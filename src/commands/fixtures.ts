@@ -1,18 +1,20 @@
 import { c } from "../ansi.ts";
 import { getMatches } from "../api.ts";
 import { matchLine, fmtDate, groupName, STAGE_LABELS, heading } from "../format.ts";
-import { withFallback, sortByDate } from "./_lib.ts";
+import { withFallback, sortByDate, matchHasTeam, applyMine, noFavoritesHint } from "./_lib.ts";
 import type { Match } from "../types.ts";
 
 export async function fixtures(args: string[]) {
   const team = getFlag(args, "--team");
 
-  let matches = await withFallback(
+  const fetched = await withFallback(
     async () => (await getMatches({})).matches,
     (all) => all,
   );
 
-  matches = matches.sort(sortByDate);
+  const mine = await applyMine(fetched, args);
+  if (mine === "no-favorites") return noFavoritesHint();
+  let matches = mine.sort(sortByDate);
 
   if (team) {
     const needle = team.toLowerCase();
@@ -40,18 +42,6 @@ export async function fixtures(args: string[]) {
     console.log(heading(name));
     for (const m of ms) console.log(`  ${c.dim(fmtDate(m.utcDate).padEnd(20))} ${matchLine(m)}`);
   }
-}
-
-function matchHasTeam(m: Match, needle: string): boolean {
-  const fields = [
-    m.homeTeam.name,
-    m.homeTeam.tla,
-    m.homeTeam.shortName,
-    m.awayTeam.name,
-    m.awayTeam.tla,
-    m.awayTeam.shortName,
-  ];
-  return fields.some((f) => f?.toLowerCase().includes(needle));
 }
 
 function teamHeading(matches: Match[], needle: string): string {

@@ -1,36 +1,33 @@
 import { c } from "../ansi.ts";
 import { getMatches } from "../api.ts";
 import { matchLine, fmtDate, relativeTime, groupName, STAGE_LABELS } from "../format.ts";
-import { withFallback, sortByDate } from "./_lib.ts";
+import { withFallback, sortByDate, matchHasTeam, applyMine, noFavoritesHint } from "./_lib.ts";
 import { getFlag } from "./fixtures.ts";
-import type { Match } from "../types.ts";
 
 export async function next(args: string[]) {
   const team = getFlag(args, "--team")?.toLowerCase() ?? null;
 
-  let matches = await withFallback(
+  const fetched = await withFallback(
     async () => (await getMatches({})).matches,
     (all) => all,
   );
 
+  const mine = await applyMine(fetched, args);
+  if (mine === "no-favorites") return noFavoritesHint();
+
   const now = Date.now();
-  let upcoming = matches
+  let upcoming = mine
     .filter((m) => new Date(m.utcDate).getTime() >= now && m.status !== "FINISHED")
     .sort(sortByDate);
 
   if (team) {
-    upcoming = upcoming.filter(
-      (m) =>
-        m.homeTeam.name?.toLowerCase().includes(team) ||
-        m.awayTeam.name?.toLowerCase().includes(team) ||
-        m.homeTeam.tla?.toLowerCase().includes(team) ||
-        m.awayTeam.tla?.toLowerCase().includes(team),
-    );
+    upcoming = upcoming.filter((m) => matchHasTeam(m, team));
   }
 
   const m = upcoming[0];
   if (!m) {
-    console.log(c.dim(team ? `No upcoming matches for "${team}".` : "No upcoming matches."));
+    const scope = team ? `"${team}"` : args.includes("--mine") ? "your favorites" : null;
+    console.log(c.dim(scope ? `No upcoming matches for ${scope}.` : "No upcoming matches."));
     return;
   }
 

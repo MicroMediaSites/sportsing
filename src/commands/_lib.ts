@@ -1,5 +1,6 @@
 import { c } from "../ansi.ts";
 import { NoKeyError, getOpenFootballMatches } from "../api.ts";
+import { getFavorites } from "../config.ts";
 import type { Match } from "../types.ts";
 
 export function ymd(d = new Date()): string {
@@ -48,4 +49,35 @@ export async function withFallback<T>(
 
 export function sortByDate(a: Match, b: Match): number {
   return new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime();
+}
+
+/** True if either side of the match matches `needle` (lowercased) by name/tla/shortName. */
+export function matchHasTeam(m: Match, needle: string): boolean {
+  const fields = [
+    m.homeTeam.name,
+    m.homeTeam.tla,
+    m.homeTeam.shortName,
+    m.awayTeam.name,
+    m.awayTeam.tla,
+    m.awayTeam.shortName,
+  ];
+  return fields.some((f) => f?.toLowerCase().includes(needle));
+}
+
+/**
+ * If `--mine` is present in args, narrow `matches` to games involving a favorite
+ * team. Returns the literal `"no-favorites"` when `--mine` was asked for but no
+ * favorites are set, so the caller can show a helpful hint. Without `--mine`,
+ * returns the list unchanged.
+ */
+export async function applyMine(matches: Match[], args: string[]): Promise<Match[] | "no-favorites"> {
+  if (!args.includes("--mine")) return matches;
+  const favs = (await getFavorites()).map((f) => f.toLowerCase());
+  if (favs.length === 0) return "no-favorites";
+  return matches.filter((m) => favs.some((n) => matchHasTeam(m, n)));
+}
+
+/** Shared message for `--mine` with no favorites configured. */
+export function noFavoritesHint(): void {
+  console.log(c.dim("No favorite teams yet — add one with ") + c.bold("sportsball fifa fav add USA"));
 }
