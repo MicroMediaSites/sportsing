@@ -17,6 +17,21 @@ import { c } from "./ansi.ts";
 /** Shared persistent Chrome profile — one login per provider, reused across launches. */
 export const STREAM_PROFILE_DIR = join(homedir(), ".config", "sportsball", "chrome");
 
+/**
+ * Open `url` in the user's default browser (fire-and-forget). For public pages
+ * like a YouTube highlights search — no persistent profile or app window needed,
+ * unlike launchStream. argv-array form (no shell), so the URL can't inject.
+ */
+export function openInBrowser(url: string): void {
+  const cmd =
+    process.platform === "darwin"
+      ? ["open", url]
+      : process.platform === "win32"
+        ? ["cmd", "/c", "start", "", url]
+        : ["xdg-open", url];
+  Bun.spawn(cmd, { stdout: "ignore", stderr: "ignore" });
+}
+
 export interface Provider {
   label: string;
   hub: string;
