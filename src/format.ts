@@ -144,7 +144,7 @@ function signed(n: number): string {
 }
 
 export function heading(text: string): string {
-  const line = "─".repeat(Math.max(text.length, 8));
+  const line = "─".repeat(Math.max(visibleLen(text), 8));
   return `\n${c.bold(c.magenta(text))}\n${c.dim(line)}`;
 }
 

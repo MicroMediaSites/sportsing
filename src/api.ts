@@ -128,7 +128,11 @@ const teamName = (t: any): string =>
 export async function getOpenFootballMatches(): Promise<Match[]> {
   return cached("openfootball", 24 * 60 * 60_000, async () => {
     const res = await fetch(OPENFOOTBALL);
-    if (!res.ok) throw new ApiError(res.status, "Could not load openfootball schedule.");
+    if (!res.ok)
+      throw new ApiError(
+        res.status,
+        "Could not fetch the offline fixture schedule — network unavailable. Run `sportsball setup` to add a free API key for live data.",
+      );
     const data = (await res.json()) as any;
     const out: Match[] = [];
     let id = 1;
@@ -149,5 +153,5 @@ export async function getOpenFootballMatches(): Promise<Match[]> {
       });
     }
     return out;
-  }).then((m) => m as Match[]);
+  });
 }

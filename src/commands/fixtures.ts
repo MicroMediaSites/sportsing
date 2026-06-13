@@ -2,7 +2,6 @@ import { c } from "../ansi.ts";
 import { getMatches } from "../api.ts";
 import { matchLine, fmtDate, groupName, STAGE_LABELS, heading } from "../format.ts";
 import { withFallback, sortByDate } from "./_lib.ts";
-import { teamLabel } from "../format.ts";
 import type { Match } from "../types.ts";
 
 export async function fixtures(args: string[]) {
@@ -65,8 +64,10 @@ function teamHeading(matches: Match[], needle: string): string {
 
 export function getFlag(args: string[], flag: string): string | null {
   const i = args.indexOf(flag);
-  if (i >= 0 && args[i + 1] && !args[i + 1]!.startsWith("--")) return args[i + 1]!;
-  return null;
+  if (i < 0) return null;
+  const val = args[i + 1];
+  if (!val || val.startsWith("--")) {
+    throw new Error(`Flag ${flag} requires a value.`);
+  }
+  return val;
 }
-
-export { teamLabel };

@@ -2,6 +2,7 @@ import { c } from "../ansi.ts";
 import { getMatches, NoKeyError } from "../api.ts";
 import { matchLine, fmtTimeOnly, groupName, STAGE_LABELS } from "../format.ts";
 import { ymd, addDays, localDateOf, sortByDate } from "./_lib.ts";
+import type { Stage } from "../types.ts";
 
 const REFRESH_MS = 60_000; // free tier note: scores are delayed; 60s is plenty.
 
@@ -49,6 +50,7 @@ export async function live() {
       console.log(c.bold("Later today"));
       for (const m of upcoming.slice(0, 6))
         console.log(`  ${c.cyan(fmtTimeOnly(m.utcDate).padEnd(8))} ${matchLine(m)}`);
+      if (upcoming.length > 6) console.log(c.dim(`  … and ${upcoming.length - 6} more`));
       console.log();
     }
     if (done.length) {
@@ -66,7 +68,7 @@ export async function live() {
   });
 }
 
-function stageTag(m: { stage: any; group: string | null }): string {
-  const s = m.stage === "GROUP_STAGE" ? groupName(m.group) : STAGE_LABELS[m.stage as keyof typeof STAGE_LABELS];
+function stageTag(m: { stage: Stage; group: string | null }): string {
+  const s = m.stage === "GROUP_STAGE" ? groupName(m.group) : STAGE_LABELS[m.stage];
   return s ? c.dim(`  ${s}`) : "";
 }
