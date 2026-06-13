@@ -11,6 +11,8 @@ interface Config {
   favorites?: string[];
   /** Preferred streaming provider for `fifa watch` (peacock | fubo). */
   streamProvider?: string;
+  /** Calibrated overlay delay (seconds) per provider, to sync stats to the stream. */
+  streamDelay?: Record<string, number>;
 }
 
 async function readConfig(): Promise<Config> {
@@ -49,6 +51,19 @@ export async function getStreamProvider(): Promise<string | null> {
 export async function setStreamProvider(provider: string): Promise<void> {
   const cfg = await readConfig();
   cfg.streamProvider = provider.trim().toLowerCase();
+  await writeConfig(cfg);
+}
+
+/** Calibrated overlay delay (seconds) for a provider, or null if not set. */
+export async function getStreamDelay(provider: string): Promise<number | null> {
+  const cfg = await readConfig();
+  const v = cfg.streamDelay?.[provider.trim().toLowerCase()];
+  return typeof v === "number" ? v : null;
+}
+
+export async function setStreamDelay(provider: string, seconds: number): Promise<void> {
+  const cfg = await readConfig();
+  cfg.streamDelay = { ...(cfg.streamDelay ?? {}), [provider.trim().toLowerCase()]: Math.max(0, Math.round(seconds)) };
   await writeConfig(cfg);
 }
 
