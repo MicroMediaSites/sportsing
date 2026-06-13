@@ -1,8 +1,7 @@
 import { c } from "../ansi.ts";
 import { getMatches } from "../api.ts";
 import { matchLine, fmtDate, relativeTime, stageLabel } from "../format.ts";
-import { withFallback, sortByDate, matchHasTeam, applyMine, noFavoritesHint } from "./_lib.ts";
-import { getFlag } from "./fixtures.ts";
+import { withFallback, sortByDate, matchHasTeam, applyMine, noFavoritesHint, getFlag } from "./_lib.ts";
 
 export async function next(args: string[]) {
   const team = getFlag(args, "--team")?.toLowerCase() ?? null;

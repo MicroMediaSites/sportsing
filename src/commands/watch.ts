@@ -2,7 +2,7 @@ import { c } from "../ansi.ts";
 import { findEvent } from "../espn.ts";
 import { getStreamProvider } from "../config.ts";
 import { PROVIDERS, launchStream } from "../stream.ts";
-import { getFlag } from "./fixtures.ts";
+import { getFlag } from "./_lib.ts";
 
 // `sportsball fifa watch <team> [team] [--provider peacock|fubo] [--url <link>]`
 // Opens the broadcast in a persistent-profile Chrome window via ui-leaf.
