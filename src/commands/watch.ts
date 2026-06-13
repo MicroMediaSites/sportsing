@@ -7,13 +7,14 @@ import { getFlag } from "./_lib.ts";
 // `sportsball fifa watch <team> [team] [--provider peacock|fubo] [--url <link>]`
 // Opens the broadcast in a persistent-profile Chrome window via ui-leaf.
 //   --url   jump straight to a specific game link (skips the hub)
-//   --provider  override the configured default (config.streamProvider, else peacock)
+//   --provider  override the configured default (config.streamProvider, else fubo)
 export async function watch(args: string[]) {
   const url = getFlag(args, "--url"); // throws if --url has no value
   const providerFlag = getFlag(args, "--provider");
   const terms = positionalTerms(args);
 
-  const key = (providerFlag ?? (await getStreamProvider()) ?? "peacock").toLowerCase();
+  // Default to Fubo (English/Fox). Peacock is Spanish-only (Telemundo).
+  const key = (providerFlag ?? (await getStreamProvider()) ?? "fubo").toLowerCase();
   const provider = PROVIDERS[key];
   if (!provider) {
     console.error(c.red(`Unknown provider "${key}". Known: ${Object.keys(PROVIDERS).join(", ")}.`));
