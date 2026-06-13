@@ -1,84 +1,63 @@
 #!/usr/bin/env bun
 import { c } from "./ansi.ts";
 import { ApiError } from "./api.ts";
-import { today } from "./commands/today.ts";
-import { fixtures } from "./commands/fixtures.ts";
-import { table } from "./commands/table.ts";
-import { bracket } from "./commands/bracket.ts";
-import { next } from "./commands/next.ts";
-import { scorers } from "./commands/scorers.ts";
-import { live } from "./commands/live.ts";
-import { setup } from "./commands/setup.ts";
+import { fifa, FIFA_COMMANDS } from "./sports/fifa.ts";
 
 const VERSION = "0.1.0";
 
+// Sport namespaces. Add a new sport by writing src/sports/<sport>.ts with a
+// dispatcher `(args: string[]) => unknown` and registering it here.
+const SPORTS: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
+  fifa,
+};
+
+// While FIFA is the only sport, a bare `sportsball <command>` is treated as a
+// `fifa` command so existing usage keeps working. Remove the fallback (or make
+// it configurable) once a second sport lands.
+const DEFAULT_SPORT = "fifa";
+
 function help() {
   const b = c.bold;
-  console.log(`${b(c.cyan("⚽ sportsball"))} — FIFA World Cup 2026 in your terminal  ${c.dim("v" + VERSION)}
+  console.log(`${b(c.cyan("⚽ sportsball"))} — sports in your terminal  ${c.dim("v" + VERSION)}
 
 ${b("USAGE")}
-  sportsball <command> [options]
+  sportsball <sport> <command> [options]
 
-${b("COMMANDS")}
-  ${c.green("today")}              Matches today  ${c.dim("(--tomorrow, --yesterday, --offset N)")}
-  ${c.green("next")}   ${c.dim("[--team X]")} Next upcoming match + countdown
-  ${c.green("live")}               Auto-refreshing live scoreboard
-  ${c.green("fixtures")} ${c.dim("[--team X]")} All fixtures, or one team's schedule
-  ${c.green("table")}  ${c.dim("[A-L]")}      Group standings ${c.dim("(optionally one group)")}
-  ${c.green("bracket")}            Knockout bracket (Round of 32 → Final)
-  ${c.green("scorers")}            Golden Boot race
-  ${c.green("setup")}  ${c.dim("[key]")}      Add your free football-data.org API key
-  ${c.green("help")}               This screen
+${b("SPORTS")}
+  ${c.green("fifa")}               FIFA World Cup 2026 ${c.dim("— sportsball fifa help")}
 
-${b("DATA")}
-  Live data: football-data.org (free key, World Cup included).
-  Without a key, fixtures fall back to the offline openfootball schedule.
-  Set FOOTBALL_DATA_API_KEY or run ${b("sportsball setup")}.
+${b("NOTE")}
+  During the World Cup, the ${b("fifa")} prefix is optional —
+  ${c.dim("sportsball today")} is shorthand for ${c.dim("sportsball fifa today")}.
 
 ${b("EXAMPLES")}
-  sportsball today
-  sportsball next --team USA
-  sportsball table B
-  sportsball fixtures --team Brazil
-  sportsball live
+  sportsball fifa today
+  sportsball fifa next --team USA
+  sportsball today              ${c.dim("(= sportsball fifa today)")}
 `);
 }
 
-const ROUTES: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
-  today,
-  fixtures,
-  table,
-  bracket: () => bracket(),
-  next,
-  scorers: () => scorers(),
-  live: () => live(),
-  setup,
-};
+async function dispatch(): Promise<void> {
+  const [, , first, ...rest] = process.argv;
+
+  if (!first || first === "help" || first === "--help" || first === "-h") return help();
+  if (first === "--version" || first === "-v") return void console.log("sportsball " + VERSION);
+
+  // Explicit sport namespace: `sportsball fifa <command>`.
+  const sport = SPORTS[first];
+  if (sport) return void (await sport(rest));
+
+  // Back-compat: `sportsball <fifa-command>` → run it under the default sport.
+  if (FIFA_COMMANDS.has(first)) return void (await SPORTS[DEFAULT_SPORT]!([first, ...rest]));
+
+  console.error(c.red(`Unknown command: ${first}`));
+  console.error(c.dim("Run `sportsball help` for sports, or `sportsball fifa help` for World Cup commands."));
+  process.exitCode = 1;
+}
 
 async function main() {
-  const [, , cmd, ...args] = process.argv;
-
-  if (!cmd || cmd === "help" || cmd === "--help" || cmd === "-h") return help();
-  if (cmd === "--version" || cmd === "-v") return console.log("sportsball " + VERSION);
-
-  const aliases: Record<string, string> = {
-    t: "today",
-    n: "next",
-    f: "fixtures",
-    standings: "table",
-    tables: "table",
-    knockout: "bracket",
-  };
-  const route = ROUTES[cmd] ?? ROUTES[aliases[cmd] ?? ""];
-  if (!route) {
-    console.error(c.red(`Unknown command: ${cmd}`));
-    console.error(c.dim("Run `sportsball help` for usage."));
-    process.exitCode = 1;
-    return;
-  }
-
   try {
-    await route(args);
+    await dispatch();
   } catch (e) {
     if (e instanceof ApiError) {
       console.error(c.red(`API error (${e.status}): ${e.message}`));
