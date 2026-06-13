@@ -9,6 +9,8 @@ export const CACHE_DIR = join(homedir(), ".cache", "sportsball");
 interface Config {
   apiKey?: string;
   favorites?: string[];
+  /** Preferred streaming provider for `fifa watch` (peacock | fubo). */
+  streamProvider?: string;
 }
 
 async function readConfig(): Promise<Config> {
@@ -35,6 +37,18 @@ export async function getApiKey(): Promise<string | null> {
 export async function setApiKey(key: string): Promise<void> {
   const cfg = await readConfig();
   cfg.apiKey = key.trim();
+  await writeConfig(cfg);
+}
+
+/** Preferred streaming provider for `fifa watch`, or null if unset. */
+export async function getStreamProvider(): Promise<string | null> {
+  const cfg = await readConfig();
+  return cfg.streamProvider?.trim().toLowerCase() || null;
+}
+
+export async function setStreamProvider(provider: string): Promise<void> {
+  const cfg = await readConfig();
+  cfg.streamProvider = provider.trim().toLowerCase();
   await writeConfig(cfg);
 }
 
