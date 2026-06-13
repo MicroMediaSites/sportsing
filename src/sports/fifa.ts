@@ -32,9 +32,6 @@ const ALIASES: Record<string, string> = {
   knockout: "bracket",
 };
 
-/** Subcommand names this sport understands (for back-compat dispatch in index.ts). */
-export const FIFA_COMMANDS = new Set([...Object.keys(ROUTES), ...Object.keys(ALIASES)]);
-
 /** Dispatch a `sportsball fifa <command>` invocation. Args are everything after `fifa`. */
 export async function fifa(args: string[]): Promise<void> {
   const [cmd, ...rest] = args;

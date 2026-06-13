@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { c } from "./ansi.ts";
 import { ApiError } from "./api.ts";
-import { fifa, FIFA_COMMANDS } from "./sports/fifa.ts";
+import { fifa } from "./sports/fifa.ts";
 
 const VERSION = "0.1.0";
 
@@ -10,11 +10,6 @@ const VERSION = "0.1.0";
 const SPORTS: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   fifa,
 };
-
-// While FIFA is the only sport, a bare `sportsball <command>` is treated as a
-// `fifa` command so existing usage keeps working. Remove the fallback (or make
-// it configurable) once a second sport lands.
-const DEFAULT_SPORT = "fifa";
 
 function help() {
   const b = c.bold;
@@ -41,18 +36,23 @@ async function dispatch(): Promise<void> {
   const [, , first, ...rest] = process.argv;
 
   if (!first || first === "help" || first === "--help" || first === "-h") return help();
-  if (first === "--version" || first === "-v") return void console.log("sportsball " + VERSION);
+  if (first === "--version" || first === "-v") {
+    console.log("sportsball " + VERSION);
+    return;
+  }
 
   // Explicit sport namespace: `sportsball fifa <command>`.
   const sport = SPORTS[first];
-  if (sport) return void (await sport(rest));
+  if (sport) {
+    await sport(rest);
+    return;
+  }
 
-  // Back-compat: `sportsball <fifa-command>` → run it under the default sport.
-  if (FIFA_COMMANDS.has(first)) return void (await SPORTS[DEFAULT_SPORT]!([first, ...rest]));
-
-  console.error(c.red(`Unknown command: ${first}`));
-  console.error(c.dim("Run `sportsball help` for sports, or `sportsball fifa help` for World Cup commands."));
-  process.exitCode = 1;
+  // Back-compat: while FIFA is the only sport, a bare `sportsball <command>`
+  // runs as a FIFA command (`sportsball today` == `sportsball fifa today`).
+  // An unknown token surfaces as "Unknown fifa command". Delete this line when
+  // a second sport lands so bare commands require an explicit sport prefix.
+  await fifa([first, ...rest]);
 }
 
 async function main() {
