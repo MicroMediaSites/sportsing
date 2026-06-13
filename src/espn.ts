@@ -90,6 +90,36 @@ export async function findEvent(terms: string[], opts: { playedOnly?: boolean } 
   return events[0] ?? null;
 }
 
+export interface H2HGame {
+  date: string;
+  score: string;
+  result: "W" | "D" | "L" | "?";
+}
+
+/** Prior meetings between the two sides of an event (summary headToHeadGames),
+ *  results from the first listed team's perspective. */
+export async function getHeadToHead(
+  eventId: string,
+  ttlMs = 60 * 60_000,
+): Promise<{ team: string; games: H2HGame[] }> {
+  // Separate cache key from getMatchStats (which also hits /summary on a short
+  // TTL) — a shared key would let the shorter TTL win and refetch H2H needlessly.
+  const raw = await cached<any>(`espn_h2h_${eventId}`, ttlMs, async () => {
+    const res = await fetch(`${BASE}/summary?event=${eventId}`);
+    if (!res.ok) throw new ApiError(res.status, `ESPN summary request failed (HTTP ${res.status}).`);
+    return res.json();
+  });
+  const block = (raw.headToHeadGames ?? [])[0];
+  if (!block) return { team: "", games: [] };
+  const games: H2HGame[] = (block.events ?? []).map((e: any) => {
+    const [a, b] = String(e.score ?? "").split("-").map(Number);
+    const result: H2HGame["result"] =
+      a === undefined || b === undefined || Number.isNaN(a) || Number.isNaN(b) ? "?" : a > b ? "W" : a < b ? "L" : "D";
+    return { date: String(e.gameDate ?? e.date ?? "").slice(0, 10), score: String(e.score ?? ""), result };
+  });
+  return { team: block.team?.displayName ?? "", games };
+}
+
 /** Per-team statistics for one event (from the summary boxscore). */
 export async function getMatchStats(eventId: string, ttlMs = 60_000): Promise<EspnTeamStats[]> {
   const raw = await cached<any>(`espn_sum_${eventId}`, ttlMs, async () => {

@@ -79,7 +79,7 @@ ${b("COMMANDS")}
   ${c.green("today")}              Matches today  ${c.dim("(--tomorrow, --yesterday, --offset N)")}
   ${c.green("next")}   ${c.dim("[--team X]")} Next upcoming match + countdown
   ${c.green("live")}               Auto-refreshing live scoreboard
-  ${c.green("watch")}  ${c.dim("<team>")}      Open the broadcast ${c.dim("(--provider, --url)")}
+  ${c.green("watch")}  ${c.dim("<team>")}      Open the broadcast ${c.dim("(--overlay, --provider, --url)")}
   ${c.green("highlights")} ${c.dim("<team>")}   Open a highlights search in your browser
   ${c.green("fixtures")} ${c.dim("[--team X]")} All fixtures, or one team's schedule
   ${c.green("schedule")}           Whole tournament by day ${c.dim("(--mine)")}
