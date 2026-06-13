@@ -8,6 +8,7 @@ export const CACHE_DIR = join(homedir(), ".cache", "sportsball");
 
 interface Config {
   apiKey?: string;
+  apiFootballKey?: string;
   favorites?: string[];
 }
 
@@ -35,6 +36,20 @@ export async function getApiKey(): Promise<string | null> {
 export async function setApiKey(key: string): Promise<void> {
   const cfg = await readConfig();
   cfg.apiKey = key.trim();
+  await writeConfig(cfg);
+}
+
+/** Resolve the API-Football (api-sports.io) key from env or config file. */
+export async function getApiFootballKey(): Promise<string | null> {
+  const env = process.env.API_FOOTBALL_KEY?.trim();
+  if (env) return env;
+  const cfg = await readConfig();
+  return cfg.apiFootballKey?.trim() || null;
+}
+
+export async function setApiFootballKey(key: string): Promise<void> {
+  const cfg = await readConfig();
+  cfg.apiFootballKey = key.trim();
   await writeConfig(cfg);
 }
 
