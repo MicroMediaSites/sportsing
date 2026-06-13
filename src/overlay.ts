@@ -105,31 +105,77 @@ async function todaySnapshot(): Promise<Record<string, unknown>> {
   return { mode: "today", games };
 }
 
-// Find the game's tile on the provider hub by team name (any language) and click
-// it, so the SPA routes to the match. Returns true if it clicked. Runs through
-// the existing ui-leaf CDP session — no separate browser.
+// Auto-open the game over the existing ui-leaf CDP session (no separate
+// browser), in two phases: (1) find the game's tile on the hub by team name
+// (any language) and click it to route there; (2) some providers (Fubo) land on
+// a program-details page with a "Watch live" CTA, others (Peacock) go straight
+// to the player — so click a Watch/Play CTA if present and finish once a
+// <video> is actually playing. Returns true once routed (best-effort).
 async function tryDeepLink(session: CdpSession, ev: EspnEvent): Promise<boolean> {
   const { home, away } = sides(ev);
   const A = searchTerms(home?.name ?? "", home?.abbreviation ?? "");
   const B = searchTerms(away?.name ?? "", away?.abbreviation ?? "");
+  // Scan the hub for the game's tile and click it. The matcher must be picky:
+  // a matchup string also appears on non-navigable headings (Fubo's program
+  // page title) and inside huge list containers with a delegated onclick
+  // (Peacock's rail). So we (1) require a real click affordance, (2) reject
+  // ancestors bigger than the viewport (the rail/list, not a card), and
+  // (3) among all matches pick the smallest, link-like target — then click it
+  // WITHOUT scrollIntoView (the jump was the visible bug; SPA handlers fire
+  // off-screen anyway).
   const js =
     "(function(A,B){" +
-    "function clk(el){for(var n=el;n&&n!==document.body;n=n.parentElement){if(n.tagName==='A'||n.tagName==='BUTTON'||n.getAttribute('role')==='button'||n.onclick)return n;}return el;}" +
+    "function isLink(n){return n.tagName==='A'||n.getAttribute('role')==='link';}" +
+    "function aff(n){return isLink(n)||n.tagName==='BUTTON'||n.getAttribute('role')==='button'||!!n.onclick;}" +
+    "function clk(el){for(var n=el;n&&n!==document.body;n=n.parentElement){if(aff(n)){var r=n.getBoundingClientRect();if(r.width*r.height>=400&&r.height<=2*innerHeight)return n;}}return null;}" + // a card, not the giant rail/list container
     "function split(t){var s=[' v. ',' vs ',' v ',' versus '];for(var k=0;k<s.length;k++){var i=t.indexOf(s[k]);if(i>0)return [t.slice(0,i),t.slice(i+s[k].length)];}return null;}" +
     "function inAny(s,arr){for(var j=0;j<arr.length;j++)if(s.indexOf(arr[j])>=0)return true;return false;}" +
-    "var all=document.querySelectorAll('*');for(var i=0;i<all.length;i++){var el=all[i];if(el.children.length>3)continue;var t=(el.innerText||'').replace(/\\s+/g,' ').trim().toLowerCase();if(!t||t.length>44)continue;var sp=split(t);if(!sp)continue;" +
-    "if((inAny(sp[0],A)&&inAny(sp[1],B))||(inAny(sp[0],B)&&inAny(sp[1],A))){var c=clk(el);if(c.scrollIntoView)c.scrollIntoView();c.click();return true;}}return false;" +
+    "var all=document.querySelectorAll('*'),best=null;for(var i=0;i<all.length;i++){var el=all[i];if(el.children.length>3)continue;var t=(el.innerText||'').replace(/\\s+/g,' ').trim().toLowerCase();if(!t||t.length>44)continue;var sp=split(t);if(!sp)continue;" +
+    "if(!((inAny(sp[0],A)&&inAny(sp[1],B))||(inAny(sp[0],B)&&inAny(sp[1],A))))continue;" +
+    "var c=clk(el);if(!c)continue;var r=c.getBoundingClientRect();var sc=(isLink(c)?0:1)*1e9+r.width*r.height;" + // prefer real links, then the smallest target (a card, not the rail)
+    "if(!best||sc<best.sc)best={el:c,sc:sc};}" +
+    "if(best){best.el.click();return true;}return false;" +
     "})(" + JSON.stringify(A) + "," + JSON.stringify(B) + ")";
-  for (let i = 0; i < 8; i++) {
-    await new Promise((r) => setTimeout(r, 1500)); // hub SPA lazy-loads — keep trying
+
+  // Phase 2: on the game's page, click a Watch/Play CTA (Fubo's "Watch live")
+  // if there is one; we're done once a <video> is actually playing (Peacock
+  // routes straight into the player and has no CTA). Returns 'playing' | 'clicked' | 'none'.
+  const watchJs =
+    "(function(){" +
+    "var v=document.querySelector('video');" +
+    "if(v&&v.readyState>=2&&!v.paused&&v.currentTime>0)return 'playing';" +
+    "var b=document.querySelectorAll('button,a,[role=button],[role=link]');" +
+    "for(var i=0;i<b.length;i++){var el=b[i];var t=((el.innerText||'')+' '+(el.getAttribute('aria-label')||'')).toLowerCase();" +
+    "if(!/\\b(watch|play|ver|reproducir)\\b/.test(t))continue;" + // a Watch/Play CTA — not "watchlist" (no word boundary) or "view schedule"
+    "var r=el.getBoundingClientRect();if(r.width*r.height<400)continue;" +
+    "el.click();return 'clicked';}" +
+    "return v?'playing':'none';" +
+    "})()";
+
+  const evalValue = async (expression: string): Promise<unknown> => {
     try {
-      const r = await session.send("Runtime.evaluate", { expression: js, returnByValue: true });
-      if (r?.result?.result?.value === true) return true;
+      const r = await session.send("Runtime.evaluate", { expression, returnByValue: true });
+      return r?.result?.result?.value;
     } catch {
-      /* page navigating */
+      return undefined; // page navigating
     }
+  };
+
+  // Phase 1 — click the matchup tile to route to the game's page.
+  let routed = false;
+  for (let i = 0; i < 8 && !routed; i++) {
+    await new Promise((r) => setTimeout(r, 1500)); // hub SPA lazy-loads — keep trying
+    if ((await evalValue(js)) === true) routed = true;
   }
-  return false;
+  if (!routed) return false;
+
+  // Phase 2 — click the Watch/Play CTA if the landing page needs one; finish
+  // once the player is up.
+  for (let i = 0; i < 8; i++) {
+    await new Promise((r) => setTimeout(r, 1500));
+    if ((await evalValue(watchJs)) === "playing") return true;
+  }
+  return true; // routed to the game even if we couldn't confirm <video> playback
 }
 
 /** Launch the stream with the configurable, page-following, delay-calibratable overlay. Blocks until closed. */
