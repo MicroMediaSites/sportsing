@@ -21,7 +21,7 @@ export class ApiError extends Error {
 
 export class NoKeyError extends Error {}
 
-/** Disk cache so we stay under the 10 req/min free-tier limit. Shared with apifootball.ts. */
+/** Disk cache so we stay under the 10 req/min free-tier limit. Shared with espn.ts. */
 export async function cached<T>(key: string, ttlMs: number, fetcher: () => Promise<T>): Promise<T> {
   await mkdir(CACHE_DIR, { recursive: true });
   const file = join(CACHE_DIR, key + ".json");
