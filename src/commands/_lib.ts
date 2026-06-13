@@ -51,6 +51,18 @@ export function sortByDate(a: Match, b: Match): number {
   return new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime();
 }
 
+/** Value of a `--flag value` pair, or null if the flag is absent.
+ *  Throws if the flag is present but has no value (e.g. `--team` at end). */
+export function getFlag(args: string[], flag: string): string | null {
+  const i = args.indexOf(flag);
+  if (i < 0) return null;
+  const val = args[i + 1];
+  if (!val || val.startsWith("--")) {
+    throw new Error(`Flag ${flag} requires a value.`);
+  }
+  return val;
+}
+
 /** True if either side of the match matches `needle` (lowercased) by name/tla/shortName. */
 export function matchHasTeam(m: Match, needle: string): boolean {
   const fields = [
