@@ -2,15 +2,18 @@ import { c } from "../ansi.ts";
 import { findEvent } from "../espn.ts";
 import { getStreamProvider } from "../config.ts";
 import { PROVIDERS, launchStream } from "../stream.ts";
+import { runOverlayStream } from "../overlay.ts";
 import { getFlag } from "./_lib.ts";
 
-// `sportsball fifa watch <team> [team] [--provider peacock|fubo] [--url <link>]`
+// `sportsball fifa watch <team> [team] [--provider peacock|fubo] [--url <link>] [--overlay]`
 // Opens the broadcast in a persistent-profile Chrome window via ui-leaf.
-//   --url   jump straight to a specific game link (skips the hub)
+//   --url       jump straight to a specific game link (skips the hub)
 //   --provider  override the configured default (config.streamProvider, else fubo)
+//   --overlay   inject a live-stats panel onto the page via CDP (interactive; needs ui-leaf >=1.5)
 export async function watch(args: string[]) {
   const url = getFlag(args, "--url"); // throws if --url has no value
   const providerFlag = getFlag(args, "--provider");
+  const overlay = args.includes("--overlay");
   const terms = positionalTerms(args);
 
   // Default to Fubo (English/Fox). Peacock is Spanish-only (Telemundo).
@@ -22,6 +25,23 @@ export async function watch(args: string[]) {
     return;
   }
 
+  // --overlay needs a resolved match (for the panel's stats + head-to-head).
+  if (overlay) {
+    if (terms.length === 0) {
+      console.error(c.red("Usage: sportsball fifa watch <team> [team] --overlay [--provider] [--url]"));
+      process.exitCode = 1;
+      return;
+    }
+    const ev = await findEvent(terms);
+    if (!ev) {
+      console.error(c.yellow(`No match found for "${terms.join(" ")}".`));
+      process.exitCode = 1;
+      return;
+    }
+    await runOverlayStream(url ?? provider.hub, provider.label, ev);
+    return;
+  }
+
   // Direct link wins — open it straight away (no match lookup needed).
   if (url) {
     await launchStream(url, provider.label);
@@ -29,7 +49,7 @@ export async function watch(args: string[]) {
   }
 
   if (terms.length === 0) {
-    console.error(c.red("Usage: sportsball fifa watch <team> [team] [--provider peacock|fubo] [--url <link>]"));
+    console.error(c.red("Usage: sportsball fifa watch <team> [team] [--provider peacock|fubo] [--url <link>] [--overlay]"));
     process.exitCode = 1;
     return;
   }
