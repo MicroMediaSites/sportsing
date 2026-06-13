@@ -11,6 +11,7 @@ import { next } from "../commands/next.ts";
 import { scorers } from "../commands/scorers.ts";
 import { live } from "../commands/live.ts";
 import { setup } from "../commands/setup.ts";
+import { fav } from "../commands/fav.ts";
 
 const ROUTES: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   today,
@@ -20,6 +21,7 @@ const ROUTES: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   next,
   scorers: () => scorers(),
   live: () => live(),
+  fav,
   setup,
 };
 
@@ -63,6 +65,7 @@ ${b("COMMANDS")}
   ${c.green("table")}  ${c.dim("[A-L]")}      Group standings ${c.dim("(optionally one group)")}
   ${c.green("bracket")}            Knockout bracket (Round of 32 → Final)
   ${c.green("scorers")}            Golden Boot race
+  ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
   ${c.green("setup")}  ${c.dim("[key]")}      Add your free football-data.org API key
 
 ${b("DATA")}
