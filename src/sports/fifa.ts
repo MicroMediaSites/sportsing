@@ -76,6 +76,7 @@ ${b("COMMANDS")}
   ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
   ${c.green("me")}                 Dashboard for your favorite teams
   ${c.green("setup")}  ${c.dim("[key]")}      Add your free football-data.org API key
+  ${c.green("setup apifootball")}  Add an API-Football key ${c.dim("(richer stats)")}
 
 ${b("FILTER")}
   ${c.dim("--mine")} on today/next/fixtures limits results to your favorite teams.
