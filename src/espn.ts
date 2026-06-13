@@ -122,6 +122,8 @@ export async function getHeadToHead(
 
 export interface LiveMatch {
   detail: string; // clock/status, e.g. "66'", "HT", "FT"
+  state: "pre" | "in" | "post";
+  kickoff: string; // ISO kickoff time (for the pre-game countdown)
   homeAbbr: string;
   awayAbbr: string;
   homeScore: string;
@@ -129,6 +131,15 @@ export interface LiveMatch {
   possession?: [string, string];
   shots?: [string, string];
   onTarget?: [string, string];
+  /** Market-implied win % (de-vigged) from ESPN odds: [home, draw, away], 0–100. */
+  winProb?: [number, number, number];
+  /** Raw 3-way odds line, e.g. "QAT +1500 / X +600 / SUI -525". */
+  oddsLine?: string;
+}
+
+/** American moneyline → implied probability (0–1). */
+function mlToProb(ml: number): number {
+  return ml >= 0 ? 100 / (ml + 100) : -ml / (-ml + 100);
 }
 
 /** Fresh live state for one match in a single call: clock + score (summary
@@ -156,16 +167,57 @@ export async function getLiveMatch(eventId: string, ttlMs = 5_000): Promise<Live
     const a = stat(at, n);
     return h === undefined && a === undefined ? undefined : [h ?? "—", a ?? "—"];
   };
+  const homeAbbr = hc?.team?.abbreviation ?? "?";
+  const awayAbbr = ac?.team?.abbreviation ?? "?";
+
+  // Win probability + odds line, derived from the 3-way moneyline.
+  let winProb: [number, number, number] | undefined;
+  let oddsLine: string | undefined;
+  const o = raw.pickcenter?.[0] ?? raw.odds?.[0];
+  const hml = o?.homeTeamOdds?.moneyLine;
+  const aml = o?.awayTeamOdds?.moneyLine;
+  const dml = o?.drawOdds?.moneyLine;
+  if (typeof hml === "number" && typeof aml === "number" && typeof dml === "number") {
+    const ph = mlToProb(hml);
+    const pd = mlToProb(dml);
+    const pa = mlToProb(aml);
+    const sum = ph + pd + pa;
+    winProb = sum > 0 ? [Math.round((ph / sum) * 100), Math.round((pd / sum) * 100), Math.round((pa / sum) * 100)] : undefined;
+    const fmt = (n: number) => (n >= 0 ? "+" + n : String(n));
+    oddsLine = `${homeAbbr} ${fmt(hml)} / X ${fmt(dml)} / ${awayAbbr} ${fmt(aml)}`;
+  }
+
   return {
     detail: comp.status?.type?.shortDetail ?? "",
-    homeAbbr: hc?.team?.abbreviation ?? "?",
-    awayAbbr: ac?.team?.abbreviation ?? "?",
+    state: comp.status?.type?.state ?? "pre",
+    kickoff: comp.date ?? "",
+    homeAbbr,
+    awayAbbr,
     homeScore: String(hc?.score ?? "0"),
     awayScore: String(ac?.score ?? "0"),
     possession: pair("possessionPct"),
     shots: pair("totalShots"),
     onTarget: pair("shotsOnTarget"),
+    winProb,
+    oddsLine,
   };
+}
+
+/** Resolve terms to the *currently relevant* match: live now → today → next
+ *  upcoming → most recent. (findEvent returns the latest-scheduled, which is
+ *  wrong for "watch <team>" when a team has several fixtures.) */
+export async function findCurrentMatch(terms: string[]): Promise<EspnEvent | null> {
+  const t = terms.map((s) => s.toLowerCase());
+  const events = (await getEvents()).filter((e) => t.every((term) => eventHasTeam(e, term)));
+  if (!events.length) return null;
+  const live = events.find((e) => e.state === "in");
+  if (live) return live;
+  const today = new Date().toLocaleDateString();
+  const todayGame = events.find((e) => new Date(e.date).toLocaleDateString() === today);
+  if (todayGame) return todayGame;
+  const upcoming = events.filter((e) => e.state === "pre").sort((a, b) => +new Date(a.date) - +new Date(b.date))[0];
+  if (upcoming) return upcoming;
+  return events.sort((a, b) => +new Date(b.date) - +new Date(a.date))[0] ?? null;
 }
 
 /** Per-team statistics for one event (from the summary boxscore). */
