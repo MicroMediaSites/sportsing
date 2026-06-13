@@ -78,7 +78,7 @@ ${b("COMMANDS")}
   ${c.green("bracket")}            Knockout bracket (Round of 32 → Final)
   ${c.green("scorers")}            Golden Boot race
   ${c.green("stats")}  ${c.dim("<team> [team]")} Match statistics ${c.dim("(--json)")}
-  ${c.green("analyze")} ${c.dim("<team>")}      AI tactical read of a match ${c.dim("(--prompt)")}
+  ${c.green("analyze")} ${c.dim("<team> [team]")} AI tactical read of a match ${c.dim("(--prompt)")}
   ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
   ${c.green("me")}                 Dashboard for your favorite teams
   ${c.green("setup")}  ${c.dim("[key]")}      Add your free football-data.org API key

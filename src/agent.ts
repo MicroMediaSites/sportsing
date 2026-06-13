@@ -9,7 +9,15 @@ export class ClaudeNotFoundError extends Error {}
 export async function runClaude(prompt: string): Promise<string> {
   if (!Bun.which("claude")) throw new ClaudeNotFoundError();
 
-  const proc = Bun.spawn(["claude", "-p"], { stdin: "pipe", stdout: "pipe", stderr: "pipe" });
+  // `--allowedTools ""` disables all tool execution: prompts here embed
+  // externally-sourced data (API responses), and headless Claude Code retains
+  // Bash/file tools by default — a prompt-injection → local-exec risk. This is
+  // a pure text-in/text-out call, so no tools are needed.
+  const proc = Bun.spawn(["claude", "-p", "--allowedTools", ""], {
+    stdin: "pipe",
+    stdout: "pipe",
+    stderr: "pipe",
+  });
   proc.stdin.write(prompt);
   proc.stdin.end();
 
