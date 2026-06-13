@@ -20,6 +20,15 @@ export function fmtTimeOnly(iso: string): string {
   return new Date(iso).toLocaleString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
+/** Date-only header, e.g. "Sat, Jun 13" — for grouping a list by day (local). */
+export function fmtDayHeader(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function statusBadge(m: Match): string {
   switch (m.status) {
     case "IN_PLAY":
@@ -89,6 +98,13 @@ export const STAGE_LABELS: Record<Stage, string> = {
   THIRD_PLACE: "Third-place Play-off",
   FINAL: "Final",
 };
+
+/** Canonical stage label for a match: group name (e.g. "Group B") for the group
+ *  stage, or the knockout-round label. Falls back to "Group Stage" when the
+ *  group letter is unknown. */
+export function stageLabel(m: Match): string {
+  return m.stage === "GROUP_STAGE" ? groupName(m.group) || "Group Stage" : STAGE_LABELS[m.stage];
+}
 
 export const KNOCKOUT_ORDER: Stage[] = [
   "LAST_32",
