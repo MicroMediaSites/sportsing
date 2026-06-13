@@ -61,15 +61,16 @@ export async function predict(args: string[]) {
   }
 }
 
-/** Prefer the earliest upcoming match matching all terms; fall back to any match. */
+/** The earliest *upcoming* (not-yet-played) match matching all terms, or null.
+ *  Never falls back to a completed game — predicting a finished match is wrong. */
 function pickTarget(events: EspnEvent[], terms: string[]): EspnEvent | null {
   const has = (e: EspnEvent, t: string) =>
     e.competitors.some((c) => c.name.toLowerCase().includes(t) || c.abbreviation.toLowerCase() === t);
-  const matched = events.filter((e) => terms.every((t) => has(e, t)));
-  const upcoming = matched
-    .filter((e) => e.state === "pre")
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  return upcoming[0] ?? matched[0] ?? null;
+  return (
+    events
+      .filter((e) => e.state === "pre" && terms.every((t) => has(e, t)))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0] ?? null
+  );
 }
 
 /** A team's played games this tournament, as W/D/L + goals. */
