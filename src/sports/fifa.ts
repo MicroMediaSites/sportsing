@@ -12,6 +12,7 @@ import { analyze } from "../commands/analyze.ts";
 import { predict } from "../commands/predict.ts";
 import { watch } from "../commands/watch.ts";
 import { highlights } from "../commands/highlights.ts";
+import { teams } from "../commands/teams.ts";
 import { table } from "../commands/table.ts";
 import { bracket } from "../commands/bracket.ts";
 import { next } from "../commands/next.ts";
@@ -26,6 +27,7 @@ const ROUTES: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   fixtures,
   schedule,
   results,
+  teams,
   table,
   bracket: () => bracket(),
   next,
@@ -84,6 +86,7 @@ ${b("COMMANDS")}
   ${c.green("results")}            Finished games, newest first ${c.dim("(--mine)")}
   ${c.green("table")}  ${c.dim("[A-L]")}      Group standings ${c.dim("(optionally one group)")}
   ${c.green("bracket")}            Knockout bracket (Round of 32 → Final)
+  ${c.green("teams")}  ${c.dim("[--group X]")} Teams in the tournament ${c.dim("(--json)")}
   ${c.green("scorers")}            Golden Boot race
   ${c.green("stats")}  ${c.dim("<team> [team]")} Match statistics ${c.dim("(--json)")}
   ${c.green("analyze")} ${c.dim("<team> [team]")} AI tactical read of a match ${c.dim("(--prompt)")}
