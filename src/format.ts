@@ -99,6 +99,13 @@ export const STAGE_LABELS: Record<Stage, string> = {
   FINAL: "Final",
 };
 
+/** Canonical stage label for a match: group name (e.g. "Group B") for the group
+ *  stage, or the knockout-round label. Falls back to "Group Stage" when the
+ *  group letter is unknown. */
+export function stageLabel(m: Match): string {
+  return m.stage === "GROUP_STAGE" ? groupName(m.group) || "Group Stage" : STAGE_LABELS[m.stage];
+}
+
 export const KNOCKOUT_ORDER: Stage[] = [
   "LAST_32",
   "LAST_16",

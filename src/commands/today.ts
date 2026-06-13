@@ -1,6 +1,6 @@
 import { c } from "../ansi.ts";
 import { getMatches } from "../api.ts";
-import { matchLine, groupName, STAGE_LABELS, heading } from "../format.ts";
+import { matchLine, stageLabel, heading } from "../format.ts";
 import { ymd, addDays, localDateOf, withFallback, sortByDate, applyMine, noFavoritesHint } from "./_lib.ts";
 import type { Match } from "../types.ts";
 
@@ -40,8 +40,7 @@ export async function today(args: string[]) {
 export function printGrouped(matches: Match[]) {
   const buckets = new Map<string, Match[]>();
   for (const m of matches) {
-    const key =
-      m.stage === "GROUP_STAGE" ? groupName(m.group) || "Group Stage" : STAGE_LABELS[m.stage];
+    const key = stageLabel(m);
     (buckets.get(key) ?? buckets.set(key, []).get(key)!).push(m);
   }
   for (const [name, ms] of buckets) {

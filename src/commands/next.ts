@@ -1,6 +1,6 @@
 import { c } from "../ansi.ts";
 import { getMatches } from "../api.ts";
-import { matchLine, fmtDate, relativeTime, groupName, STAGE_LABELS } from "../format.ts";
+import { matchLine, fmtDate, relativeTime, stageLabel } from "../format.ts";
 import { withFallback, sortByDate, matchHasTeam, applyMine, noFavoritesHint } from "./_lib.ts";
 import { getFlag } from "./fixtures.ts";
 
@@ -31,8 +31,7 @@ export async function next(args: string[]) {
     return;
   }
 
-  const stage =
-    m.stage === "GROUP_STAGE" ? groupName(m.group) : STAGE_LABELS[m.stage];
+  const stage = stageLabel(m);
 
   console.log(c.bold(c.cyan("⚽ Next Match")));
   console.log("\n  " + matchLine(m));

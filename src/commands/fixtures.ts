@@ -1,6 +1,6 @@
 import { c } from "../ansi.ts";
 import { getMatches } from "../api.ts";
-import { matchLine, fmtDate, groupName, STAGE_LABELS, heading } from "../format.ts";
+import { matchLine, fmtDate, stageLabel, heading } from "../format.ts";
 import { withFallback, sortByDate, matchHasTeam, applyMine, noFavoritesHint } from "./_lib.ts";
 import type { Match } from "../types.ts";
 
@@ -25,9 +25,7 @@ export async function fixtures(args: string[]) {
     }
     console.log(c.bold(c.cyan(`⚽ Fixtures — ${teamHeading(matches, needle)}`)));
     for (const m of matches) {
-      const stage =
-        m.stage === "GROUP_STAGE" ? groupName(m.group) : STAGE_LABELS[m.stage];
-      console.log(`  ${c.dim(fmtDate(m.utcDate).padEnd(20))} ${matchLine(m)}  ${c.dim(stage)}`);
+      console.log(`  ${c.dim(fmtDate(m.utcDate).padEnd(20))} ${matchLine(m)}  ${c.dim(stageLabel(m))}`);
     }
     return;
   }
@@ -35,7 +33,7 @@ export async function fixtures(args: string[]) {
   console.log(c.bold(c.cyan(`⚽ World Cup 2026 — All Fixtures (${matches.length})`)));
   const byStage = new Map<string, Match[]>();
   for (const m of matches) {
-    const key = m.stage === "GROUP_STAGE" ? groupName(m.group) || "Group Stage" : STAGE_LABELS[m.stage];
+    const key = stageLabel(m);
     (byStage.get(key) ?? byStage.set(key, []).get(key)!).push(m);
   }
   for (const [name, ms] of byStage) {
