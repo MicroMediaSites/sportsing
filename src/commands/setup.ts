@@ -68,11 +68,12 @@ async function setupApiFootball(args: string[]) {
   if (!(await validateApiFootballKey(key))) {
     console.log(c.red("failed."));
     console.log(c.yellow("Key looks invalid or quota-exhausted. Not saved."));
+    console.log(c.dim("Check your key/quota at https://dashboard.api-football.com"));
     process.exitCode = 1;
     return;
   }
   console.log(c.green("ok ✓"));
   await setApiFootballKey(key);
   console.log(c.dim(`Saved to ${CONFIG_FILE}`));
-  console.log("\nThis unlocks " + c.bold("sportsball fifa stats") + " and " + c.bold("predict") + " (coming next).");
+  console.log(c.dim("\nThis powers the upcoming stats & predict commands (coming next)."));
 }

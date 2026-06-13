@@ -49,7 +49,10 @@ async function get<T>(path: string, ttlMs: number): Promise<Envelope<T>> {
   const key = await getApiFootballKey();
   if (!key) throw new NoApiFootballKeyError();
 
-  return cached<Envelope<T>>(`apifootball_${path}`, ttlMs, async () => {
+  // encodeURIComponent so the key is a single filename-safe segment — `path`
+  // contains '/', '?', '&', '=' which would otherwise make `join(CACHE_DIR, key)`
+  // resolve into an uncreated subdir and silently fail every cache write.
+  return cached<Envelope<T>>(`apifootball_${encodeURIComponent(path)}`, ttlMs, async () => {
     const res = await fetch(BASE + path, { headers: { "x-apisports-key": key } });
     if (res.status === 429) {
       throw new ApiError(429, "API-Football rate limit reached (free tier = 100/day). Try later.");
