@@ -8,6 +8,7 @@ export const CACHE_DIR = join(homedir(), ".cache", "sportsball");
 
 interface Config {
   apiKey?: string;
+  favorites?: string[];
 }
 
 async function readConfig(): Promise<Config> {
@@ -16,6 +17,11 @@ async function readConfig(): Promise<Config> {
   } catch {
     return {};
   }
+}
+
+async function writeConfig(cfg: Config): Promise<void> {
+  await mkdir(CONFIG_DIR, { recursive: true });
+  await Bun.write(CONFIG_FILE, JSON.stringify(cfg, null, 2) + "\n");
 }
 
 /** Resolve the football-data.org API key from env or config file. */
@@ -27,10 +33,39 @@ export async function getApiKey(): Promise<string | null> {
 }
 
 export async function setApiKey(key: string): Promise<void> {
-  await mkdir(CONFIG_DIR, { recursive: true });
   const cfg = await readConfig();
   cfg.apiKey = key.trim();
-  await Bun.write(CONFIG_FILE, JSON.stringify(cfg, null, 2) + "\n");
+  await writeConfig(cfg);
+}
+
+/** Favorite teams, in the order they were added (as the user typed them). */
+export async function getFavorites(): Promise<string[]> {
+  const cfg = await readConfig();
+  return cfg.favorites ?? [];
+}
+
+/** Add a favorite team. No-op (added=false) if an equal name already exists. */
+export async function addFavorite(team: string): Promise<{ added: boolean; favorites: string[] }> {
+  const name = team.trim();
+  const cfg = await readConfig();
+  const favorites = cfg.favorites ?? [];
+  const exists = favorites.some((f) => f.toLowerCase() === name.toLowerCase());
+  if (!exists) favorites.push(name);
+  cfg.favorites = favorites;
+  await writeConfig(cfg);
+  return { added: !exists, favorites };
+}
+
+/** Remove a favorite team (case-insensitive). removed=false if it wasn't there. */
+export async function removeFavorite(team: string): Promise<{ removed: boolean; favorites: string[] }> {
+  const cfg = await readConfig();
+  const favorites = cfg.favorites ?? [];
+  const i = favorites.findIndex((f) => f.toLowerCase() === team.trim().toLowerCase());
+  const removed = i >= 0;
+  if (removed) favorites.splice(i, 1);
+  cfg.favorites = favorites;
+  await writeConfig(cfg);
+  return { removed, favorites };
 }
 
 export { CONFIG_FILE };
