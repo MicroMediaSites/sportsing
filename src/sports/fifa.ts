@@ -8,6 +8,7 @@ import { fixtures } from "../commands/fixtures.ts";
 import { schedule } from "../commands/schedule.ts";
 import { results } from "../commands/results.ts";
 import { stats } from "../commands/stats.ts";
+import { analyze } from "../commands/analyze.ts";
 import { table } from "../commands/table.ts";
 import { bracket } from "../commands/bracket.ts";
 import { next } from "../commands/next.ts";
@@ -27,6 +28,7 @@ const ROUTES: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   next,
   scorers: () => scorers(),
   stats,
+  analyze,
   live: () => live(),
   fav,
   me,
@@ -76,6 +78,7 @@ ${b("COMMANDS")}
   ${c.green("bracket")}            Knockout bracket (Round of 32 → Final)
   ${c.green("scorers")}            Golden Boot race
   ${c.green("stats")}  ${c.dim("<team> [team]")} Match statistics ${c.dim("(--json)")}
+  ${c.green("analyze")} ${c.dim("<team> [team]")} AI tactical read of a match ${c.dim("(--prompt)")}
   ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
   ${c.green("me")}                 Dashboard for your favorite teams
   ${c.green("setup")}  ${c.dim("[key]")}      Add your free football-data.org API key
