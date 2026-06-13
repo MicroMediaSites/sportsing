@@ -102,7 +102,9 @@ export async function getHeadToHead(
   eventId: string,
   ttlMs = 60 * 60_000,
 ): Promise<{ team: string; games: H2HGame[] }> {
-  const raw = await cached<any>(`espn_sum_${eventId}`, ttlMs, async () => {
+  // Separate cache key from getMatchStats (which also hits /summary on a short
+  // TTL) — a shared key would let the shorter TTL win and refetch H2H needlessly.
+  const raw = await cached<any>(`espn_h2h_${eventId}`, ttlMs, async () => {
     const res = await fetch(`${BASE}/summary?event=${eventId}`);
     if (!res.ok) throw new ApiError(res.status, `ESPN summary request failed (HTTP ${res.status}).`);
     return res.json();

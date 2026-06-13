@@ -74,7 +74,7 @@ export async function spawnStreamWindow(
   opts: { debugPort?: number } = {},
 ): Promise<StreamWindow | null> {
   if (!Bun.which("ui-leaf")) {
-    console.error(c.yellow("Streaming needs the `ui-leaf` CLI (>=1.3.0; overlay needs >=1.5)."));
+    console.error(c.yellow("Streaming needs the `ui-leaf` CLI (>=1.3.0)."));
     console.error(c.dim("Install it: npm i -g @openthink/ui-leaf@latest"));
     return null;
   }

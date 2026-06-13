@@ -49,6 +49,9 @@ export async function attachToPage(port: number, timeoutMs = 20_000): Promise<Cd
     await Bun.sleep(250);
   }
   if (!wsUrl) throw new Error(`No CDP page target on 127.0.0.1:${port} (is debugPort supported?)`);
+  if (!wsUrl.startsWith("ws://127.0.0.1:") && !wsUrl.startsWith("ws://localhost:")) {
+    throw new Error(`Refusing non-loopback CDP endpoint: ${wsUrl}`);
+  }
 
   const ws = new WebSocket(wsUrl);
   await new Promise<void>((res, rej) => {
@@ -71,9 +74,9 @@ export async function attachToPage(port: number, timeoutMs = 20_000): Promise<Cd
 
   return {
     send: (method, params = {}) =>
-      new Promise((res) => {
+      new Promise((res, rej) => {
         const id = ++nextId;
-        pending.set(id, res);
+        pending.set(id, (msg) => (msg.error ? rej(new Error(`CDP ${method}: ${msg.error.message}`)) : res(msg)));
         ws.send(JSON.stringify({ id, method, params }));
       }),
     onEvent: (h) => handlers.push(h),
