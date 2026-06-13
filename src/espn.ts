@@ -10,8 +10,9 @@ import { cached, ApiError } from "./api.ts";
 
 const BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world";
 
-/** WC2026 opening day (YYYYMMDD) — start of the scoreboard search window. */
+/** WC2026 scoreboard search window (YYYYMMDD) — opening day → final. */
 export const TOURNAMENT_START = "20260611";
+export const TOURNAMENT_END = "20260719";
 
 export interface EspnCompetitor {
   homeAway: "home" | "away";
@@ -35,10 +36,6 @@ export interface EspnTeamStats {
   team: string;
   abbreviation: string;
   stats: { name: string; label: string; value: string }[];
-}
-
-function ymdCompact(d: Date): string {
-  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function normalizeEvent(e: any): EspnEvent {
@@ -68,11 +65,10 @@ export async function getScoreboard(dates: string, ttlMs = 60_000): Promise<Espn
   return (raw.events ?? []).map(normalizeEvent);
 }
 
-/** All tournament events so far (opening day → tomorrow, to catch today's live games). */
+/** Every tournament event — played and upcoming (opening day → final). The full
+ *  window so `predict` can see matches days out, not just the next day. */
 export async function getEvents(ttlMs = 60_000): Promise<EspnEvent[]> {
-  const end = new Date();
-  end.setDate(end.getDate() + 1);
-  return getScoreboard(`${TOURNAMENT_START}-${ymdCompact(end)}`, ttlMs);
+  return getScoreboard(`${TOURNAMENT_START}-${TOURNAMENT_END}`, ttlMs);
 }
 
 function eventHasTeam(e: EspnEvent, term: string): boolean {
