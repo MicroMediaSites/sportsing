@@ -137,19 +137,36 @@ async function tryDeepLink(session: CdpSession, ev: EspnEvent): Promise<boolean>
     "if(best){best.el.click();return true;}return false;" +
     "})(" + JSON.stringify(A) + "," + JSON.stringify(B) + ")";
 
-  // Phase 2: on the game's page, click a Watch/Play CTA (Fubo's "Watch live")
-  // if there is one; we're done once a <video> is actually playing (Peacock
-  // routes straight into the player and has no CTA). Returns 'playing' | 'clicked' | 'none'.
+  // Phase 2: enter the player and start it. Once a viewport-filling <video>
+  // exists we are IN the player — and these DRM players (Peacock/Fubo) ignore a
+  // scripted video.play() (their state machine re-pauses the raw element), so
+  // the only thing that starts them is a *trusted* click on their Play control.
+  // We therefore return the Play button's coordinates and let the caller fire a
+  // real Input.dispatchMouseEvent (synthetic .click() doesn't satisfy the
+  // autoplay user-gesture requirement). CRITICAL: we hand back those coords ONLY
+  // while v.paused — so we never click while playing (which would toggle pause).
+  // The Play control is identified by aria-label "Play"/"Reproducir" (present
+  // only when paused). On a non-player page (Fubo's program-details) we instead
+  // click the "Watch live" CTA, matched by visible innerText so the player's
+  // 48px aria-label-only icon controls can't match.
+  // Returns {s:'playing'|'wait'|'clicked'|'none'} or {s:'play',x,y}.
   const watchJs =
     "(function(){" +
     "var v=document.querySelector('video');" +
-    "if(v&&v.readyState>=2&&!v.paused&&v.currentTime>0)return 'playing';" +
+    "var big=v&&(v.getBoundingClientRect().width*v.getBoundingClientRect().height>=0.4*innerWidth*innerHeight);" +
+    "if(big){" +
+    "  if(!v.paused)return JSON.stringify({s:'playing'});" + // already playing — never touch it
+    "  var c=document.querySelectorAll('button,[role=button]');" +
+    "  for(var i=0;i<c.length;i++){var el=c[i];var al=((el.getAttribute('aria-label')||'')+' '+(el.getAttribute('title')||'')).trim().toLowerCase();" +
+    "    if(/^(play|reproducir|reanudar)\\b/.test(al)){var rr=el.getBoundingClientRect();if(rr.width*rr.height>=100)return JSON.stringify({s:'play',x:Math.round(rr.left+rr.width/2),y:Math.round(rr.top+rr.height/2)});}}" +
+    "  return JSON.stringify({s:'wait'});" + // paused but no Play control found yet — keep waiting
+    "}" +
     "var b=document.querySelectorAll('button,a,[role=button],[role=link]');" +
-    "for(var i=0;i<b.length;i++){var el=b[i];var t=((el.innerText||'')+' '+(el.getAttribute('aria-label')||'')).toLowerCase();" +
-    "if(!/\\b(watch|play|ver|reproducir)\\b/.test(t))continue;" + // a Watch/Play CTA — not "watchlist" (no word boundary) or "view schedule"
+    "for(var i=0;i<b.length;i++){var el=b[i];var t=(el.innerText||'').toLowerCase();" + // innerText only — not aria-label, so icon controls don't match
+    "if(!/(watch live|watch now|ver en vivo|ver ahora)/.test(t))continue;" +
     "var r=el.getBoundingClientRect();if(r.width*r.height<400)continue;" +
-    "el.click();return 'clicked';}" +
-    "return v?'playing':'none';" +
+    "el.click();return JSON.stringify({s:'clicked'});}" +
+    "return JSON.stringify({s:'none'});" +
     "})()";
 
   const evalValue = async (expression: string): Promise<unknown> => {
@@ -161,6 +178,18 @@ async function tryDeepLink(session: CdpSession, ev: EspnEvent): Promise<boolean>
     }
   };
 
+  // A real (trusted) click — required to satisfy the player's autoplay gesture
+  // check, which a scripted element.click() does not.
+  const trustedClick = async (x: number, y: number) => {
+    try {
+      await session.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+      await session.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 });
+      await session.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });
+    } catch {
+      /* page navigating */
+    }
+  };
+
   // Phase 1 — click the matchup tile to route to the game's page.
   let routed = false;
   for (let i = 0; i < 8 && !routed; i++) {
@@ -169,11 +198,18 @@ async function tryDeepLink(session: CdpSession, ev: EspnEvent): Promise<boolean>
   }
   if (!routed) return false;
 
-  // Phase 2 — click the Watch/Play CTA if the landing page needs one; finish
-  // once the player is up.
-  for (let i = 0; i < 8; i++) {
+  // Phase 2 — enter the player (Fubo needs a "Watch live" click; Peacock routes
+  // straight in) and start it; finish once the video is actually playing.
+  for (let i = 0; i < 12; i++) {
     await new Promise((r) => setTimeout(r, 1500));
-    if ((await evalValue(watchJs)) === "playing") return true;
+    let r: { s?: string; x?: number; y?: number } = {};
+    try {
+      r = JSON.parse((await evalValue(watchJs)) as string);
+    } catch {
+      continue; // page navigating / no result this tick
+    }
+    if (r.s === "playing") return true;
+    if (r.s === "play" && typeof r.x === "number" && typeof r.y === "number") await trustedClick(r.x, r.y);
   }
   return true; // routed to the game even if we couldn't confirm <video> playback
 }
