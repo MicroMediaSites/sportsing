@@ -11,6 +11,7 @@ import { stats } from "../commands/stats.ts";
 import { analyze } from "../commands/analyze.ts";
 import { predict } from "../commands/predict.ts";
 import { watch } from "../commands/watch.ts";
+import { highlights } from "../commands/highlights.ts";
 import { table } from "../commands/table.ts";
 import { bracket } from "../commands/bracket.ts";
 import { next } from "../commands/next.ts";
@@ -33,6 +34,7 @@ const ROUTES: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   analyze,
   predict,
   watch,
+  highlights,
   live: () => live(),
   fav,
   me,
@@ -76,6 +78,7 @@ ${b("COMMANDS")}
   ${c.green("next")}   ${c.dim("[--team X]")} Next upcoming match + countdown
   ${c.green("live")}               Auto-refreshing live scoreboard
   ${c.green("watch")}  ${c.dim("<team>")}      Open the broadcast ${c.dim("(--provider, --url)")}
+  ${c.green("highlights")} ${c.dim("<team>")}   Open a highlights search in your browser
   ${c.green("fixtures")} ${c.dim("[--team X]")} All fixtures, or one team's schedule
   ${c.green("schedule")}           Whole tournament by day ${c.dim("(--mine)")}
   ${c.green("results")}            Finished games, newest first ${c.dim("(--mine)")}
