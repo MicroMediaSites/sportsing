@@ -6,6 +6,7 @@ import { c } from "../ansi.ts";
 import { today } from "../commands/today.ts";
 import { fixtures } from "../commands/fixtures.ts";
 import { schedule } from "../commands/schedule.ts";
+import { results } from "../commands/results.ts";
 import { table } from "../commands/table.ts";
 import { bracket } from "../commands/bracket.ts";
 import { next } from "../commands/next.ts";
@@ -19,6 +20,7 @@ const ROUTES: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   today,
   fixtures,
   schedule,
+  results,
   table,
   bracket: () => bracket(),
   next,
@@ -67,6 +69,7 @@ ${b("COMMANDS")}
   ${c.green("live")}               Auto-refreshing live scoreboard
   ${c.green("fixtures")} ${c.dim("[--team X]")} All fixtures, or one team's schedule
   ${c.green("schedule")}           Whole tournament by day ${c.dim("(--mine)")}
+  ${c.green("results")}            Finished games, newest first ${c.dim("(--mine)")}
   ${c.green("table")}  ${c.dim("[A-L]")}      Group standings ${c.dim("(optionally one group)")}
   ${c.green("bracket")}            Knockout bracket (Round of 32 → Final)
   ${c.green("scorers")}            Golden Boot race
