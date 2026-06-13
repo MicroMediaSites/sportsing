@@ -20,6 +20,15 @@ export function fmtTimeOnly(iso: string): string {
   return new Date(iso).toLocaleString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
+/** Date-only header, e.g. "Sat, Jun 13" — for grouping a list by day (local). */
+export function fmtDayHeader(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function statusBadge(m: Match): string {
   switch (m.status) {
     case "IN_PLAY":
