@@ -81,3 +81,16 @@ export function detectFromTitle(title: string): PageContext {
 
   return { kind: "unknown" };
 }
+
+/** Candidate substrings to recognize a team on a provider page (English name,
+ *  abbreviation, and any Spanish aliases) — for finding a game tile to click. */
+export function searchTerms(name: string, abbr: string): string[] {
+  const out = new Set<string>();
+  if (name) out.add(normalize(name));
+  if (abbr) out.add(abbr.toLowerCase());
+  const tla = abbr.toUpperCase();
+  for (const [alias, t] of Object.entries(NAME_TO_TLA)) {
+    if (t === tla) out.add(alias);
+  }
+  return [...out].filter(Boolean);
+}

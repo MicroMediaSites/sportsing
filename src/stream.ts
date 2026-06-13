@@ -14,8 +14,11 @@ import { mkdtemp, writeFile, mkdir } from "fs/promises";
 import { rmSync } from "fs";
 import { c } from "./ansi.ts";
 
-/** Shared persistent Chrome profile — one login per provider, reused across launches. */
-export const STREAM_PROFILE_DIR = join(homedir(), ".config", "sportsball", "chrome");
+/** Persistent Chrome profile path for a provider — one per provider so logins
+ *  don't collide and two providers can run concurrently. */
+export function profileDir(provider: string): string {
+  return join(homedir(), ".config", "sportsball", "chrome-" + provider.trim().toLowerCase());
+}
 
 /**
  * Open `url` in the user's default browser (fire-and-forget). For public pages
@@ -39,8 +42,10 @@ export interface Provider {
 
 // US WC 2026 rights: English on Fox (→ Fubo), Spanish on Telemundo (→ Peacock).
 export const PROVIDERS: Record<string, Provider> = {
-  peacock: { label: "Peacock", hub: "https://www.peacocktv.com" },
-  fubo: { label: "Fubo", hub: "https://www.fubo.tv" },
+  // Land on the World Cup section (not the generic home) so the deep-link can
+  // find the game tiles.
+  peacock: { label: "Peacock", hub: "https://www.peacocktv.com/watch/sports-La-Copa-Mundial-de-la-FIFA-2026" },
+  fubo: { label: "Fubo", hub: "https://www.fubo.tv/p/world-cup" },
 };
 
 const REDIRECT_VIEW = `import { useEffect } from "react";
@@ -71,7 +76,7 @@ export interface StreamWindow {
 export async function spawnStreamWindow(
   url: string,
   label: string,
-  opts: { debugPort?: number } = {},
+  opts: { debugPort?: number; windowSize?: { width: number; height: number } } = {},
 ): Promise<StreamWindow | null> {
   if (!Bun.which("ui-leaf")) {
     console.error(c.yellow("Streaming needs the `ui-leaf` CLI (>=1.3.0)."));
@@ -83,7 +88,8 @@ export async function spawnStreamWindow(
   // the compiled binary (no views/ dir to ship alongside it).
   const viewsRoot = await mkdtemp(join(tmpdir(), "sportsball-stream-"));
   await writeFile(join(viewsRoot, "stream.tsx"), REDIRECT_VIEW);
-  await mkdir(STREAM_PROFILE_DIR, { recursive: true });
+  const dir = profileDir(label);
+  await mkdir(dir, { recursive: true });
 
   const config = {
     version: "1",
@@ -91,8 +97,9 @@ export async function spawnStreamWindow(
     viewsRoot,
     data: { url, label },
     shell: "app",
-    profile: { dir: STREAM_PROFILE_DIR },
+    profile: { dir },
     ...(opts.debugPort ? { debugPort: opts.debugPort } : {}),
+    ...(opts.windowSize ? { windowSize: opts.windowSize } : {}),
     port: 0,
   };
 
@@ -121,8 +128,12 @@ export async function spawnStreamWindow(
  * Open `url` in a persistent-profile app-mode Chrome window and block until it
  * closes. Ctrl-C tears the window down.
  */
-export async function launchStream(url: string, label: string): Promise<void> {
-  const win = await spawnStreamWindow(url, label);
+export async function launchStream(
+  url: string,
+  label: string,
+  opts: { windowSize?: { width: number; height: number } } = {},
+): Promise<void> {
+  const win = await spawnStreamWindow(url, label, opts);
   if (!win) {
     process.exitCode = 1;
     return;

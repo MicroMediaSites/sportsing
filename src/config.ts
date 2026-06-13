@@ -13,7 +13,17 @@ interface Config {
   streamProvider?: string;
   /** Calibrated overlay delay (seconds) per provider, to sync stats to the stream. */
   streamDelay?: Record<string, number>;
+  /** Overlay panel choices (the gear/settings) — per provider → { panel: on }. */
+  overlayPanels?: Record<string, Record<string, boolean>>;
 }
+
+/** Default overlay panel visibility — minimal by default; the user opts in via the gear. */
+export const OVERLAY_PANEL_DEFAULTS: Record<string, boolean> = {
+  stats: true, // possession / shots / on-target
+  winprob: false, // 3-way win-probability breakdown (strip always shows the favorite)
+  odds: false, // raw 3-way odds line
+  h2h: true, // head-to-head button
+};
 
 async function readConfig(): Promise<Config> {
   try {
@@ -64,6 +74,21 @@ export async function getStreamDelay(provider: string): Promise<number | null> {
 export async function setStreamDelay(provider: string, seconds: number): Promise<void> {
   const cfg = await readConfig();
   cfg.streamDelay = { ...(cfg.streamDelay ?? {}), [provider.trim().toLowerCase()]: Math.max(0, Math.round(seconds)) };
+  await writeConfig(cfg);
+}
+
+/** Overlay panel visibility for a provider (defaults merged with saved choices). */
+export async function getOverlayPanels(provider: string): Promise<Record<string, boolean>> {
+  const cfg = await readConfig();
+  const saved = cfg.overlayPanels?.[provider.trim().toLowerCase()] ?? {};
+  return { ...OVERLAY_PANEL_DEFAULTS, ...saved };
+}
+
+export async function setOverlayPanel(provider: string, key: string, on: boolean): Promise<void> {
+  const cfg = await readConfig();
+  const p = provider.trim().toLowerCase();
+  const all = cfg.overlayPanels ?? {};
+  cfg.overlayPanels = { ...all, [p]: { ...(all[p] ?? {}), [key]: on } };
   await writeConfig(cfg);
 }
 
