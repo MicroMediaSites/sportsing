@@ -36,7 +36,8 @@ export async function watch(args: string[]) {
   // Resolve the match for context (and to fail clearly on a bad team name).
   const ev = await findEvent(terms);
   if (!ev) {
-    console.log(c.dim(`No match found for "${terms.join(" ")}".`));
+    console.error(c.yellow(`No match found for "${terms.join(" ")}".`));
+    process.exitCode = 1;
     return;
   }
 

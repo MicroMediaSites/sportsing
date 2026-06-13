@@ -11,6 +11,7 @@
 import { homedir, tmpdir } from "os";
 import { join } from "path";
 import { mkdtemp, writeFile, mkdir } from "fs/promises";
+import { rmSync } from "fs";
 import { c } from "./ansi.ts";
 
 /** Shared persistent Chrome profile — one login per provider, reused across launches. */
@@ -68,6 +69,14 @@ export async function launchStream(url: string, label: string): Promise<void> {
     port: 0,
   };
 
+  const cleanup = () => {
+    try {
+      rmSync(viewsRoot, { recursive: true, force: true });
+    } catch {
+      /* best-effort */
+    }
+  };
+
   const proc = Bun.spawn(["ui-leaf", "mount"], { stdin: "pipe", stdout: "ignore", stderr: "ignore" });
   proc.stdin.write(JSON.stringify(config) + "\n");
   // Hold stdin open — do NOT end it (EOF tears the window down).
@@ -77,9 +86,15 @@ export async function launchStream(url: string, label: string): Promise<void> {
 
   const stop = () => {
     proc.kill();
+    cleanup();
     process.exit(0);
   };
   process.on("SIGINT", stop);
   process.on("SIGTERM", stop);
-  await proc.exited;
+
+  try {
+    await proc.exited;
+  } finally {
+    cleanup();
+  }
 }
