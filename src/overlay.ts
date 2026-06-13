@@ -6,7 +6,7 @@
 
 import { c } from "./ansi.ts";
 import { findEvent, getHeadToHead, getLiveMatch, getEvents, type EspnEvent } from "./espn.ts";
-import { getStreamDelay, setStreamDelay, getOverlayPanels, setOverlayPanel } from "./config.ts";
+import { getStreamDelay, setStreamDelay, getOverlayPanels, setOverlayPanel, OVERLAY_PANEL_DEFAULTS } from "./config.ts";
 import { freePort, attachToPage, type CdpSession } from "./cdp.ts";
 import { spawnStreamWindow } from "./stream.ts";
 import { detectFromTitle, searchTerms } from "./match-detect.ts";
@@ -14,6 +14,7 @@ import { detectFromTitle, searchTerms } from "./match-detect.ts";
 const BOOTSTRAP = [
   "(function(){",
   "if(window.__sbInit)return;window.__sbInit=true;",
+  "var D=" + JSON.stringify(OVERLAY_PANEL_DEFAULTS) + ";", // panel defaults — single source of truth (config.ts)
   "function esc(s){var d=document.createElement('div');d.appendChild(document.createTextNode(String(s==null?'':s)));return d.innerHTML;}",
   "function row(label,a,b){return '<div style=\"display:flex;justify-content:space-between;margin-top:3px\"><span>'+esc(a)+'</span><span style=\"color:#8b949e\">'+label+'</span><span>'+esc(b)+'</span></div>';}",
   "function show(id,on){var e=document.getElementById(id);if(e)e.style.display=on?'':'none';}",
@@ -47,7 +48,7 @@ const BOOTSTRAP = [
   "  window.addEventListener('mouseup',function(){drag=null;});",
   "  function call(o){if(window.__sbCall)window.__sbCall(JSON.stringify(o));}",
   "  document.getElementById('sb-gear').addEventListener('click',function(){var s=document.getElementById('sb-set');s.style.display=s.style.display==='none'?'':'none';});",
-  "  document.getElementById('sb-cbs').innerHTML=cb('stats','Possession / shots',true,false)+cb('winprob','Win-probability breakdown',false,false)+cb('odds','Odds line',false,false)+cb('h2h','Head-to-head',true,false)+cb('events','Live events',false,true)+cb('scores','Other live scores',false,true)+cb('ai','AI read',false,true);",
+  "  document.getElementById('sb-cbs').innerHTML=cb('stats','Possession / shots',!!D.stats,false)+cb('winprob','Win-probability breakdown',!!D.winprob,false)+cb('odds','Odds line',!!D.odds,false)+cb('h2h','Head-to-head',!!D.h2h,false)+cb('events','Live events',false,true)+cb('scores','Other live scores',false,true)+cb('ai','AI read',false,true);",
   "  document.getElementById('sb-cbs').addEventListener('change',function(e){if(e.target&&e.target.dataset.k)call({fn:'pref',key:e.target.dataset.k,on:e.target.checked});});",
   "  document.getElementById('sb-slider').addEventListener('input',function(e){call({fn:'delay',set:Number(e.target.value)});});",
   "  p.addEventListener('click',function(e){var t=e.target;while(t&&t!==p){if(t.getAttribute&&t.getAttribute('data-watch')!==null){call({fn:'watch',id:t.getAttribute('data-watch')});return;}t=t.parentElement;}});",
@@ -58,7 +59,7 @@ const BOOTSTRAP = [
   "    if(d.mode==='today'){document.getElementById('sb-score').textContent='Today';document.getElementById('sb-clock').textContent=(d.games||[]).length+' matches';document.getElementById('sb-wp').textContent='';['sb-pl-winprob','sb-pl-stats','sb-pl-odds','sb-pl-h2h'].forEach(function(i){show(i,false);});var st=document.getElementById('sb-pl-stats');show('sb-pl-stats',true);var g=d.games||[],h='';for(var i=0;i<g.length;i++){h+='<div style=\"display:flex;justify-content:space-between;gap:8px;padding:2px 0\"><span>'+esc(g[i].home)+' '+esc(g[i].hs)+' – '+esc(g[i].as)+' '+esc(g[i].away)+'</span>'+statusCell(g[i].state,g[i].kickoff,g[i].detail,g[i].id)+'</div>';}st.innerHTML=h||'<span style=\"color:#8b949e\">no matches today</span>';return;}",
   "    document.getElementById('sb-score').textContent=d.home+' '+d.homeScore+' – '+d.awayScore+' '+d.away;document.getElementById('sb-clock').innerHTML=statusCell(d.state,d.kickoff,d.detail,d.id);",
   "    var wpEl=document.getElementById('sb-wp');if(d.winProb){var fav=d.winProb[0]>=d.winProb[2]?d.home:d.away,fp=Math.max(d.winProb[0],d.winProb[2]);wpEl.textContent=fav+' '+fp+'%';}else wpEl.textContent='';",
-  "    show('sb-pl-stats',!!P.stats);show('sb-pl-winprob',!!P.winprob);show('sb-pl-odds',!!P.odds);show('sb-pl-h2h',!!P.h2h);",
+  "    show('sb-pl-stats',!!P.stats);show('sb-pl-winprob',!!P.winprob&&!!d.winProb);show('sb-pl-odds',!!P.odds);show('sb-pl-h2h',!!P.h2h);",
   "    if(P.stats){var s='';if(d.possession)s+=row('poss %',d.possession[0],d.possession[1]);if(d.shots)s+=row('shots',d.shots[0],d.shots[1]);if(d.onTarget)s+=row('on target',d.onTarget[0],d.onTarget[1]);document.getElementById('sb-pl-stats').innerHTML=s;}",
   "    if(P.winprob&&d.winProb){document.getElementById('sb-pl-winprob').innerHTML=row('win %',d.home+' '+d.winProb[0]+'%','')+row('draw',d.winProb[1]+'%','')+row('win %','',d.away+' '+d.winProb[2]+'%');}",
   "    if(P.odds)document.getElementById('sb-pl-odds').textContent=d.oddsLine||'odds n/a';",

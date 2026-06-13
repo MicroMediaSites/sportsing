@@ -14,7 +14,11 @@ export async function watch(args: string[]) {
   const url = getFlag(args, "--url"); // throws if --url has no value
   const providerFlag = getFlag(args, "--provider");
   const overlay = args.includes("--overlay");
-  const windowSize = parseSize(getFlag(args, "--size")); // e.g. --size 660x500
+  const sizeFlag = getFlag(args, "--size"); // e.g. --size 660x500
+  const windowSize = parseSize(sizeFlag);
+  if (sizeFlag && !windowSize) {
+    console.warn(c.yellow(`Ignoring --size "${sizeFlag}" — expected WxH, e.g. 660x500. Opening at the default size.`));
+  }
   const terms = positionalTerms(args);
 
   // Default to Fubo (English/Fox). Peacock is Spanish-only (Telemundo).
@@ -72,7 +76,7 @@ export async function watch(args: string[]) {
 
 /** Parse a `WxH` size string into a window size, or undefined if absent/invalid. */
 function parseSize(s: string | null): { width: number; height: number } | undefined {
-  const m = s?.match(/^(\d+)x(\d+)$/i);
+  const m = s?.match(/^(\d+)x(\d+)$/);
   return m ? { width: Number(m[1]), height: Number(m[2]) } : undefined;
 }
 
