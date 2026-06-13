@@ -120,6 +120,54 @@ export async function getHeadToHead(
   return { team: block.team?.displayName ?? "", games };
 }
 
+export interface LiveMatch {
+  detail: string; // clock/status, e.g. "66'", "HT", "FT"
+  homeAbbr: string;
+  awayAbbr: string;
+  homeScore: string;
+  awayScore: string;
+  possession?: [string, string];
+  shots?: [string, string];
+  onTarget?: [string, string];
+}
+
+/** Fresh live state for one match in a single call: clock + score (summary
+ *  header) and stats (boxscore). Short TTL — this drives the live overlay. */
+export async function getLiveMatch(eventId: string, ttlMs = 5_000): Promise<LiveMatch | null> {
+  const raw = await cached<any>(`espn_live_${eventId}`, ttlMs, async () => {
+    const res = await fetch(`${BASE}/summary?event=${eventId}`);
+    if (!res.ok) throw new ApiError(res.status, `ESPN summary request failed (HTTP ${res.status}).`);
+    return res.json();
+  });
+  const comp = raw.header?.competitions?.[0];
+  if (!comp) return null;
+  const hc = (comp.competitors ?? []).find((c: any) => c.homeAway === "home");
+  const ac = (comp.competitors ?? []).find((c: any) => c.homeAway === "away");
+  const teams = raw.boxscore?.teams ?? [];
+  const byAbbr = (a?: string) => teams.find((t: any) => t.team?.abbreviation === a);
+  const ht = byAbbr(hc?.team?.abbreviation) ?? teams[0];
+  const at = byAbbr(ac?.team?.abbreviation) ?? teams[1];
+  const stat = (t: any, n: string): string | undefined => {
+    const s = (t?.statistics ?? []).find((x: any) => x.name === n);
+    return s ? String(s.displayValue) : undefined;
+  };
+  const pair = (n: string): [string, string] | undefined => {
+    const h = stat(ht, n);
+    const a = stat(at, n);
+    return h === undefined && a === undefined ? undefined : [h ?? "—", a ?? "—"];
+  };
+  return {
+    detail: comp.status?.type?.shortDetail ?? "",
+    homeAbbr: hc?.team?.abbreviation ?? "?",
+    awayAbbr: ac?.team?.abbreviation ?? "?",
+    homeScore: String(hc?.score ?? "0"),
+    awayScore: String(ac?.score ?? "0"),
+    possession: pair("possessionPct"),
+    shots: pair("totalShots"),
+    onTarget: pair("shotsOnTarget"),
+  };
+}
+
 /** Per-team statistics for one event (from the summary boxscore). */
 export async function getMatchStats(eventId: string, ttlMs = 60_000): Promise<EspnTeamStats[]> {
   const raw = await cached<any>(`espn_sum_${eventId}`, ttlMs, async () => {
