@@ -1,7 +1,7 @@
 import { c } from "../ansi.ts";
 import { getMatches } from "../api.ts";
 import { matchLine, groupName, STAGE_LABELS, heading } from "../format.ts";
-import { ymd, addDays, localDateOf, withFallback, sortByDate } from "./_lib.ts";
+import { ymd, addDays, localDateOf, withFallback, sortByDate, applyMine, noFavoritesHint } from "./_lib.ts";
 import type { Match } from "../types.ts";
 
 export async function today(args: string[]) {
@@ -13,13 +13,17 @@ export async function today(args: string[]) {
   // A local calendar day straddles two UTC days, so query ±1 day and then
   // filter to matches whose *local* date is the one we want. The API filters
   // by UTC date, which would otherwise pull in late games from the day before.
-  const matches = await withFallback(
+  const fetched = await withFallback(
     async () =>
       (await getMatches({ dateFrom: ymd(addDays(day, -1)), dateTo: ymd(addDays(day, 1)) })).matches.filter(
         (m) => localDateOf(m.utcDate) === date,
       ),
     (all) => all.filter((m) => localDateOf(m.utcDate) === date),
   );
+
+  const mine = await applyMine(fetched, args);
+  if (mine === "no-favorites") return noFavoritesHint();
+  const matches = mine;
 
   const label =
     offset === 0 ? "Today" : offset === 1 ? "Tomorrow" : offset === -1 ? "Yesterday" : date;
