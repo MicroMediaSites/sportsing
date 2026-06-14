@@ -48,7 +48,7 @@ export async function live(args: string[] = []) {
   // stdout stays clean for backgrounding) confirming the alerter is running.
   if (wantQuiet) {
     const who = favorites.length ? favorites.join(", ") : "no favorites set";
-    console.error(c.dim(`Ambient fav-alerts running (${who}) — Ctrl-C to stop.`));
+    console.error(c.dim(`Favorite-team alerts running (${who}) — Ctrl-C to stop.`));
   }
 
   // Previous tick's full snapshot of today's matches, for fav-event diffing.
