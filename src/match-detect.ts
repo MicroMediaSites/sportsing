@@ -66,13 +66,17 @@ export type PageContext =
 
 // Team names that are *distinctively* one language (the normalized form differs
 // across English/Spanish), so seeing one in a title reveals the broadcast cast.
-// Language-neutral names (Mexico, Paraguay, Australia, Argentina, Portugal,
-// Uruguay, Colombia, Senegal, Ecuador, Canada, Haiti) carry no signal.
-const NEUTRAL_NAMES = new Set([
-  "mexico", "paraguay", "australia", "argentina", "portugal",
-  "uruguay", "colombia", "senegal", "ecuador", "canada", "haiti",
+// These are EXPLICIT (not derived from NAME_TO_TLA) on purpose: NAME_TO_TLA is a
+// lookup table whose keys could gain English-form entries, which would silently
+// corrupt language inference. Language-neutral names (Mexico, Paraguay, Australia,
+// Argentina, Portugal, Uruguay, Colombia, Senegal, Ecuador, Canada, Haiti) carry
+// no signal and appear in neither set.
+const SPANISH_NAMES = new Set([
+  "estados unidos", "catar", "suiza", "brasil", "marruecos", "turquia", "corea del sur",
+  "sudafrica", "chequia", "republica checa", "bosnia y herzegovina", "escocia", "argelia",
+  "belgica", "alemania", "espana", "inglaterra", "francia", "croacia", "paises bajos",
+  "holanda", "japon",
 ]);
-const SPANISH_NAMES = new Set(Object.keys(NAME_TO_TLA).filter((k) => !NEUTRAL_NAMES.has(k)));
 const ENGLISH_NAMES = new Set([
   "united states", "qatar", "switzerland", "brazil", "morocco", "turkey", "turkiye",
   "south korea", "south africa", "czechia", "czech republic", "bosnia and herzegovina",
@@ -82,8 +86,9 @@ const ENGLISH_NAMES = new Set([
 
 /** Infer the broadcast language from the two team tokens + provider suffix.
  *  Conservative: returns undefined when undeterminable (so callers never warn on
- *  a guess). A distinctive Spanish/English team name wins; otherwise Peacock's
- *  World Cup feed is Telemundo (Spanish) only. */
+ *  a guess). A distinctive team name decides it — Spanish is checked first, so a
+ *  mixed title (one Spanish, one English token — not expected in a real cast)
+ *  resolves to spanish. Otherwise Peacock's World Cup feed is Telemundo (Spanish). */
 function inferLang(a: string, b: string, isPeacock: boolean): StreamLang | undefined {
   const na = normalize(a);
   const nb = normalize(b);
