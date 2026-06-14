@@ -60,10 +60,12 @@ export async function watch(args: string[]) {
   // closes it, so it would hang forever holding a Chrome + ui-leaf process tree.
   // Guard that: without a TTY, either run a bounded --smoke (open → confirm → tear
   // down → exit 0) or refuse with a message naming the alternatives.
-  const wantSmoke = args.includes("--smoke") || args.includes("--check");
-  const interactive = process.stdin.isTTY === true;
-  if (!interactive) {
-    if (wantSmoke) return smokeWatch(url ?? provider.hub, provider.label, windowSize);
+  // --smoke is bounded (open → confirm → tear down → exit) and works in ANY
+  // context, TTY or not — an operator in a terminal can smoke-test too.
+  if (args.includes("--smoke")) return smokeWatch(url ?? provider.hub, provider.label, windowSize);
+  // Otherwise, with no controlling TTY nothing would ever close the window, so it
+  // would hang forever — refuse and name the alternatives instead.
+  if (process.stdin.isTTY !== true) {
     console.error(c.yellow("`watch` is interactive — it opens a stream window and blocks until you close it, so it isn't usable in scripts or smoke-tests."));
     console.error(c.dim("Run it in a terminal, or use `--smoke` to just confirm the window opens and exit 0."));
     process.exitCode = 1;

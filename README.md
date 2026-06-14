@@ -67,10 +67,10 @@ commands; `ask` is low-level plumbing that `serve` wraps).
   language-biased deep-link selection is not wired yet (a notice prints when a
   non-default language is requested).
 
-- **`--smoke`** (a.k.a. `--check`) — open the window, confirm it came up, tear it
-  down, exit 0. For scripts/CI. Note: `watch` is otherwise **interactive** — it
-  blocks until you close the window, so run **without** a TTY (e.g. `< /dev/null`)
-  it refuses rather than hanging. Use `--smoke` to verify the launch path instead.
+- **`--smoke`** — open the window, confirm it came up, tear it down, exit 0. For
+  scripts/CI. `watch` is otherwise **interactive** — it blocks until you close the
+  window — so run without a controlling TTY (e.g. `< /dev/null`) it refuses rather
+  than hanging. Use `--smoke` to verify the launch path instead.
 
 For a hands-off, agent-driven session — open the game **and** keep "Ask Claude" /
 "Get caught up" answered — use **`/loop agent-setup`** instead of running `watch`
