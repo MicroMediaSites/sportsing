@@ -34,3 +34,25 @@ blocks you.
 automatically. Every subsequent change goes through the stamp flow.
 
 <!-- stamp:end -->
+
+## Smoke-testing: never block on GUI / interactive commands
+
+`watch` (and `watch --overlay`) open a browser window and **block until you close
+it or Ctrl-C** — there is no natural exit. A build/verify agent that "smoke-tests
+by running the binary" (e.g. the `sportsball-build` Phase-3 step, or any run/verify
+skill) will **hang forever** on `watch`, holding a Chrome + ~15-process ui-leaf
+tree open. (That — not a teardown leak — was the source of the "orphan processes"
+diagnosed 2026-06-13; SIGTERM / closing the window reaps the tree cleanly.)
+
+When smoke-testing changes, **do not run `watch` / `watch --overlay` blockingly:**
+
+- Use the bounded path: **`sportsball fifa watch --smoke [--provider …]`** — it
+  opens the window, confirms it came up over CDP, tears it down, and exits 0
+  (exit 1 if it didn't). This is the way to exercise the launch path in a script.
+- `watch` with **no controlling TTY** now refuses (exits 1) instead of hanging, so
+  `sportsball fifa watch <team> < /dev/null` is safe — but prefer `--smoke` to
+  actually test the launch.
+- Otherwise just rely on `bun run typecheck` + `bun run build` + the command's
+  `--help`/usage output; don't launch the GUI at all.
+- Any other long-running/GUI command: wrap in a bounded `timeout` (or background +
+  kill) and confirm no surviving processes afterward.
