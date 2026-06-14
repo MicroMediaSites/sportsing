@@ -15,6 +15,11 @@ import { detectFromTitle, searchTerms } from "./match-detect.ts";
 import { postQuestion, waitForAnswer, isServing } from "./ask-bus.ts";
 import { requestRecap, type RecapInput, type RecapEvent } from "./recap.ts";
 
+/** Preferred broadcast language for providers (Fubo) that carry both a Fox
+ *  (English) and Telemundo (Spanish) airing of the same match. Consumed by the
+ *  deep-link tile-scorer (AGT-543) and the post-landing warning (AGT-544). */
+export type WatchLang = "english" | "spanish";
+
 const BOOTSTRAP = [
   "(function(){",
   "if(window.__sbInit)return;window.__sbInit=true;",
@@ -341,9 +346,10 @@ export async function runOverlayStream(
   url: string,
   label: string,
   ev: EspnEvent,
-  opts: { deepLink?: boolean; windowSize?: { width: number; height: number } } = {},
+  opts: { deepLink?: boolean; windowSize?: { width: number; height: number }; lang?: WatchLang } = {},
 ): Promise<void> {
   const providerKey = label.toLowerCase();
+  const lang: WatchLang = opts.lang ?? "english";
   const port = await freePort();
   const win = await spawnStreamWindow(url, label, { debugPort: port, windowSize: opts.windowSize });
   if (!win) {
@@ -353,6 +359,13 @@ export async function runOverlayStream(
 
   console.log(c.bold(c.cyan(`⚽ Opening ${label} with live overlay`)) + c.dim(`  ${url}`));
   console.log(c.dim("Just a floating ⚙ by default — click it to open settings, pick panels, and sync the delay. Drag the gear, settings, and stats windows anywhere."));
+
+  // A non-default language is accepted and carried, but the language-biased
+  // deep-link (tile-scorer + post-landing warning) isn't wired yet — be honest
+  // rather than silently opening the default airing. Wired by AGT-543/AGT-544.
+  if (lang !== "english") {
+    console.log(c.yellow(`--lang ${lang} noted, but language-biased game selection isn't enabled yet — opening the standard airing for now.`));
+  }
 
   // The "Ask Claude" panel needs an external answerer (no local claude is spawned).
   // Nag about it ONLY when nobody is serving — opening the stream is not enough.

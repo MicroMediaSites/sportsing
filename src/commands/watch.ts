@@ -2,10 +2,10 @@ import { c } from "../ansi.ts";
 import { findCurrentMatch, resolveWatchTarget, type EspnEvent } from "../espn.ts";
 import { getStreamProvider } from "../config.ts";
 import { PROVIDERS, launchStream } from "../stream.ts";
-import { runOverlayStream } from "../overlay.ts";
+import { runOverlayStream, type WatchLang } from "../overlay.ts";
 import { getFlag } from "./_lib.ts";
 
-// `sportsball fifa watch [team] [team] [--wait] [--provider peacock|fubo] [--url <link>] [--overlay]`
+// `sportsball fifa watch [team] [team] [--wait] [--provider peacock|fubo] [--url <link>] [--overlay] [--lang english|spanish]`
 // Opens the broadcast in a persistent-profile Chrome window via ui-leaf.
 //   --wait      block until the match is live, then open it (deep-links to the
 //               game with the overlay). With no team, waits for the NEXT match —
@@ -15,6 +15,8 @@ import { getFlag } from "./_lib.ts";
 //   --url       jump straight to a specific game link (skips the hub)
 //   --provider  override the configured default (config.streamProvider, else fubo)
 //   --overlay   inject a live-stats panel onto the page via CDP (interactive; needs ui-leaf >=1.5)
+//   --lang      preferred broadcast language (english|spanish, default english) — biases
+//               deep-linking on providers (Fubo) that carry both Fox & Telemundo airings
 export async function watch(args: string[]) {
   const url = getFlag(args, "--url"); // throws if --url has no value
   const providerFlag = getFlag(args, "--provider");
@@ -25,6 +27,21 @@ export async function watch(args: string[]) {
   if (sizeFlag && !windowSize) {
     console.warn(c.yellow(`Ignoring --size "${sizeFlag}" — expected WxH, e.g. 660x500. Opening at the default size.`));
   }
+
+  // Preferred broadcast language (default english). Validated like --provider.
+  const langFlag = getFlag(args, "--lang"); // throws if --lang has no value
+  let lang: WatchLang = "english";
+  if (langFlag) {
+    const v = langFlag.toLowerCase();
+    if (v === "english" || v === "spanish") {
+      lang = v; // positive check narrows v to WatchLang
+    } else {
+      console.error(c.red(`Unknown language "${langFlag}". Known: english, spanish.`));
+      process.exitCode = 1;
+      return;
+    }
+  }
+
   const terms = positionalTerms(args);
 
   // Default to Fubo (English/Fox). Peacock is Spanish-only (Telemundo).
@@ -41,7 +58,7 @@ export async function watch(args: string[]) {
   // opens with the overlay + auto-navigation regardless of --overlay.
   if (wait) {
     const ev = await waitForLive(terms);
-    await runOverlayStream(url ?? provider.hub, provider.label, ev, { deepLink: !url, windowSize });
+    await runOverlayStream(url ?? provider.hub, provider.label, ev, { deepLink: !url, windowSize, lang });
     return;
   }
 
@@ -59,7 +76,7 @@ export async function watch(args: string[]) {
       return;
     }
     // deep-link only when we opened the hub (no explicit --url to honor).
-    await runOverlayStream(url ?? provider.hub, provider.label, ev, { deepLink: !url, windowSize });
+    await runOverlayStream(url ?? provider.hub, provider.label, ev, { deepLink: !url, windowSize, lang });
     return;
   }
 
@@ -70,7 +87,7 @@ export async function watch(args: string[]) {
   }
 
   if (terms.length === 0) {
-    console.error(c.red("Usage: sportsball fifa watch <team> [team] [--wait] [--provider peacock|fubo] [--url <link>] [--overlay]"));
+    console.error(c.red("Usage: sportsball fifa watch <team> [team] [--wait] [--provider peacock|fubo] [--url <link>] [--overlay] [--lang english|spanish]"));
     process.exitCode = 1;
     return;
   }
@@ -148,7 +165,7 @@ function positionalTerms(args: string[]): string[] {
   const out: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
-    if (a === "--url" || a === "--provider" || a === "--size") {
+    if (a === "--url" || a === "--provider" || a === "--size" || a === "--lang") {
       i++; // skip its value
       continue;
     }
