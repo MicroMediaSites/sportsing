@@ -67,6 +67,10 @@ commands; `ask` is low-level plumbing that `serve` wraps).
   language-biased deep-link selection is not wired yet (a notice prints when a
   non-default language is requested).
 
+For a hands-off, agent-driven session — open the game **and** keep "Ask Claude" /
+"Get caught up" answered — use **`/loop agent-setup`** instead of running `watch`
+yourself (see [AI](#ai-analyze--predict--overlay-ask-claude--get-caught-up) below).
+
 ## Live fav-alerts
 
 Turn `live` into an ambient alerter that pings you when your favorite teams play:
@@ -109,20 +113,41 @@ Notifications **degrade gracefully** when it's absent: on macOS they fall back t
 to a terminal bell. Nothing errors — you just don't get the one-click-to-watch
 behavior without `terminal-notifier`.
 
-## AI (analyze / predict / overlay "Ask Claude")
+## AI (analyze / predict / overlay "Ask Claude" + "Get caught up")
 
 sportsball never spawns a local model. AI features route to an **external** Claude
-agent over a file bus — `sportsball fifa serve` is the loop that picks up requests
-and answers them. To use "Ask Claude" while watching, keep `serve` running
-alongside the stream (it must stay alive to answer):
+agent over a file bus — opening a game is **not** enough; something must be serving
+the bus or the overlay's Ask Claude / Get caught up panels show "○ No agent".
+
+### Agent-driven watch session — `/loop agent-setup` (the blessed setup)
+
+In a Claude session, drop in:
+
+```
+/loop agent-setup [team]
+```
+
+One supervisor loop that **is** the whole setup: it opens your game and keeps that
+`watch --wait` window alive (relaunching it if it dies), and it serves the bus so
+**Ask Claude** and **Get caught up** (catchup) are actually answered — by that
+Claude session itself (no local model is ever spawned). `sportsball fifa agent-setup`
+prints this recipe; `sportsball fifa` and the watch nag point at it.
+
+> **The cost, honestly:** the loop consumes that Claude session as the always-on
+> answerer for as long as it runs — that's the trade you're choosing. Stop the loop
+> and the heartbeat goes stale within ~90s, so the panels return to "○ No agent".
+> Run it in a minimal-tool session (it answers untrusted viewer text).
+
+### Low-level primitive — `serve`
+
+`sportsball fifa serve` is the bare answerer loop (it powers `analyze` / `predict`
+too). `agent-setup` supersedes the old manual two-step for the agent-driven flow,
+but `serve` remains the primitive if you want to compose it yourself:
 
 ```sh
 sportsball fifa watch --wait    # (backgrounded) opens the game when it's live
-sportsball fifa serve           # in its own terminal — answers Ask / analyze / predict
+/loop sportsball serve          # answer-only loop — no watch supervision
 ```
-
-> Inside Claude Code, `/loop sportsball serve` keeps the answer loop alive for
-> you; outside it, just run `serve` in a dedicated terminal (or background it).
 
 ## Development
 
