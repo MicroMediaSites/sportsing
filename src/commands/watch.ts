@@ -63,11 +63,14 @@ export async function watch(args: string[]) {
   // --smoke is bounded (open → confirm → tear down → exit) and works in ANY
   // context, TTY or not — an operator in a terminal can smoke-test too.
   if (args.includes("--smoke")) return smokeWatch(url ?? provider.hub, provider.label, windowSize);
-  // Otherwise, with no controlling TTY nothing would ever close the window, so it
-  // would hang forever — refuse and name the alternatives instead.
-  if (process.stdin.isTTY !== true) {
+  // With no controlling TTY, watch would block forever with nothing to close it —
+  // refuse, UNLESS --supervised: the agent-setup supervisor deliberately backgrounds
+  // `watch --wait --supervised` and reaps it via the pidfile, so the long block is
+  // intentional and managed. The guard only catches ACCIDENTAL non-interactive hangs
+  // (e.g. a build smoke-test), not the supervised path.
+  if (process.stdin.isTTY !== true && !args.includes("--supervised")) {
     console.error(c.yellow("`watch` is interactive — it opens a stream window and blocks until you close it, so it isn't usable in scripts or smoke-tests."));
-    console.error(c.dim("Run it in a terminal, or use `--smoke` to just confirm the window opens and exit 0."));
+    console.error(c.dim("Run it in a terminal; use `--smoke` to just confirm the window opens; or `--supervised` for a pidfile-managed background watcher (what `/loop agent-setup` uses)."));
     process.exitCode = 1;
     return;
   }
@@ -109,7 +112,7 @@ export async function watch(args: string[]) {
   }
 
   if (terms.length === 0) {
-    console.error(c.red("Usage: sportsball fifa watch <team> [team] [--wait] [--provider peacock|fubo] [--url <link>] [--overlay] [--lang english|spanish] [--smoke]"));
+    console.error(c.red("Usage: sportsball fifa watch <team> [team] [--wait] [--provider peacock|fubo] [--url <link>] [--overlay] [--lang english|spanish] [--smoke] [--supervised]"));
     console.error(c.dim("For a hands-off agent-driven session (open the game + answer Ask Claude / catchup), use  /loop agent-setup  — see  sportsball fifa agent-setup"));
     process.exitCode = 1;
     return;

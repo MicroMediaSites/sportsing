@@ -40,10 +40,12 @@ Parse the JSON: `{ "watchAlive": bool, "watchPid": number|null, "serving": bool 
 
 - **If `watchAlive` is false** (no watcher, or it died — the pidfile is missing/stale): relaunch it
   **in the background** (it blocks until the game opens, so it must NOT run in the foreground of
-  this tick):
+  this tick). It MUST carry `--supervised` — you're launching it headless (no TTY), which `watch`
+  otherwise refuses to avoid accidental smoke-test hangs; `--supervised` is the opt-in for exactly
+  this pidfile-managed background case:
 
   ```sh
-  sportsball fifa watch --wait [team]      # run_in_background: true
+  sportsball fifa watch --wait --supervised [team]      # run_in_background: true
   ```
 
   Pass the `[team]` argument through if one was given; omit it for "the next match overall".

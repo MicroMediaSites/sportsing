@@ -56,3 +56,8 @@ When smoke-testing changes, **do not run `watch` / `watch --overlay` blockingly:
   `--help`/usage output; don't launch the GUI at all.
 - Any other long-running/GUI command: wrap in a bounded `timeout` (or background +
   kill) and confirm no surviving processes afterward.
+
+`watch --supervised` is **not** a smoke-test path — it's the opposite: it lets the
+`/loop agent-setup` supervisor run `watch --wait` headless (no TTY) on purpose,
+blocking until the game opens, and reaps it via the pidfile. Don't use it to
+"smoke-test" — it will block. For tests use `--smoke`.
