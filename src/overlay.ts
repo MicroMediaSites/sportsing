@@ -249,7 +249,7 @@ async function tryDeepLink(session: CdpSession, ev: EspnEvent): Promise<boolean>
     "var v=document.querySelector('video');" +
     "var big=v&&(v.getBoundingClientRect().width*v.getBoundingClientRect().height>=0.4*innerWidth*innerHeight);" +
     "if(big){" +
-    "  if(!v.paused)return JSON.stringify({s:'playing'});" + // already playing — never touch it
+    "  if(!v.paused)return JSON.stringify({s:'playing',t:v.currentTime});" + // playing — report currentTime so the caller can confirm it STAYS playing; never touch it
     "  var c=document.querySelectorAll('button,[role=button]');" +
     "  for(var i=0;i<c.length;i++){var el=c[i];var al=((el.getAttribute('aria-label')||'')+' '+(el.getAttribute('title')||'')).trim().toLowerCase();" +
     "    if(/^(play|reproducir|reanudar)\\b/.test(al)){var rr=el.getBoundingClientRect();if(rr.width*rr.height>=100)return JSON.stringify({s:'play',x:Math.round(rr.left+rr.width/2),y:Math.round(rr.top+rr.height/2)});}}" +
@@ -293,19 +293,42 @@ async function tryDeepLink(session: CdpSession, ev: EspnEvent): Promise<boolean>
   if (!routed) return false;
 
   // Phase 2 — enter the player (Fubo needs a "Watch live" click; Peacock routes
-  // straight in) and start it; finish once the video is actually playing.
-  for (let i = 0; i < 12; i++) {
-    await new Promise((r) => setTimeout(r, 1500));
-    let r: { s?: string; x?: number; y?: number } = {};
+  // straight in) and start it. We declare success only once playback reaches a
+  // STEADY STATE — currentTime advancing across several consecutive ~1s samples —
+  // NOT on the first non-paused reading. Peacock auto-starts but can re-pause
+  // shortly after (an ad/pre-roll gate, or the player's state machine pausing the
+  // raw <video>); the old "return on first playing" declared victory too early and
+  // left it paused. So whenever it falls back to paused we re-click the Play
+  // control and reset the confirmation. We only ever click while paused, so a
+  // playing stream is never toggled off (AC#4, no regression).
+  const SAMPLE_MS = 1000;
+  const STEADY_SAMPLES = 4; // ~4s of continuous progress = playback "stuck"
+  const MAX_SAMPLES = 45; // overall budget: routing-in + ad wait + confirmation
+  let lastT: number | null = null;
+  let advancing = 0;
+  for (let i = 0; i < MAX_SAMPLES; i++) {
+    await new Promise((r) => setTimeout(r, SAMPLE_MS));
+    let r: { s?: string; x?: number; y?: number; t?: number } = {};
     try {
       r = JSON.parse((await evalValue(watchJs)) as string);
     } catch {
       continue; // page navigating / no result this tick
     }
-    if (r.s === "playing") return true;
-    if (r.s === "play" && typeof r.x === "number" && typeof r.y === "number") await trustedClick(r.x, r.y);
+    if (r.s === "playing" && typeof r.t === "number") {
+      // currentTime moved forward since the last sample → one more steady tick.
+      // A stall (ad boundary / buffering / re-pause about to happen) resets it.
+      if (lastT !== null && r.t > lastT + 0.05) advancing++;
+      else advancing = 0;
+      lastT = r.t;
+      if (advancing >= STEADY_SAMPLES) return true; // playback stuck — done
+    } else if (r.s === "play" && typeof r.x === "number" && typeof r.y === "number") {
+      await trustedClick(r.x, r.y); // (re)start — covers the initial start AND a re-pause
+      lastT = null;
+      advancing = 0;
+    }
+    // 'wait' (paused, no control yet) / 'clicked' / 'none' → keep polling
   }
-  return true; // routed to the game even if we couldn't confirm <video> playback
+  return true; // routed to the game even if we couldn't confirm steady playback
 }
 
 /** Launch the stream with the configurable, page-following, delay-calibratable overlay. Blocks until closed. */
