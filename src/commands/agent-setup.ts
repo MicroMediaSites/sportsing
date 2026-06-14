@@ -1,12 +1,38 @@
 import { c } from "../ansi.ts";
+import { isServing } from "../ask-bus.ts";
+import { isWatchAlive, readWatchPid } from "../liveness.ts";
 
 // `sportsball fifa agent-setup` — the discoverable front door for an agent-driven
 // watch session. It does NOT spawn a model or any background process; its only
 // job is to point at the `/loop agent-setup` supervisor skill, which is the one
 // blessed way to set sportsball up so a Claude agent can follow a live game AND
-// answer the overlay's "Ask Claude" + "Get caught up" (catchup). Both bare and
-// `--help` print the same guidance.
-export function agentSetup(_args: string[] = []): void {
+// answer the overlay's "Ask Claude" + "Get caught up" (catchup).
+//
+//   agent-setup            print the setup guidance (also --help)
+//   agent-setup --check    fast machine-readable status (JSON) for the loop
+export async function agentSetup(args: string[] = []): Promise<void> {
+  if (args.includes("--check")) return printCheck();
+  printGuide();
+}
+
+/**
+ * Machine-readable status for the supervisor loop (AGT-548) to branch on each
+ * tick — no prose parsing. Fast: just reads the pidfile + the bus heartbeat; it
+ * never spawns a model, opens a window, or blocks. Exit code is 0 only when the
+ * session is fully up (watcher alive AND an answerer serving), so the loop can
+ * gate on either the JSON fields or `$?`.
+ */
+async function printCheck(): Promise<void> {
+  const status = {
+    watchAlive: isWatchAlive(),
+    watchPid: readWatchPid(),
+    serving: await isServing(),
+  };
+  console.log(JSON.stringify(status));
+  process.exitCode = status.watchAlive && status.serving ? 0 : 1;
+}
+
+function printGuide(): void {
   const b = c.bold;
   console.log(`${b(c.cyan("⚽ sportsball agent-setup"))} — set up an agent-driven watch session
 
