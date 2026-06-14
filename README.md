@@ -2,7 +2,8 @@
 
 Sports in your terminal — the FIFA World Cup 2026 schedule, favorites, live
 scores, **ambient fav-alerts**, browser streaming, highlights, stats, and AI
-analysis. Zero runtime dependencies; built on [Bun](https://bun.sh).
+analysis. No npm dependencies; ships as a self-contained [Bun](https://bun.sh)
+binary.
 
 ```
 sportsball fifa today
@@ -35,16 +36,31 @@ scores or tables).
 |---|---|
 | `today` / `next` | Today's matches / next upcoming match + countdown |
 | `live [--notify [--quiet]]` | Auto-refreshing live scoreboard — see **Live fav-alerts** below |
-| `watch [team] [--wait] [--overlay] [--provider] [--url]` | Open the broadcast in your own browser |
+| `watch [team] [flags]` | Open the broadcast in your own browser — see **Watch** below |
 | `highlights <team>` | Open a highlights search |
 | `fixtures` / `schedule` / `results` | Fixtures, whole-tournament schedule, finished games (`--mine`) |
 | `table [A-L]` / `bracket` | Group standings / knockout bracket |
 | `teams` / `scorers` / `stats <team>` | Teams, Golden Boot race, match stats (`--json`) |
-| `analyze` / `predict <team>` | AI tactical read / prediction |
+| `analyze` / `predict <team>` | AI tactical read / prediction (answered by `serve`) |
+| `serve` | Run the AI answer loop that powers `analyze`, `predict`, and the overlay's "Ask Claude" (see **AI** below) |
 | `fav [add\|rm\|list]` / `me` | Manage favorite teams / your dashboard |
 | `setup [key]` | Add your football-data.org API key |
 
-Run `sportsball fifa help` for the full list.
+Run `sportsball fifa help` for the full list (`serve` and `ask` are the AI-bus
+commands; `ask` is low-level plumbing that `serve` wraps).
+
+## Watch
+
+`sportsball fifa watch [team] [team]` opens the broadcast in your own browser
+(your real Chrome, via [ui-leaf](https://www.npmjs.com/package/@openthink/ui-leaf)):
+
+- **`--wait`** — block until the match goes live, then open it (deep-linked to the
+  game with the stats overlay). With no team, waits for the *next* match overall.
+- **`--overlay`** — inject the live-stats panel onto the page (needs a resolved
+  match; `--wait` always opens with it).
+- **`--provider peacock|fubo`** — override the configured default (Fubo by default;
+  Peacock is Spanish/Telemundo).
+- **`--url <link>`** — jump straight to a specific game link, skipping the hub.
 
 ## Live fav-alerts
 
@@ -71,7 +87,8 @@ Flags:
   board normally. Without it, `live` behaves exactly as before.
 - **`--quiet`** — suppress the full-screen scoreboard so the command can be
   backgrounded (`&`) as a pure ambient alerter without redrawing your terminal.
-  Only meaningful together with `--notify`. `Ctrl-C` stops it.
+  Only meaningful together with `--notify` — used alone it prints a hint and
+  exits. `Ctrl-C` stops it.
 
 ### Click-to-watch requires `terminal-notifier`
 
@@ -90,13 +107,17 @@ behavior without `terminal-notifier`.
 ## AI (analyze / predict / overlay "Ask Claude")
 
 sportsball never spawns a local model. AI features route to an **external** Claude
-agent over a file bus. To use "Ask Claude" while watching, run the serve loop
-alongside the stream:
+agent over a file bus — `sportsball fifa serve` is the loop that picks up requests
+and answers them. To use "Ask Claude" while watching, keep `serve` running
+alongside the stream (it must stay alive to answer):
 
 ```sh
 sportsball fifa watch --wait    # (backgrounded) opens the game when it's live
-/loop sportsball serve          # answers Ask questions + analyze/predict
+sportsball fifa serve           # in its own terminal — answers Ask / analyze / predict
 ```
+
+> Inside Claude Code, `/loop sportsball serve` keeps the answer loop alive for
+> you; outside it, just run `serve` in a dedicated terminal (or background it).
 
 ## Development
 
