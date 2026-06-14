@@ -64,11 +64,14 @@ export async function watch(args: string[]) {
   // context, TTY or not — an operator in a terminal can smoke-test too.
   if (args.includes("--smoke")) return smokeWatch(url ?? provider.hub, provider.label, windowSize);
   // With no controlling TTY, watch would block forever with nothing to close it —
-  // refuse, UNLESS --supervised: the agent-setup supervisor deliberately backgrounds
-  // `watch --wait --supervised` and reaps it via the pidfile, so the long block is
-  // intentional and managed. The guard only catches ACCIDENTAL non-interactive hangs
-  // (e.g. a build smoke-test), not the supervised path.
-  if (process.stdin.isTTY !== true && !args.includes("--supervised")) {
+  // refuse, UNLESS `--supervised --wait`: the agent-setup supervisor deliberately
+  // backgrounds `watch --wait --supervised` and reaps it via the pidfile, so the
+  // long block is intentional and managed. We require --wait too because only the
+  // --wait path writes the pidfile — `--supervised` without it would still hang
+  // unreaped, so it doesn't earn the bypass. The guard otherwise catches ACCIDENTAL
+  // non-interactive hangs (a build smoke-test).
+  const supervised = args.includes("--supervised") && wait;
+  if (process.stdin.isTTY !== true && !supervised) {
     console.error(c.yellow("`watch` is interactive — it opens a stream window and blocks until you close it, so it isn't usable in scripts or smoke-tests."));
     console.error(c.dim("Run it in a terminal; use `--smoke` to just confirm the window opens; or `--supervised` for a pidfile-managed background watcher (what `/loop agent-setup` uses)."));
     process.exitCode = 1;
