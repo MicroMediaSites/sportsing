@@ -236,6 +236,20 @@ export async function findCurrentMatch(terms: string[]): Promise<EspnEvent | nul
   return events.sort((a, b) => +new Date(b.date) - +new Date(a.date))[0] ?? null;
 }
 
+/** The match `watch --wait` should poll toward: a currently-live one matching
+ *  `terms` (or any live match if `terms` is empty), else the soonest upcoming.
+ *  Returns null when nothing matching is live or scheduled. Short default TTL so
+ *  the kickoff→in-play transition is seen promptly. ESPN's `state` is the live
+ *  signal (no key, same source the overlay follows — unlike the lagging
+ *  football-data feed behind `live`). */
+export async function resolveWatchTarget(terms: string[], ttlMs = 15_000): Promise<EspnEvent | null> {
+  const t = terms.map((s) => s.toLowerCase());
+  const events = (await getEvents(ttlMs)).filter((e) => t.every((term) => eventHasTeam(e, term)));
+  const live = events.find((e) => e.state === "in");
+  if (live) return live;
+  return events.filter((e) => e.state === "pre").sort((a, b) => +new Date(a.date) - +new Date(b.date))[0] ?? null;
+}
+
 /** Per-team statistics for one event (from the summary boxscore). */
 export async function getMatchStats(eventId: string, ttlMs = 60_000): Promise<EspnTeamStats[]> {
   const raw = await cached<any>(`espn_sum_${eventId}`, ttlMs, async () => {
