@@ -1,0 +1,39 @@
+name: Publish to npm
+
+# Publishes `sportsball` to npm when a GitHub Release is published.
+# Uses npm TRUSTED PUBLISHING (OIDC) — no NPM_TOKEN secret. Configure the trusted
+# publisher once on npmjs.com (package → Settings → Trusted Publisher) pointing at
+# repo `MicroMediaSites/sportsball` and workflow `publish.yml`. Provenance is
+# attested from this public repo build.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write # required for OIDC trusted publishing + provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Gate the publish on the same checks as CI.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun test
+
+      # Publish with npm (its CLI is what supports OIDC trusted publishing +
+      # --provenance; the package itself is a Bun CLI shipped as source).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+      - run: npm install -g npm@latest # ensure a version with trusted-publishing/OIDC support
+      - run: npm publish --provenance --access public
