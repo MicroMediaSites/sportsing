@@ -215,7 +215,7 @@ async function todaySnapshot(): Promise<Record<string, unknown>> {
 // a program-details page with a "Watch live" CTA, others (Peacock) go straight
 // to the player — so click a Watch/Play CTA if present and finish once a
 // <video> is actually playing. Returns true once routed (best-effort).
-async function tryDeepLink(session: CdpSession, ev: EspnEvent): Promise<boolean> {
+async function tryDeepLink(session: CdpSession, ev: EspnEvent, lang: WatchLang = "english"): Promise<boolean> {
   const { home, away } = sides(ev);
   const A = searchTerms(home?.name ?? "", home?.abbreviation ?? "");
   const B = searchTerms(away?.name ?? "", away?.abbreviation ?? "");
@@ -228,18 +228,28 @@ async function tryDeepLink(session: CdpSession, ev: EspnEvent): Promise<boolean>
   // WITHOUT scrollIntoView (the jump was the visible bug; SPA handlers fire
   // off-screen anyway).
   const js =
-    "(function(A,B){" +
+    "(function(A,B,W){" +
     "function isLink(n){return n.tagName==='A'||n.getAttribute('role')==='link';}" +
     "function aff(n){return isLink(n)||n.tagName==='BUTTON'||n.getAttribute('role')==='button'||!!n.onclick;}" +
     "function clk(el){for(var n=el;n&&n!==document.body;n=n.parentElement){if(aff(n)){var r=n.getBoundingClientRect();if(r.width*r.height>=400&&r.height<=2*innerHeight)return n;}}return null;}" + // a card, not the giant rail/list container
     "function split(t){var s=[' v. ',' vs ',' v ',' versus '];for(var k=0;k<s.length;k++){var i=t.indexOf(s[k]);if(i>0)return [t.slice(0,i),t.slice(i+s[k].length)];}return null;}" +
     "function inAny(s,arr){for(var j=0;j<arr.length;j++)if(s.indexOf(arr[j])>=0)return true;return false;}" +
+    // Wanted-language preference (AGT-543): Fubo lists each game as two tiles (Fox/
+    // English + Telemundo/Spanish); the cast is in the tile's program-footer-subtitle
+    // — verified live on the hub in spike AGT-541 ("…• FOX Sports 1" vs "Copa Mundial
+    // de la FIFA 2026"). Spanish checked first (a subtitle naming both wouldn't, but
+    // be deterministic). Returns '' when undeterminable → no preference applied.
+    "function langOf(c){var q=c.querySelector&&c.querySelector('[data-testid=program-footer-subtitle]');var s=((q&&q.textContent)||c.textContent||'').toLowerCase();if(/copa mundial|telemundo|tudn|universo|en espa/.test(s))return 'spanish';if(/\\bfox\\b|world cup/.test(s))return 'english';return '';}" +
     "var all=document.querySelectorAll('*'),best=null;for(var i=0;i<all.length;i++){var el=all[i];if(el.children.length>3)continue;var t=(el.innerText||'').replace(/\\s+/g,' ').trim().toLowerCase();if(!t||t.length>44)continue;var sp=split(t);if(!sp)continue;" +
     "if(!((inAny(sp[0],A)&&inAny(sp[1],B))||(inAny(sp[0],B)&&inAny(sp[1],A))))continue;" +
-    "var c=clk(el);if(!c)continue;var r=c.getBoundingClientRect();var sc=(isLink(c)?0:1)*1e9+r.width*r.height;" + // prefer real links, then the smallest target (a card, not the rail)
+    "var c=clk(el);if(!c)continue;var r=c.getBoundingClientRect();" +
+    // language term dominates (1e12) so the wanted-cast tile beats the other-cast tile
+    // of the same match; an unknown-language tile isn't penalised (preserves behaviour
+    // when only one airing exists or no signal is present). Then prefer links, then area.
+    "var lg=langOf(c);var langPen=(lg&&lg!==W)?1:0;var sc=langPen*1e12+(isLink(c)?0:1)*1e9+r.width*r.height;" +
     "if(!best||sc<best.sc)best={el:c,sc:sc};}" +
     "if(best){best.el.click();return true;}return false;" +
-    "})(" + JSON.stringify(A) + "," + JSON.stringify(B) + ")";
+    "})(" + JSON.stringify(A) + "," + JSON.stringify(B) + "," + JSON.stringify(lang) + ")";
 
   // Phase 2: enter the player and start it. Once a viewport-filling <video>
   // exists we are IN the player — and these DRM players (Peacock/Fubo) ignore a
@@ -360,11 +370,11 @@ export async function runOverlayStream(
   console.log(c.bold(c.cyan(`⚽ Opening ${label} with live overlay`)) + c.dim(`  ${url}`));
   console.log(c.dim("Just a floating ⚙ by default — click it to open settings, pick panels, and sync the delay. Drag the gear, settings, and stats windows anywhere."));
 
-  // A non-default language is accepted and carried, but the language-biased
-  // deep-link (tile-scorer + post-landing warning) isn't wired yet — be honest
-  // rather than silently opening the default airing. Wired by AGT-543/AGT-544.
+  // On a provider that carries both casts (Fubo), the deep-link now prefers the
+  // wanted-language airing (AGT-543); the post-landing check warns on a mismatch
+  // (AGT-544). Note which cast we're aiming for when it's not the default.
   if (lang !== "english") {
-    console.log(c.yellow(`--lang ${lang} noted, but language-biased game selection isn't enabled yet — opening the standard airing for now.`));
+    console.log(c.dim(`Preferring the ${lang} broadcast where the provider carries both casts.`));
   }
 
   // The "Ask Claude" panel needs an external answerer (no local claude is spawned).
@@ -391,7 +401,7 @@ export async function runOverlayStream(
   // Dynamically open the game: find its tile on the hub and click it (the SPA
   // routes to the match). Fire-and-forget — the title poll then follows it.
   if (session && opts.deepLink) {
-    void tryDeepLink(session, ev).then((ok) => {
+    void tryDeepLink(session, ev, lang).then((ok) => {
       if (!ok) console.log(c.dim(`Couldn't auto-open the game — open ${ev.name} in ${label} and the overlay will follow.`));
     });
   }
@@ -583,7 +593,7 @@ export async function runOverlayStream(
           renderDelayed();
         } else if (msg.fn === "watch") {
           const target = msg.id ? ((await getEvents()).find((e) => e.id === String(msg.id)) ?? currentEv) : currentEv;
-          void tryDeepLink(session!, target);
+          void tryDeepLink(session!, target, lang);
         } else if (msg.fn === "pref" && typeof msg.key === "string") {
           panels = { ...panels, [msg.key]: !!msg.on };
           await setOverlayPanel(providerKey, msg.key, !!msg.on);
