@@ -17,12 +17,17 @@ interface Config {
   overlayPanels?: Record<string, Record<string, boolean>>;
 }
 
-/** Default overlay panel visibility — minimal by default; the user opts in via the gear. */
+/** Default overlay panel visibility — nothing on by default, so a fresh stream
+ *  shows JUST the floating gear; every panel is opt-in via the settings modal. */
 export const OVERLAY_PANEL_DEFAULTS: Record<string, boolean> = {
-  stats: true, // possession / shots / on-target
-  winprob: false, // 3-way win-probability breakdown (strip always shows the favorite)
+  score: false, // score · clock · favorite win%
+  stats: false, // possession / shots / on-target
+  winprob: false, // 3-way win-probability breakdown
   odds: false, // raw 3-way odds line
-  h2h: true, // head-to-head button
+  h2h: false, // head-to-head button
+  events: false, // live match events (goals/cards/subs)
+  scores: false, // other live matches
+  ask: false, // "Ask Claude" — routed through the external agent bus
 };
 
 async function readConfig(): Promise<Config> {
