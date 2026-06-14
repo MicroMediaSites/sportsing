@@ -74,7 +74,8 @@ export function readWatchPid(): number | null {
 
 /** Whether a `watch --wait` is currently alive: the pidfile must exist AND name a
  *  live process. A stale pidfile (process gone) reports false — never a false
- *  "running". */
+ *  "running". Scope: only `watch --wait` writes the pidfile, so a live *non*-wait
+ *  `watch` (e.g. a one-shot hub open) correctly reports false here. */
 export function isWatchAlive(): boolean {
   const pid = readWatchPid();
   return pid != null && pidAlive(pid);
