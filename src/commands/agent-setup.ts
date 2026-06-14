@@ -52,5 +52,6 @@ questions to a file bus; ${b("an external agent must be serving")} or the Ask /
 catchup panels just show ${c.dim('"○ no agent"')}. The supervisor loop is that agent.
 
 ${c.dim("This command only prints these instructions — it starts nothing itself.")}
+${c.dim("(The supervisor loop uses")} ${c.bold("agent-setup --check")} ${c.dim("for machine-readable status JSON.)")}
 `);
 }
