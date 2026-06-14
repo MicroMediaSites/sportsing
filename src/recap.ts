@@ -6,7 +6,9 @@
 
 import { postQuestion, waitForAnswer, isServing } from "./ask-bus.ts";
 
-/** One normalized key event, matching the shape getLiveMatch() emits. */
+/** One normalized key event. Intentionally a local structural copy of the event
+ *  shape `getLiveMatch()` emits (espn.ts `LiveMatch.events`) — kept here so recap
+ *  stays self-contained/testable. If that upstream shape changes, update this too. */
 export interface RecapEvent {
   clock: string;
   type: string;
