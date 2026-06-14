@@ -111,6 +111,8 @@ export async function live(args: string[] = []) {
         // Kickoff alerts are click-to-watch: clicking launches `watch <fav team>`
         // (terminal-notifier -execute). notify() degrades to a plain, non-clickable
         // notification when terminal-notifier is absent. Goal/full-time stay informational.
+        // process.execPath is the sportsball binary when distributed (compiled); under
+        // `bun run` dev it's the Bun runtime, so the click command only works compiled.
         const onClick = kickoffWatchCommand(e, matches, favorites, process.execPath);
         notify(title, body, { group: `sportsball-${e.matchId}`, sound: e.kind === "goal", onClick });
       }
@@ -154,7 +156,7 @@ export function kickoffWatchCommand(
   if (!match) return undefined;
   const fav = favorites.find((f) => matchHasTeam(match, f.trim().toLowerCase()));
   if (!fav) return undefined;
-  return `${shQuote(exe)} fifa watch ${shQuote(fav)}`;
+  return `${shQuote(exe)} fifa watch ${shQuote(fav.trim())}`;
 }
 
 /** Notification title + body for a fav match event. */
