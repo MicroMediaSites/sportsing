@@ -5,6 +5,7 @@
 // itself yields nothing, so the same transition never alerts twice.
 
 import { teamLabel } from "./format.ts";
+import { matchHasTeam } from "./match-util.ts";
 import type { Match, MatchStatus } from "./types.ts";
 
 export type MatchEventKind = "kickoff" | "goal" | "full-time";
@@ -31,21 +32,6 @@ function goalsOf(m: Match): { home: number; away: number } {
   return { home: m.score.fullTime.home ?? 0, away: m.score.fullTime.away ?? 0 };
 }
 
-/** True if either side of the match matches `needle` (lowercased) by name/tla/shortName.
- *  Local to keep this module pure and dependency-light; mirrors the field set in
- *  commands/_lib.ts `matchHasTeam` so favourites resolve the same way as `--mine`. */
-function involvesTeam(m: Match, needle: string): boolean {
-  const fields = [
-    m.homeTeam.name,
-    m.homeTeam.tla,
-    m.homeTeam.shortName,
-    m.awayTeam.name,
-    m.awayTeam.tla,
-    m.awayTeam.shortName,
-  ];
-  return fields.some((f) => f?.toLowerCase().includes(needle));
-}
-
 /**
  * Diff two match-list snapshots into favourite-team events.
  *
@@ -70,7 +56,7 @@ export function diffEvents(prev: Match[], cur: Match[], favorites: string[]): Ma
   const events: MatchEvent[] = [];
 
   for (const m of cur) {
-    if (!favs.some((n) => involvesTeam(m, n))) continue;
+    if (!favs.some((n) => matchHasTeam(m, n))) continue;
     const before = prevById.get(m.id);
     if (!before) continue; // need a prior state to diff a transition
 
