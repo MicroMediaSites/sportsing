@@ -3,6 +3,7 @@ import { findCurrentMatch, resolveWatchTarget, type EspnEvent } from "../espn.ts
 import { getStreamProvider } from "../config.ts";
 import { PROVIDERS, launchStream } from "../stream.ts";
 import { runOverlayStream, type WatchLang } from "../overlay.ts";
+import { writeWatchPidfile } from "../liveness.ts";
 import { getFlag } from "./_lib.ts";
 
 // `sportsball fifa watch [team] [team] [--wait] [--provider peacock|fubo] [--url <link>] [--overlay] [--lang english|spanish]`
@@ -57,6 +58,9 @@ export async function watch(args: string[]) {
   // open THE GAME, which needs the deep-link path (overlay), so --wait always
   // opens with the overlay + auto-navigation regardless of --overlay.
   if (wait) {
+    // Record liveness so a supervisor (agent-setup --check / /loop agent-setup)
+    // can detect a silent death and restart. Removed on exit/SIGINT/SIGTERM.
+    writeWatchPidfile();
     const ev = await waitForLive(terms);
     await runOverlayStream(url ?? provider.hub, provider.label, ev, { deepLink: !url, windowSize, lang });
     return;
