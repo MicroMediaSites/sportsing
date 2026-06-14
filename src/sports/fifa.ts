@@ -109,11 +109,14 @@ ${b("DATA")}
   Without a key, fixtures fall back to the offline openfootball schedule.
   Set FOOTBALL_DATA_API_KEY or run ${b("sportsball fifa setup")}.
 
-${b("AI (analyze / predict / overlay Ask Claude)")}
-  sportsball never spawns a local Claude. AI features post questions to a bus;
-  keep ONE Claude session serving answers — it just waits for prompts:
-  ${c.dim("/loop sportsball serve")}
-  Each tick prints the next question as a prompt; the agent answers + replies.
+${b("AI (analyze / predict / overlay “Ask Claude”)")}
+  sportsball never spawns a local Claude — an external Claude agent answers.
+  Opening a game is NOT enough for "Ask Claude"; it needs a serve loop too.
+  ${b("To watch a game AND use Ask Claude, run both:")}
+    ${c.dim("sportsball fifa watch --wait")}   ${c.dim("# (backgrounded) opens the game when live")}
+    ${c.dim("/loop sportsball serve")}          ${c.dim("# answers Ask questions + analyze/predict")}
+  Without the serve loop, the Ask panel shows “No agent”. The serve loop just
+  waits for prompts; each tick prints a question for you to answer + reply.
 
 ${b("EXAMPLES")}
   sportsball fifa today

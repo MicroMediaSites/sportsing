@@ -326,6 +326,13 @@ export async function runOverlayStream(
   console.log(c.bold(c.cyan(`⚽ Opening ${label} with live overlay`)) + c.dim(`  ${url}`));
   console.log(c.dim("Just a floating ⚙ by default — click it to open settings, pick panels, and sync the delay. Drag the gear, settings, and stats windows anywhere."));
 
+  // The "Ask Claude" panel needs an external answerer (no local claude is spawned).
+  // Nag about it ONLY when nobody is serving — opening the stream is not enough.
+  if (!(await isServing())) {
+    console.log(c.yellow('💬 The overlay\'s "Ask Claude" needs an answerer. In a Claude session, run:'));
+    console.log("     " + c.bold("/loop sportsball serve") + c.dim('   — until you do, Ask shows "No agent".'));
+  }
+
   let session: CdpSession | undefined;
   try {
     session = await attachToPage(port);
