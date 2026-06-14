@@ -302,7 +302,7 @@ async function tryDeepLink(session: CdpSession, ev: EspnEvent): Promise<boolean>
   // control and reset the confirmation. We only ever click while paused, so a
   // playing stream is never toggled off (AC#4, no regression).
   const SAMPLE_MS = 1000;
-  const STEADY_SAMPLES = 4; // ~4s of continuous progress = playback "stuck"
+  const STEADY_SAMPLES = 4; // 4 observed currentTime advances (~5 playing reads, ~5s) = steady
   const MAX_SAMPLES = 45; // overall budget: routing-in + ad wait + confirmation
   let lastT: number | null = null;
   let advancing = 0;
@@ -320,7 +320,7 @@ async function tryDeepLink(session: CdpSession, ev: EspnEvent): Promise<boolean>
       if (lastT !== null && r.t > lastT + 0.05) advancing++;
       else advancing = 0;
       lastT = r.t;
-      if (advancing >= STEADY_SAMPLES) return true; // playback stuck — done
+      if (advancing >= STEADY_SAMPLES) return true; // steady — playback confirmed advancing
     } else if (r.s === "play" && typeof r.x === "number" && typeof r.y === "number") {
       await trustedClick(r.x, r.y); // (re)start — covers the initial start AND a re-pause
       lastT = null;
