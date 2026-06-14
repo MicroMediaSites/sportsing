@@ -69,7 +69,7 @@ commands; `ask` is low-level plumbing that `serve` wraps).
 
 For a hands-off, agent-driven session — open the game **and** keep "Ask Claude" /
 "Get caught up" answered — use **`/loop agent-setup`** instead of running `watch`
-yourself (see [AI](#ai-analyze--predict--overlay-ask-claude--get-caught-up) below).
+yourself (see the **AI** section below).
 
 ## Live fav-alerts
 
