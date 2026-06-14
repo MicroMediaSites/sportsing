@@ -71,6 +71,10 @@ commands; `ask` is low-level plumbing that `serve` wraps).
   scripts/CI. `watch` is otherwise **interactive** — it blocks until you close the
   window — so run without a controlling TTY (e.g. `< /dev/null`) it refuses rather
   than hanging. Use `--smoke` to verify the launch path instead.
+- **`--supervised`** — opt into running headless (no TTY) without that refusal, for
+  a pidfile-managed background watcher. This is what `/loop agent-setup` uses to
+  keep `watch --wait` alive; it still blocks (it's reaped via the pidfile), so it's
+  not a smoke-test — use `--smoke` for that.
 
 For a hands-off, agent-driven session — open the game **and** keep "Ask Claude" /
 "Get caught up" answered — use **`/loop agent-setup`** instead of running `watch`
