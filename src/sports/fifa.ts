@@ -59,7 +59,7 @@ const ALIASES: Record<string, string> = {
   knockout: "bracket",
 };
 
-/** Dispatch a `sportsball fifa <command>` invocation. Args are everything after `fifa`. */
+/** Dispatch a `sportsing fifa <command>` invocation. Args are everything after `fifa`. */
 export async function fifa(args: string[]): Promise<void> {
   const [cmd, ...rest] = args;
   if (!cmd || cmd === "help" || cmd === "--help" || cmd === "-h") return fifaHelp();
@@ -67,7 +67,7 @@ export async function fifa(args: string[]): Promise<void> {
   const route = ROUTES[cmd] ?? ROUTES[ALIASES[cmd] ?? ""];
   if (!route) {
     console.error(c.red(`Unknown fifa command: ${cmd}`));
-    console.error(c.dim("Run `sportsball fifa help` for usage."));
+    console.error(c.dim("Run `sportsing fifa help` for usage."));
     process.exitCode = 1;
     return;
   }
@@ -76,11 +76,11 @@ export async function fifa(args: string[]): Promise<void> {
 
 function fifaHelp(): void {
   const b = c.bold;
-  console.log(`${b(c.cyan("⚽ sportsball fifa"))} — FIFA World Cup 2026
+  console.log(`${b(c.cyan("⚽ sportsing fifa"))} — FIFA World Cup 2026
 
 ${b("USAGE")}
-  sportsball fifa <command> [options]
-  ${c.dim("(during the World Cup, the `fifa` prefix is optional — `sportsball today` works too)")}
+  sportsing fifa <command> [options]
+  ${c.dim("(during the World Cup, the `fifa` prefix is optional — `sportsing today` works too)")}
 
 ${b("COMMANDS")}
   ${c.green("today")}              Matches today  ${c.dim("(--tomorrow, --yesterday, --offset N)")}
@@ -102,7 +102,7 @@ ${b("COMMANDS")}
   ${c.green("predict")} ${c.dim("<team> [team]")} AI prediction of an upcoming match ${c.dim("(--prompt)")}
   ${c.green("recap")}  ${c.dim("<team> [team]")} "Here's what you missed" — AI recap of a match's key events ${c.dim("(--prompt)")}
   ${c.green("agent-setup")}        Set up an agent-driven watch session ${c.dim("(points at /loop agent-setup)")}
-  ${c.green("serve")}              Serve the AI bus from a Claude agent ${c.dim("(use: /loop sportsball serve)")}
+  ${c.green("serve")}              Serve the AI bus from a Claude agent ${c.dim("(use: /loop sportsing serve)")}
   ${c.green("ask")}    ${c.dim("--next|--reply")} Low-level AI-bus plumbing ${c.dim("(serve wraps this)")}
   ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
   ${c.green("me")}                 Dashboard for your favorite teams
@@ -114,26 +114,26 @@ ${b("FILTER")}
 ${b("DATA")}
   Live data: football-data.org (free key, World Cup included).
   Without a key, fixtures fall back to the offline openfootball schedule.
-  Set FOOTBALL_DATA_API_KEY or run ${b("sportsball fifa setup")}.
+  Set FOOTBALL_DATA_API_KEY or run ${b("sportsing fifa setup")}.
 
 ${b("AI (analyze / predict / overlay “Ask Claude”)")}
-  sportsball never spawns a local Claude — an external Claude agent answers.
+  sportsing never spawns a local Claude — an external Claude agent answers.
   Opening a game is NOT enough for "Ask Claude"; it needs a serve loop too.
   ${b("Easiest (blessed) setup — one supervisor loop:")}
-    ${c.dim("/loop agent-setup")}              ${c.dim("# opens the game + answers Ask/catchup (see: sportsball fifa agent-setup)")}
+    ${c.dim("/loop agent-setup")}              ${c.dim("# opens the game + answers Ask/catchup (see: sportsing fifa agent-setup)")}
   ${b("Or compose the two steps yourself:")}
-    ${c.dim("sportsball fifa watch --wait")}   ${c.dim("# (backgrounded) opens the game when live")}
-    ${c.dim("/loop sportsball serve")}          ${c.dim("# answers Ask questions + analyze/predict")}
+    ${c.dim("sportsing fifa watch --wait")}   ${c.dim("# (backgrounded) opens the game when live")}
+    ${c.dim("/loop sportsing serve")}          ${c.dim("# answers Ask questions + analyze/predict")}
   Without an answerer loop, the Ask panel shows “No agent”. The serve loop just
   waits for prompts; each tick prints a question for you to answer + reply.
 
 ${b("EXAMPLES")}
-  sportsball fifa today
-  sportsball fifa next --team USA
-  sportsball fifa table B
-  sportsball fifa fixtures --team Brazil
-  sportsball fifa live
-  sportsball fifa watch --wait              ${c.dim("# wait for the next match, open it live (with stats)")}
-  sportsball fifa watch USA --wait          ${c.dim("# wait for USA's game, open it the moment it's live")}
+  sportsing fifa today
+  sportsing fifa next --team USA
+  sportsing fifa table B
+  sportsing fifa fixtures --team Brazil
+  sportsing fifa live
+  sportsing fifa watch --wait              ${c.dim("# wait for the next match, open it live (with stats)")}
+  sportsing fifa watch USA --wait          ${c.dim("# wait for USA's game, open it the moment it's live")}
 `);
 }

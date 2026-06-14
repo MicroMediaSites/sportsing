@@ -3,7 +3,7 @@ import { getMatches } from "../api.ts";
 import { matchLine, fmtTimeOnly, fmtDayHeader, stageLabel } from "../format.ts";
 import { withFallback, sortByDate, localDateOf, applyMine, noFavoritesHint } from "./_lib.ts";
 
-// `sportsball fifa schedule [--mine]` — the whole tournament in kickoff order,
+// `sportsing fifa schedule [--mine]` — the whole tournament in kickoff order,
 // grouped by local calendar day, times in local time. (`fixtures` groups by
 // stage; this groups by day.)
 export async function schedule(args: string[]) {

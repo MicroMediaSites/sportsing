@@ -2,13 +2,13 @@ import { c } from "../ansi.ts";
 import { findEvent } from "../espn.ts";
 import { openInBrowser } from "../stream.ts";
 
-// `sportsball fifa highlights <team> [team]` — open a YouTube highlights search
+// `sportsing fifa highlights <team> [team]` — open a YouTube highlights search
 // for the team's most recent played match in the default browser. (No clean
 // highlights API exists; a search lands on the official FIFA/broadcaster reels.)
 export async function highlights(args: string[]) {
   const terms = args.filter((a) => !a.startsWith("--"));
   if (terms.length === 0) {
-    console.error(c.red("Usage: sportsball fifa highlights <team> [team]"));
+    console.error(c.red("Usage: sportsing fifa highlights <team> [team]"));
     process.exitCode = 1;
     return;
   }

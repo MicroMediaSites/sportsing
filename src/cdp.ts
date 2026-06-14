@@ -2,7 +2,7 @@
 // page (launched by ui-leaf with `debugPort`, #66) to paint an overlay onto a
 // page we don't control and talk to it live — the way that survives Chrome
 // 149's `--load-extension` lockdown. Hand-rolled (no puppeteer dep) over the
-// CDP websocket; zero runtime deps, same spirit as the rest of sportsball.
+// CDP websocket; zero runtime deps, same spirit as the rest of sportsing.
 
 import { createServer } from "net";
 

@@ -131,7 +131,7 @@ export async function getOpenFootballMatches(): Promise<Match[]> {
     if (!res.ok)
       throw new ApiError(
         res.status,
-        "Could not fetch the offline fixture schedule — network unavailable. Run `sportsball setup` to add a free API key for live data.",
+        "Could not fetch the offline fixture schedule — network unavailable. Run `sportsing setup` to add a free API key for live data.",
       );
     const data = (await res.json()) as any;
     const out: Match[] = [];

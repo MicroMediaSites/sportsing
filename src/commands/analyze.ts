@@ -2,16 +2,16 @@ import { c } from "../ansi.ts";
 import { findEvent, getMatchStats, type EspnEvent, type EspnTeamStats } from "../espn.ts";
 import { postQuestion, waitForAnswer } from "../ask-bus.ts";
 
-// `sportsball fifa analyze <team> [team] [--prompt]` — fetch a match's stats and
-// have an EXTERNAL Claude agent (looping on `sportsball fifa ask`) write a
-// tactical read. sportsball never spawns a local Claude; it posts the prompt to
+// `sportsing fifa analyze <team> [team] [--prompt]` — fetch a match's stats and
+// have an EXTERNAL Claude agent (looping on `sportsing fifa ask`) write a
+// tactical read. sportsing never spawns a local Claude; it posts the prompt to
 // the ask bus and waits. --prompt prints the assembled prompt instead (transparent
 // + testable; also lets you pipe it elsewhere).
 export async function analyze(args: string[]) {
   const promptOnly = args.includes("--prompt");
   const terms = args.filter((a) => !a.startsWith("--"));
   if (terms.length === 0) {
-    console.error(c.red("Usage: sportsball fifa analyze <team> [team] [--prompt]"));
+    console.error(c.red("Usage: sportsing fifa analyze <team> [team] [--prompt]"));
     process.exitCode = 1;
     return;
   }
@@ -35,7 +35,7 @@ export async function analyze(args: string[]) {
   }
 
   process.stderr.write(c.dim("Posted to the ask bus — waiting for your Claude agent to answer…\n"));
-  process.stderr.write(c.dim("(keep one serving:  /loop sportsball serve)\n"));
+  process.stderr.write(c.dim("(keep one serving:  /loop sportsing serve)\n"));
   const id = await postQuestion({
     source: "analyze",
     question: prompt,
@@ -46,7 +46,7 @@ export async function analyze(args: string[]) {
   const analysis = await waitForAnswer(id, 180_000);
   if (analysis === null) {
     console.error(c.yellow("No Claude agent answered within 3 minutes."));
-    console.error(c.dim("Start a serving agent in another Claude session, then retry:  /loop sportsball serve"));
+    console.error(c.dim("Start a serving agent in another Claude session, then retry:  /loop sportsing serve"));
     console.error(c.dim("Or run with --prompt to get the prompt and analyze elsewhere."));
     process.exitCode = 1;
     return;

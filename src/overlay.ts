@@ -117,8 +117,8 @@ const BOOTSTRAP = [
   "    show('sb-pl-events',!!P.events);if(P.events){var ev=d.events||[],eh='<div style=\"color:#8b949e;font-size:11px;margin-bottom:4px\">Live events</div>';if(!ev.length)eh+='<div style=\"color:#8b949e;font-size:11px\">none yet</div>';for(var j=0;j<ev.length;j++){eh+='<div style=\"display:flex;gap:8px;padding:2px 0;font-size:12px\"><span style=\"color:#8b949e;width:2.6rem\">'+esc(ev[j].clock)+'</span><b style=\"width:2.4rem\">'+esc(ev[j].team)+'</b><span style=\"flex:1\">'+esc(ev[j].text||ev[j].type)+'</span></div>';}document.getElementById('sb-pl-events').innerHTML=eh;}",
   "    show('sb-pl-scores',!!P.scores);if(P.scores){var os=d.otherScores||[],sh='<div style=\"color:#8b949e;font-size:11px;margin-bottom:4px\">Other live scores</div>';sh+=matchList(os)||'<div style=\"color:#8b949e;font-size:11px\">no other live matches</div>';document.getElementById('sb-pl-scores').innerHTML=sh;}",
   "    show('sb-pl-h2h',!!P.h2h);",
-  "    show('sb-pl-ask',!!P.ask);if(P.ask){var ast=document.getElementById('sb-ask-status');if(ast){if(d.serving){ast.textContent='\\u25cf Claude agent connected';ast.style.color='#3fb950';}else{ast.textContent='\\u25cb No agent \\u2014 run  /loop sportsball serve  to enable answers';ast.style.color='#d29922';}}}",
-  "    show('sb-pl-catchup',!!P.catchup);if(P.catchup){var cst=document.getElementById('sb-catchup-status');if(cst){if(d.serving){cst.textContent='\\u25cf Claude agent connected';cst.style.color='#3fb950';}else{cst.textContent='\\u25cb No agent \\u2014 run  /loop sportsball serve  to enable recaps';cst.style.color='#d29922';}}}",
+  "    show('sb-pl-ask',!!P.ask);if(P.ask){var ast=document.getElementById('sb-ask-status');if(ast){if(d.serving){ast.textContent='\\u25cf Claude agent connected';ast.style.color='#3fb950';}else{ast.textContent='\\u25cb No agent \\u2014 run  /loop sportsing serve  to enable answers';ast.style.color='#d29922';}}}",
+  "    show('sb-pl-catchup',!!P.catchup);if(P.catchup){var cst=document.getElementById('sb-catchup-status');if(cst){if(d.serving){cst.textContent='\\u25cf Claude agent connected';cst.style.color='#3fb950';}else{cst.textContent='\\u25cb No agent \\u2014 run  /loop sportsing serve  to enable recaps';cst.style.color='#d29922';}}}",
   "    var fr=document.getElementById('sb-fresh');if(fr)fr.textContent=d.at?'⟳ '+d.at:'';},",
   "  result:function(d){mk();var o=document.getElementById('sb-h2h-out');if(!o)return;var g=(d&&d.games)||[];var h='<div style=\"color:#8b949e;font-size:11px;margin-bottom:4px\">Past meetings — '+esc((d&&d.team)||'')+'</div>';if(!g.length)h+='<div style=\"color:#8b949e\">none found</div>';for(var i=0;i<g.length;i++){var col=g[i].result==='W'?'#3fb950':g[i].result==='L'?'#f85149':'#8b949e';h+='<div style=\"display:flex;gap:8px;padding:2px 0;border-bottom:1px solid #21262d\"><span style=\"color:#8b949e;width:5.5rem\">'+esc(g[i].date)+'</span><b style=\"width:2.5rem\">'+esc(g[i].score)+'</b><span style=\"color:'+col+'\">'+esc(g[i].result)+'</span></div>';}o.innerHTML=h;},",
   "  askResult:function(t){mk();var o=document.getElementById('sb-ask-out');if(o)o.textContent=t||'(no response)';},",
@@ -135,16 +135,16 @@ function sides(ev: EspnEvent) {
   };
 }
 
-// The overlay's "Ask Claude" panel. sportsball does NOT run a local Claude —
+// The overlay's "Ask Claude" panel. sportsing does NOT run a local Claude —
 // instead it posts the viewer's question (plus the current live state) to the
 // ask bus and waits for an EXTERNAL Claude agent (one the user keeps looping on
-// `sportsball fifa ask`) to answer. The answer is capped short for the panel.
+// `sportsing fifa ask`) to answer. The answer is capped short for the panel.
 async function askViaBus(ev: EspnEvent, question: string): Promise<string> {
   // Fail fast (and instructively) if nobody is serving the bus — otherwise the
   // question would just sit until the 2-min timeout. This is the common gotcha:
   // opening the stream does NOT start an answerer.
   if (!(await isServing())) {
-    return "No Claude agent is serving. In a Claude session, run:  /loop sportsball serve  — then ask again.";
+    return "No Claude agent is serving. In a Claude session, run:  /loop sportsing serve  — then ask again.";
   }
   const live = await getLiveMatch(ev.id).catch(() => null);
   const ctx = live
@@ -180,10 +180,10 @@ async function askViaBus(ev: EspnEvent, question: string): Promise<string> {
     hint: "Reply in ≤40 words, plain text, no markdown — it renders in a small overlay panel.",
     maxChars: 280,
   });
-  // Generous window — a human-paced serving agent (sportsball fifa serve) needs
+  // Generous window — a human-paced serving agent (sportsing fifa serve) needs
   // time to read, think, and reply; 30s was too tight and dropped questions.
   const answer = await waitForAnswer(id, 120_000);
-  return answer ?? "No Claude agent answered (waited 2 min). Keep one serving:  /loop sportsball serve";
+  return answer ?? "No Claude agent answered (waited 2 min). Keep one serving:  /loop sportsing serve";
 }
 
 async function todaySnapshot(): Promise<Record<string, unknown>> {
@@ -384,8 +384,8 @@ export async function runOverlayStream(
   // Nag about it ONLY when nobody is serving — opening the stream is not enough.
   if (!(await isServing())) {
     console.log(c.yellow('💬 The overlay\'s "Ask Claude" / "Get caught up" need an answerer, or they show "No agent". In a Claude session, run either:'));
-    console.log("     " + c.bold("/loop agent-setup") + c.dim("   — the blessed setup (see: sportsball fifa agent-setup)"));
-    console.log("     " + c.bold("/loop sportsball serve") + c.dim("   — the answerer loop on its own"));
+    console.log("     " + c.bold("/loop agent-setup") + c.dim("   — the blessed setup (see: sportsing fifa agent-setup)"));
+    console.log("     " + c.bold("/loop sportsing serve") + c.dim("   — the answerer loop on its own"));
   }
 
   let session: CdpSession | undefined;

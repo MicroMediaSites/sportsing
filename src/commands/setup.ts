@@ -2,10 +2,10 @@ import { c } from "../ansi.ts";
 import { setApiKey, getApiKey, CONFIG_FILE } from "../config.ts";
 
 export async function setup(args: string[]) {
-  // Non-interactive: `sportsball setup <key>`
+  // Non-interactive: `sportsing setup <key>`
   const inline = args.find((a) => !a.startsWith("--"));
 
-  console.log(c.bold(c.cyan("⚽ sportsball setup")));
+  console.log(c.bold(c.cyan("⚽ sportsing setup")));
   console.log(
     "\nLive data comes from " +
       c.underline("football-data.org") +
@@ -36,5 +36,5 @@ export async function setup(args: string[]) {
   console.log(c.green("ok ✓"));
   await setApiKey(key);
   console.log(c.dim(`Saved to ${CONFIG_FILE}`));
-  console.log("\nTry: " + c.bold("sportsball today") + " · " + c.bold("sportsball next") + " · " + c.bold("sportsball bracket"));
+  console.log("\nTry: " + c.bold("sportsing today") + " · " + c.bold("sportsing next") + " · " + c.bold("sportsing bracket"));
 }

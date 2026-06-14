@@ -21,12 +21,12 @@ function ev(kind: MatchEvent["kind"], matchId: number): MatchEvent {
   return { kind, matchId, fixture: "USA vs England", home: "USA", away: "ENG", score: { home: 0, away: 0 } };
 }
 
-const EXE = "/usr/local/bin/sportsball";
+const EXE = "/usr/local/bin/sportsing";
 
 test("kickoff for a fav match → `<exe> fifa watch <fav>`, targeting the favourite team", () => {
   const matches = [mk(1, "IN_PLAY", "USA", "England")];
   const cmd = kickoffWatchCommand(ev("kickoff", 1), matches, ["USA"], EXE);
-  expect(cmd).toBe(`'/usr/local/bin/sportsball' fifa watch 'USA'`);
+  expect(cmd).toBe(`'/usr/local/bin/sportsing' fifa watch 'USA'`);
 });
 
 test("the favourite is chosen even when it's the away side", () => {
@@ -53,5 +53,5 @@ test("no command when no favourite matches the kickoff's teams", () => {
 test("team and exe with an apostrophe are POSIX-escaped (no shell injection)", () => {
   const matches = [mk(1, "IN_PLAY", "Côte d'Ivoire", "Brazil")];
   const cmd = kickoffWatchCommand(ev("kickoff", 1), matches, ["Côte d'Ivoire"], EXE);
-  expect(cmd).toBe(`'/usr/local/bin/sportsball' fifa watch 'Côte d'\\''Ivoire'`);
+  expect(cmd).toBe(`'/usr/local/bin/sportsing' fifa watch 'Côte d'\\''Ivoire'`);
 });

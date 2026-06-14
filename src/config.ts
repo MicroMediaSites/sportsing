@@ -2,9 +2,14 @@ import { homedir } from "os";
 import { join } from "path";
 import { mkdir, chmod } from "fs/promises";
 
-const CONFIG_DIR = join(homedir(), ".config", "sportsball");
+const CONFIG_DIR = join(homedir(), ".config", "sportsing");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
-export const CACHE_DIR = join(homedir(), ".cache", "sportsball");
+export const CACHE_DIR = join(homedir(), ".cache", "sportsing");
+
+// Pre-rebrand location (was `sportsball`). Read as a one-time fallback so existing
+// favorites / API key survive the rename; the next writeConfig() persists forward
+// to CONFIG_FILE. Cache (bus/pidfile/ESPN) is ephemeral, so it isn't migrated.
+const LEGACY_CONFIG_FILE = join(homedir(), ".config", "sportsball", "config.json");
 
 interface Config {
   apiKey?: string;
@@ -35,7 +40,12 @@ async function readConfig(): Promise<Config> {
   try {
     return await Bun.file(CONFIG_FILE).json();
   } catch {
-    return {};
+    try {
+      // One-time fallback to the pre-rebrand config; writeConfig migrates it forward.
+      return await Bun.file(LEGACY_CONFIG_FILE).json();
+    } catch {
+      return {};
+    }
   }
 }
 

@@ -13,22 +13,22 @@ const SPORTS: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
 
 function help() {
   const b = c.bold;
-  console.log(`${b(c.cyan("⚽ sportsball"))} — sports in your terminal  ${c.dim("v" + VERSION)}
+  console.log(`${b(c.cyan("⚽ sportsing"))} — sports in your terminal  ${c.dim("v" + VERSION)}
 
 ${b("USAGE")}
-  sportsball <sport> <command> [options]
+  sportsing <sport> <command> [options]
 
 ${b("SPORTS")}
-  ${c.green("fifa")}               FIFA World Cup 2026 ${c.dim("— sportsball fifa help")}
+  ${c.green("fifa")}               FIFA World Cup 2026 ${c.dim("— sportsing fifa help")}
 
 ${b("NOTE")}
   During the World Cup, the ${b("fifa")} prefix is optional —
-  ${c.dim("sportsball today")} is shorthand for ${c.dim("sportsball fifa today")}.
+  ${c.dim("sportsing today")} is shorthand for ${c.dim("sportsing fifa today")}.
 
 ${b("EXAMPLES")}
-  sportsball fifa today
-  sportsball fifa next --team USA
-  sportsball today              ${c.dim("(= sportsball fifa today)")}
+  sportsing fifa today
+  sportsing fifa next --team USA
+  sportsing today              ${c.dim("(= sportsing fifa today)")}
 `);
 }
 
@@ -37,19 +37,19 @@ async function dispatch(): Promise<void> {
 
   if (!first || first === "help" || first === "--help" || first === "-h") return help();
   if (first === "--version" || first === "-v") {
-    console.log("sportsball " + VERSION);
+    console.log("sportsing " + VERSION);
     return;
   }
 
-  // Explicit sport namespace: `sportsball fifa <command>`.
+  // Explicit sport namespace: `sportsing fifa <command>`.
   const sport = SPORTS[first];
   if (sport) {
     await sport(rest);
     return;
   }
 
-  // Back-compat: while FIFA is the only sport, a bare `sportsball <command>`
-  // runs as a FIFA command (`sportsball today` == `sportsball fifa today`).
+  // Back-compat: while FIFA is the only sport, a bare `sportsing <command>`
+  // runs as a FIFA command (`sportsing today` == `sportsing fifa today`).
   // An unknown token surfaces as "Unknown fifa command". Delete this line when
   // a second sport lands so bare commands require an explicit sport prefix.
   await fifa([first, ...rest]);

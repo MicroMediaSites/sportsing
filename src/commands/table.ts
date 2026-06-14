@@ -11,7 +11,7 @@ export async function table(args: string[]) {
   } catch (e) {
     if (e instanceof NoKeyError) {
       console.error(
-        c.yellow("Group tables need live data. Run `sportsball setup` to add a free API key."),
+        c.yellow("Group tables need live data. Run `sportsing setup` to add a free API key."),
       );
       return;
     }

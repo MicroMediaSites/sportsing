@@ -1,7 +1,7 @@
 import { c } from "../ansi.ts";
 import { getFavorites, addFavorite, removeFavorite } from "../config.ts";
 
-// `sportsball fifa fav [add|rm|list] [team]` — manage favorite teams.
+// `sportsing fifa fav [add|rm|list] [team]` — manage favorite teams.
 // Team names are free-text (e.g. "USA", "Brazil") matched case-insensitively
 // elsewhere; multi-word names work unquoted ("fav add South Korea").
 export async function fav(args: string[]): Promise<void> {
@@ -34,7 +34,7 @@ export async function fav(args: string[]): Promise<void> {
 
 function printList(favorites: string[]): void {
   if (favorites.length === 0) {
-    console.log(c.dim("No favorite teams yet. Add one: ") + c.bold("sportsball fifa fav add USA"));
+    console.log(c.dim("No favorite teams yet. Add one: ") + c.bold("sportsing fifa fav add USA"));
     return;
   }
   console.log(c.bold(c.cyan("★ Favorite teams")));
@@ -42,6 +42,6 @@ function printList(favorites: string[]): void {
 }
 
 function usage(form: string): void {
-  console.error(c.red(`Usage: sportsball fifa ${form}`));
+  console.error(c.red(`Usage: sportsing fifa ${form}`));
   process.exitCode = 1;
 }

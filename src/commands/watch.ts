@@ -7,11 +7,11 @@ import { freePort, attachToPage } from "../cdp.ts";
 import { writeWatchPidfile } from "../liveness.ts";
 import { getFlag } from "./_lib.ts";
 
-// `sportsball fifa watch [team] [team] [--wait] [--provider peacock|fubo] [--url <link>] [--overlay] [--lang english|spanish]`
+// `sportsing fifa watch [team] [team] [--wait] [--provider peacock|fubo] [--url <link>] [--overlay] [--lang english|spanish]`
 // Opens the broadcast in a persistent-profile Chrome window via ui-leaf.
 //   --wait      block until the match is live, then open it (deep-links to the
 //               game with the overlay). With no team, waits for the NEXT match —
-//               i.e. `sportsball fifa watch --wait` = "open the next game when it
+//               i.e. `sportsing fifa watch --wait` = "open the next game when it
 //               goes live". Polls ESPN's state (the prompt live signal), not the
 //               lagging football-data feed behind `live`.
 //   --url       jump straight to a specific game link (skips the hub)
@@ -93,7 +93,7 @@ export async function watch(args: string[]) {
   // --overlay needs a resolved match (for the panel's stats + head-to-head).
   if (overlay) {
     if (terms.length === 0) {
-      console.error(c.red("Usage: sportsball fifa watch <team> [team] --overlay [--provider] [--url]   (or add --wait to wait for the next game)"));
+      console.error(c.red("Usage: sportsing fifa watch <team> [team] --overlay [--provider] [--url]   (or add --wait to wait for the next game)"));
       process.exitCode = 1;
       return;
     }
@@ -115,8 +115,8 @@ export async function watch(args: string[]) {
   }
 
   if (terms.length === 0) {
-    console.error(c.red("Usage: sportsball fifa watch <team> [team] [--wait] [--provider peacock|fubo] [--url <link>] [--overlay] [--lang english|spanish] [--smoke] [--supervised]"));
-    console.error(c.dim("For a hands-off agent-driven session (open the game + answer Ask Claude / catchup), use  /loop agent-setup  — see  sportsball fifa agent-setup"));
+    console.error(c.red("Usage: sportsing fifa watch <team> [team] [--wait] [--provider peacock|fubo] [--url <link>] [--overlay] [--lang english|spanish] [--smoke] [--supervised]"));
+    console.error(c.dim("For a hands-off agent-driven session (open the game + answer Ask Claude / catchup), use  /loop agent-setup  — see  sportsing fifa agent-setup"));
     process.exitCode = 1;
     return;
   }

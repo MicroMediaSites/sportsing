@@ -3,7 +3,7 @@ import { getMatches } from "../api.ts";
 import { groupName } from "../format.ts";
 import { withFallback, getFlag } from "./_lib.ts";
 
-// `sportsball fifa teams [--group A] [--json]` — the teams in the tournament,
+// `sportsing fifa teams [--group A] [--json]` — the teams in the tournament,
 // grouped by group. Derived from the fixture list (so it works with or without
 // an API key), keyed by name; group + TLA filled in from group-stage matches.
 interface TeamInfo {

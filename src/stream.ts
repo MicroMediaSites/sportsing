@@ -17,7 +17,7 @@ import { c } from "./ansi.ts";
 /** Persistent Chrome profile path for a provider — one per provider so logins
  *  don't collide and two providers can run concurrently. */
 export function profileDir(provider: string): string {
-  return join(homedir(), ".config", "sportsball", "chrome-" + provider.trim().toLowerCase());
+  return join(homedir(), ".config", "sportsing", "chrome-" + provider.trim().toLowerCase());
 }
 
 /**
@@ -86,7 +86,7 @@ export async function spawnStreamWindow(
 
   // Embed the view + write it to a temp viewsRoot at launch, so this works from
   // the compiled binary (no views/ dir to ship alongside it).
-  const viewsRoot = await mkdtemp(join(tmpdir(), "sportsball-stream-"));
+  const viewsRoot = await mkdtemp(join(tmpdir(), "sportsing-stream-"));
   await writeFile(join(viewsRoot, "stream.tsx"), REDIRECT_VIEW);
   const dir = profileDir(label);
   await mkdir(dir, { recursive: true });
