@@ -19,6 +19,7 @@ import { bracket } from "../commands/bracket.ts";
 import { next } from "../commands/next.ts";
 import { scorers } from "../commands/scorers.ts";
 import { live } from "../commands/live.ts";
+import { recap } from "../commands/recap.ts";
 import { setup } from "../commands/setup.ts";
 import { fav } from "../commands/fav.ts";
 import { me } from "../commands/me.ts";
@@ -36,6 +37,7 @@ const ROUTES: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   stats,
   analyze,
   predict,
+  recap,
   ask,
   serve,
   watch,
@@ -96,6 +98,7 @@ ${b("COMMANDS")}
   ${c.green("stats")}  ${c.dim("<team> [team]")} Match statistics ${c.dim("(--json)")}
   ${c.green("analyze")} ${c.dim("<team> [team]")} AI tactical read of a match ${c.dim("(--prompt)")}
   ${c.green("predict")} ${c.dim("<team> [team]")} AI prediction of an upcoming match ${c.dim("(--prompt)")}
+  ${c.green("recap")}  ${c.dim("<team> [team]")} "Here's what you missed" — AI recap of a match's key events ${c.dim("(--prompt)")}
   ${c.green("serve")}              Serve the AI bus from a Claude agent ${c.dim("(use: /loop sportsball serve)")}
   ${c.green("ask")}    ${c.dim("--next|--reply")} Low-level AI-bus plumbing ${c.dim("(serve wraps this)")}
   ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams

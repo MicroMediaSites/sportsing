@@ -20,7 +20,7 @@ const Q_PREFIX = "q-";
 const A_PREFIX = "a-";
 const STALE_MS = 5 * 60_000; // a question nobody answered in 5 min is abandoned
 
-export type AskSource = "overlay" | "analyze" | "predict";
+export type AskSource = "overlay" | "analyze" | "predict" | "catchup";
 
 export interface AskQuestion {
   id: string;
