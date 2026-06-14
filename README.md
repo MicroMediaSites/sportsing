@@ -2,8 +2,9 @@
 
 Sports in your terminal — the FIFA World Cup 2026 schedule, favorites, live
 scores, **ambient fav-alerts**, browser streaming, highlights, stats, and AI
-analysis. No npm dependencies; ships as a self-contained [Bun](https://bun.sh)
-binary.
+analysis. Runs on [Bun](https://bun.sh); its one runtime dependency,
+[ui-leaf](https://www.npmjs.com/package/@openthink/ui-leaf), powers the
+browser-streaming window and is installed (with its native binary) automatically.
 
 ```
 sportsing fifa today
@@ -14,12 +15,20 @@ sportsing today              # the `fifa` prefix is optional during the World Cu
 ## Install
 
 ```sh
-bun install                 # dev deps (TypeScript, types)
+bun install                 # deps: ui-leaf (+ its browser binary) and dev types
 bun run build               # compiles a standalone binary → dist/sportsing
 ```
 
-Then run `./dist/sportsing …`, or put it on your `PATH`. For live data, add a
-free [football-data.org](https://www.football-data.org) API key:
+Then run `./dist/sportsing …`, or put it on your `PATH`.
+
+> **Streaming from the compiled binary.** `bun run build` produces a single
+> file, but it can't embed ui-leaf's ~64MB native browser binary. Running from
+> source (`bun run src/index.ts …`) or installing from npm resolves that binary
+> automatically; for the standalone `dist/sportsing`, point streaming at an
+> installed copy with `UI_LEAF_BINARY_PATH=/path/to/ui-leaf-bin`. Everything
+> except the `watch` browser window works with no binary present.
+
+For live data, add a free [football-data.org](https://www.football-data.org) API key:
 
 ```sh
 sportsing fifa setup       # paste your key (or set FOOTBALL_DATA_API_KEY)

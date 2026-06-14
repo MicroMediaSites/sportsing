@@ -9,6 +9,12 @@ on:
 permissions:
   contents: read
 
+# CI never launches the browser, so skip ui-leaf's postinstall binary download
+# (a ~64MB GitHub-release fetch that exit(1)s on failure — it would otherwise be
+# a network flake away from breaking every run).
+env:
+  UI_LEAF_SKIP_DOWNLOAD: "1"
+
 jobs:
   check:
     runs-on: ubuntu-latest

@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "sportsball",
+      "dependencies": {
+        "@openthink/ui-leaf": "^1.5.1",
+      },
       "devDependencies": {
         "@types/node": "^25.9.2",
         "bun-types": "^1.3.14",
@@ -11,7 +14,12 @@
       },
     },
   },
+  "trustedDependencies": [
+    "@openthink/ui-leaf",
+  ],
   "packages": {
+    "@openthink/ui-leaf": ["@openthink/ui-leaf@1.5.1", "", { "bin": { "ui-leaf": "bin/ui-leaf" } }, "sha512-gG90lCpG2PkyJNawN5zj/ouWdXrOndMvwFKfdzS+74GXuZNEQSEKscUIy0RwXgDaQSjLxfXziXk59qYRPeBCEg=="],
+
     "@types/node": ["@types/node@25.9.3", "", { "dependencies": { "undici-types": ">=7.24.0 <7.24.7" } }, "sha512-603BddQMv3pUcr4U2dhujk83N2tTDVr/34wII2B6bJy6g+8WD6yUb11jszNs0gdi4PesVWl7ABt8nYMVpnLUcg=="],
 
     "bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],

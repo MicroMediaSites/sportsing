@@ -15,6 +15,12 @@ permissions:
   contents: read
   id-token: write # required for OIDC trusted publishing + provenance
 
+# The publish job builds/tests but never launches the browser — skip ui-leaf's
+# postinstall binary download (it has no bearing on the published package, which
+# keeps its ui-leaf dependency so end users fetch the binary at their install).
+env:
+  UI_LEAF_SKIP_DOWNLOAD: "1"
+
 jobs:
   publish:
     runs-on: ubuntu-latest
