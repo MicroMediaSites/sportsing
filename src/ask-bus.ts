@@ -11,7 +11,7 @@
 // Files are written atomically (.tmp + rename) so a watcher never reads a
 // partial file. The waiting caller deletes both once it has the answer.
 
-import { mkdir, readdir, readFile, writeFile, rename, unlink } from "fs/promises";
+import { mkdir, readdir, readFile, writeFile, rename, unlink, chmod } from "fs/promises";
 import { join } from "path";
 import { CACHE_DIR } from "./config.ts";
 
@@ -36,8 +36,14 @@ export interface AskQuestion {
   ts: number;
 }
 
+// The bus carries untrusted viewer questions and the answers an agent posts
+// back; both can contain free text. Keep the whole mailbox owner-only (0700) so
+// nothing on a shared machine can read or tamper with in-flight Q&A.
 async function ensureDir(): Promise<void> {
-  await mkdir(BUS_DIR, { recursive: true });
+  await mkdir(BUS_DIR, { recursive: true, mode: 0o700 });
+  // mkdir's mode is masked by umask and a no-op if the dir already exists, so
+  // assert 0700 explicitly (best-effort — a foreign-owned dir just stays as-is).
+  await chmod(BUS_DIR, 0o700).catch(() => {});
 }
 
 const ID_RE = /^ask_[a-z0-9]+$/;
@@ -60,7 +66,7 @@ const HEARTBEAT_FILE = join(BUS_DIR, ".serving");
  *  would otherwise just time out. */
 export async function touchHeartbeat(): Promise<void> {
   await ensureDir();
-  await writeFile(HEARTBEAT_FILE, String(Date.now())).catch(() => {});
+  await writeFile(HEARTBEAT_FILE, String(Date.now()), { mode: 0o600 }).catch(() => {});
 }
 
 /** True if a serving agent refreshed the heartbeat within `maxAgeMs` (default
@@ -76,7 +82,7 @@ export async function isServing(maxAgeMs = 90_000): Promise<boolean> {
 
 async function writeJsonAtomic(path: string, data: unknown): Promise<void> {
   const tmp = path + ".tmp";
-  await writeFile(tmp, JSON.stringify(data));
+  await writeFile(tmp, JSON.stringify(data), { mode: 0o600 });
   await rename(tmp, path); // atomic on the same filesystem
 }
 
