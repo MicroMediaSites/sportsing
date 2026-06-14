@@ -56,6 +56,11 @@ function involvesTeam(m: Match, needle: string): boolean {
  * Only matches involving a favourite team are considered. A match must appear in
  * both snapshots (keyed by id) to diff a transition; brand-new entries are skipped
  * until there is a prior state to compare against. Pure and order-stable.
+ *
+ * Polling-model caveat: at most one `goal` event is emitted per side per tick.
+ * If a side's count jumps by more than one between polls (a multi-goal burst in
+ * one interval), it collapses to a single event carrying the resulting scoreline —
+ * the intermediate goals are not reconstructable from two snapshots.
  */
 export function diffEvents(prev: Match[], cur: Match[], favorites: string[]): MatchEvent[] {
   const favs = favorites.map((f) => f.trim().toLowerCase()).filter(Boolean);
