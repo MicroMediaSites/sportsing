@@ -41,7 +41,7 @@ const ROUTES: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   recap,
   ask,
   serve,
-  "agent-setup": () => agentSetup(),
+  "agent-setup": agentSetup,
   watch,
   highlights,
   live,

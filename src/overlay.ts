@@ -370,9 +370,9 @@ export async function runOverlayStream(
   // The "Ask Claude" panel needs an external answerer (no local claude is spawned).
   // Nag about it ONLY when nobody is serving — opening the stream is not enough.
   if (!(await isServing())) {
-    console.log(c.yellow('💬 The overlay\'s "Ask Claude" / "Get caught up" need an answerer. In a Claude session, run:'));
+    console.log(c.yellow('💬 The overlay\'s "Ask Claude" / "Get caught up" need an answerer, or they show "No agent". In a Claude session, run either:'));
     console.log("     " + c.bold("/loop agent-setup") + c.dim("   — the blessed setup (see: sportsball fifa agent-setup)"));
-    console.log("     " + c.dim("or just ") + c.bold("/loop sportsball serve") + c.dim('   — until you do, Ask shows "No agent".'));
+    console.log("     " + c.bold("/loop sportsball serve") + c.dim("   — the answerer loop on its own"));
   }
 
   let session: CdpSession | undefined;
