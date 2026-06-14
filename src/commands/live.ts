@@ -1,7 +1,7 @@
 import { c } from "../ansi.ts";
 import { getMatches, NoKeyError } from "../api.ts";
 import { matchLine, fmtTimeOnly, stageLabel } from "../format.ts";
-import { ymd, addDays, localDateOf, sortByDate, noFavoritesHint } from "./_lib.ts";
+import { ymd, addDays, localDateOf, sortByDate } from "./_lib.ts";
 import { getFavorites } from "../config.ts";
 import { diffEvents, type MatchEvent } from "../events.ts";
 import { notify } from "../notify.ts";
@@ -11,6 +11,15 @@ const REFRESH_MS = 60_000; // free tier note: scores are delayed; 60s is plenty.
 
 export async function live(args: string[] = []) {
   const wantNotify = args.includes("--notify");
+  const wantQuiet = args.includes("--quiet");
+
+  // --quiet is only meaningful as an ambient alerter — it suppresses the screen
+  // UI, so without --notify it would do nothing visible at all.
+  if (wantQuiet && !wantNotify) {
+    console.error(c.yellow("--quiet only makes sense with --notify (it hides the live view)."));
+    console.error(c.dim("Try: sportsball fifa live --notify --quiet &"));
+    return;
+  }
 
   // Quick key check before entering the loop.
   try {
@@ -28,10 +37,18 @@ export async function live(args: string[] = []) {
     favorites = await getFavorites();
     if (favorites.length === 0) {
       // --notify with no favourites would silently never alert; say so once.
+      // All on stderr so --quiet keeps stdout clean for backgrounding.
       console.error(c.yellow("--notify is on but you have no favorite teams — you won't get alerts."));
-      noFavoritesHint();
+      console.error(c.dim("Add one with ") + c.bold("sportsball fifa fav add USA") + c.dim(" to get alerts."));
       console.error("");
     }
+  }
+
+  // In quiet mode there's no screen UI, so print one startup line (to stderr, so
+  // stdout stays clean for backgrounding) confirming the alerter is running.
+  if (wantQuiet) {
+    const who = favorites.length ? favorites.join(", ") : "no favorites set";
+    console.error(c.dim(`Favorite-team alerts running (${who}) — Ctrl-C to stop.`));
   }
 
   // Previous tick's full snapshot of today's matches, for fav-event diffing.
@@ -49,34 +66,39 @@ export async function live(args: string[] = []) {
       20_000,
     );
     const matches = raw.filter((m) => localDateOf(m.utcDate) === today);
-    const live = matches.filter((m) => m.status === "IN_PLAY" || m.status === "PAUSED");
-    const upcoming = matches
-      .filter((m) => m.status === "TIMED" || m.status === "SCHEDULED")
-      .sort(sortByDate);
-    const done = matches.filter((m) => m.status === "FINISHED");
 
-    process.stdout.write("\x1b[2J\x1b[H"); // clear + home
-    console.log(c.bold(c.cyan("⚽ World Cup 2026 — LIVE")) + c.dim(`   ${new Date().toLocaleTimeString()}`));
-    console.log(c.dim("Refreshing every 60s · Ctrl-C to quit\n"));
+    // Full-screen scoreboard — skipped in --quiet so the command can be
+    // backgrounded without alt-screen clears corrupting the parent shell.
+    if (!wantQuiet) {
+      const live = matches.filter((m) => m.status === "IN_PLAY" || m.status === "PAUSED");
+      const upcoming = matches
+        .filter((m) => m.status === "TIMED" || m.status === "SCHEDULED")
+        .sort(sortByDate);
+      const done = matches.filter((m) => m.status === "FINISHED");
 
-    if (live.length) {
-      console.log(c.bold(c.green("● LIVE NOW")));
-      for (const m of live.sort(sortByDate)) console.log("  " + matchLine(m) + stageTag(m));
-      console.log();
-    } else {
-      console.log(c.dim("No matches in play right now.\n"));
-    }
+      process.stdout.write("\x1b[2J\x1b[H"); // clear + home
+      console.log(c.bold(c.cyan("⚽ World Cup 2026 — LIVE")) + c.dim(`   ${new Date().toLocaleTimeString()}`));
+      console.log(c.dim("Refreshing every 60s · Ctrl-C to quit\n"));
 
-    if (upcoming.length) {
-      console.log(c.bold("Later today"));
-      for (const m of upcoming.slice(0, 6))
-        console.log(`  ${c.cyan(fmtTimeOnly(m.utcDate).padEnd(8))} ${matchLine(m)}`);
-      if (upcoming.length > 6) console.log(c.dim(`  … and ${upcoming.length - 6} more`));
-      console.log();
-    }
-    if (done.length) {
-      console.log(c.bold(c.dim("Finished today")));
-      for (const m of done.sort(sortByDate)) console.log("  " + matchLine(m));
+      if (live.length) {
+        console.log(c.bold(c.green("● LIVE NOW")));
+        for (const m of live.sort(sortByDate)) console.log("  " + matchLine(m) + stageTag(m));
+        console.log();
+      } else {
+        console.log(c.dim("No matches in play right now.\n"));
+      }
+
+      if (upcoming.length) {
+        console.log(c.bold("Later today"));
+        for (const m of upcoming.slice(0, 6))
+          console.log(`  ${c.cyan(fmtTimeOnly(m.utcDate).padEnd(8))} ${matchLine(m)}`);
+        if (upcoming.length > 6) console.log(c.dim(`  … and ${upcoming.length - 6} more`));
+        console.log();
+      }
+      if (done.length) {
+        console.log(c.bold(c.dim("Finished today")));
+        for (const m of done.sort(sortByDate)) console.log("  " + matchLine(m));
+      }
     }
 
     if (wantNotify) {
