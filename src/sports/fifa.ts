@@ -40,7 +40,7 @@ const ROUTES: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   serve,
   watch,
   highlights,
-  live: () => live(),
+  live,
   fav,
   me,
   setup,
@@ -81,7 +81,7 @@ ${b("USAGE")}
 ${b("COMMANDS")}
   ${c.green("today")}              Matches today  ${c.dim("(--tomorrow, --yesterday, --offset N)")}
   ${c.green("next")}   ${c.dim("[--team X]")} Next upcoming match + countdown
-  ${c.green("live")}               Auto-refreshing live scoreboard
+  ${c.green("live")}   ${c.dim("[--notify]")}  Auto-refreshing live scoreboard ${c.dim("(--notify: OS alerts for fav events)")}
   ${c.green("watch")}  ${c.dim("[team]")}      Open the broadcast ${c.dim("(--wait, --overlay, --provider, --url)")}
          ${c.dim("--wait blocks until the game is live then opens it; no team = the next game")}
   ${c.green("highlights")} ${c.dim("<team>")}   Open a highlights search in your browser

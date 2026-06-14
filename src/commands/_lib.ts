@@ -1,7 +1,13 @@
 import { c } from "../ansi.ts";
 import { NoKeyError, getOpenFootballMatches } from "../api.ts";
 import { getFavorites } from "../config.ts";
+import { matchHasTeam } from "../match-util.ts";
 import type { Match } from "../types.ts";
+
+// Re-exported so existing `from "./_lib.ts"` importers (next/fixtures/me) keep
+// working; the canonical definition now lives in src/match-util.ts so pure
+// modules (events.ts) can share it without depending on the command layer.
+export { matchHasTeam };
 
 export function ymd(d = new Date()): string {
   // Local calendar date (not UTC) so "today" matches the user's wall clock.
@@ -61,19 +67,6 @@ export function getFlag(args: string[], flag: string): string | null {
     throw new Error(`Flag ${flag} requires a value.`);
   }
   return val;
-}
-
-/** True if either side of the match matches `needle` (lowercased) by name/tla/shortName. */
-export function matchHasTeam(m: Match, needle: string): boolean {
-  const fields = [
-    m.homeTeam.name,
-    m.homeTeam.tla,
-    m.homeTeam.shortName,
-    m.awayTeam.name,
-    m.awayTeam.tla,
-    m.awayTeam.shortName,
-  ];
-  return fields.some((f) => f?.toLowerCase().includes(needle));
 }
 
 /**

@@ -1,12 +1,17 @@
 import { c } from "../ansi.ts";
 import { getMatches, NoKeyError } from "../api.ts";
 import { matchLine, fmtTimeOnly, stageLabel } from "../format.ts";
-import { ymd, addDays, localDateOf, sortByDate } from "./_lib.ts";
+import { ymd, addDays, localDateOf, sortByDate, noFavoritesHint } from "./_lib.ts";
+import { getFavorites } from "../config.ts";
+import { diffEvents, type MatchEvent } from "../events.ts";
+import { notify } from "../notify.ts";
 import type { Match } from "../types.ts";
 
 const REFRESH_MS = 60_000; // free tier note: scores are delayed; 60s is plenty.
 
-export async function live() {
+export async function live(args: string[] = []) {
+  const wantNotify = args.includes("--notify");
+
   // Quick key check before entering the loop.
   try {
     await getMatches({ status: "IN_PLAY" }, 0);
@@ -17,6 +22,22 @@ export async function live() {
     }
     throw e;
   }
+
+  let favorites: string[] = [];
+  if (wantNotify) {
+    favorites = await getFavorites();
+    if (favorites.length === 0) {
+      // --notify with no favourites would silently never alert; say so once.
+      console.error(c.yellow("--notify is on but you have no favorite teams — you won't get alerts."));
+      noFavoritesHint();
+      console.error("");
+    }
+  }
+
+  // Previous tick's full snapshot of today's matches, for fav-event diffing.
+  // diffEvents only emits transitions between prev→cur, so an event fires once
+  // and never re-alerts on a later unchanged tick (AGT-507 idempotency).
+  let prevSnapshot: Match[] = [];
 
   const tick = async () => {
     const now = new Date();
@@ -57,6 +78,17 @@ export async function live() {
       console.log(c.bold(c.dim("Finished today")));
       for (const m of done.sort(sortByDate)) console.log("  " + matchLine(m));
     }
+
+    if (wantNotify) {
+      // Diff this snapshot against the previous tick's and alert on new fav
+      // events. The first tick has an empty prevSnapshot, so it only establishes
+      // a baseline (a match already in play when you start raises no kickoff).
+      for (const e of diffEvents(prevSnapshot, matches, favorites)) {
+        const { title, body } = formatEvent(e);
+        notify(title, body, { group: `sportsball-${e.matchId}`, sound: e.kind === "goal" });
+      }
+      prevSnapshot = matches;
+    }
   };
 
   await tick();
@@ -70,4 +102,19 @@ export async function live() {
 
 function stageTag(m: Match): string {
   return c.dim("  " + stageLabel(m));
+}
+
+/** Notification title + body for a fav match event. */
+function formatEvent(e: MatchEvent): { title: string; body: string } {
+  const scoreline = `${e.home} ${e.score.home}–${e.score.away} ${e.away}`;
+  switch (e.kind) {
+    case "kickoff":
+      return { title: "⚽ Kickoff", body: `${e.fixture} has kicked off` };
+    case "goal": {
+      const scorer = e.scoringSide === "home" ? e.home : e.away;
+      return { title: `⚽ GOAL — ${scorer}`, body: scoreline };
+    }
+    case "full-time":
+      return { title: "Full time", body: scoreline };
+  }
 }
