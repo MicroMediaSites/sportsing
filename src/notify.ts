@@ -14,9 +14,9 @@
 export interface NotifyOptions {
   /** Smaller line shown under the title (macOS only). */
   subtitle?: string;
-  /** Play a sound: `true` for the default, or a named system sound (e.g. "Ping"). */
+  /** Play a sound: `true` for the default, or a named system sound (e.g. "Ping"). macOS only. */
   sound?: boolean | string;
-  /** Collapse repeated alerts: notifications sharing a group replace each other. */
+  /** Collapse repeated alerts: notifications sharing a group replace each other. macOS + terminal-notifier only. */
   group?: string;
   /** Shell command run when the notification is clicked. macOS + terminal-notifier only. */
   onClick?: string;
@@ -24,14 +24,16 @@ export interface NotifyOptions {
 
 export type NotifyBackend = "terminal-notifier" | "osascript" | "notify-send" | "bell";
 
-/** Which notifier backend `notify` would use right now, given the requested options. */
-export function notifierBackend(opts: NotifyOptions = {}): NotifyBackend {
+/**
+ * Which notifier backend `notify` would use right now. On macOS, prefer
+ * terminal-notifier (the only backend that supports `onClick` via -execute);
+ * when it's absent, osascript still raises the notification but silently drops
+ * any click action. Callers that need click support can check for the
+ * "terminal-notifier" result before relying on `onClick`.
+ */
+export function notifierBackend(): NotifyBackend {
   if (process.platform === "darwin") {
-    // -execute (on-click) is terminal-notifier-only; osascript can't do it.
     if (Bun.which("terminal-notifier")) return "terminal-notifier";
-    if (!opts.onClick && Bun.which("osascript")) return "osascript";
-    // terminal-notifier absent but a click action was requested → osascript
-    // still raises the (non-clickable) notification rather than dropping to a bell.
     if (Bun.which("osascript")) return "osascript";
   } else if (process.platform === "linux") {
     if (Bun.which("notify-send")) return "notify-send";
@@ -57,7 +59,7 @@ function spawnQuiet(cmd: string[]): void {
  * no notifier binary was available and a terminal bell was emitted instead. Never throws.
  */
 export function notify(title: string, body: string, opts: NotifyOptions = {}): NotifyBackend {
-  const backend = notifierBackend(opts);
+  const backend = notifierBackend();
 
   if (backend === "terminal-notifier") {
     const cmd = ["terminal-notifier", "-title", title, "-message", body];
