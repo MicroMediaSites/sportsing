@@ -215,10 +215,7 @@ async function todaySnapshot(): Promise<Record<string, unknown>> {
 // a program-details page with a "Watch live" CTA, others (Peacock) go straight
 // to the player — so click a Watch/Play CTA if present and finish once a
 // <video> is actually playing. Returns true once routed (best-effort).
-async function tryDeepLink(session: CdpSession, ev: EspnEvent, lang: WatchLang = "english"): Promise<boolean> {
-  // lang is the wanted broadcast language; the tile-scorer (AGT-543) will bias
-  // toward the matching airing and the post-landing check (AGT-544) warns on a
-  // mismatch. Threaded here now so those can read it without re-plumbing.
+async function tryDeepLink(session: CdpSession, ev: EspnEvent): Promise<boolean> {
   const { home, away } = sides(ev);
   const A = searchTerms(home?.name ?? "", home?.abbreviation ?? "");
   const B = searchTerms(away?.name ?? "", away?.abbreviation ?? "");
@@ -363,6 +360,13 @@ export async function runOverlayStream(
   console.log(c.bold(c.cyan(`⚽ Opening ${label} with live overlay`)) + c.dim(`  ${url}`));
   console.log(c.dim("Just a floating ⚙ by default — click it to open settings, pick panels, and sync the delay. Drag the gear, settings, and stats windows anywhere."));
 
+  // A non-default language is accepted and carried, but the language-biased
+  // deep-link (tile-scorer + post-landing warning) isn't wired yet — be honest
+  // rather than silently opening the default airing. Wired by AGT-543/AGT-544.
+  if (lang !== "english") {
+    console.log(c.yellow(`--lang ${lang} noted, but language-biased game selection isn't enabled yet — opening the standard airing for now.`));
+  }
+
   // The "Ask Claude" panel needs an external answerer (no local claude is spawned).
   // Nag about it ONLY when nobody is serving — opening the stream is not enough.
   if (!(await isServing())) {
@@ -386,7 +390,7 @@ export async function runOverlayStream(
   // Dynamically open the game: find its tile on the hub and click it (the SPA
   // routes to the match). Fire-and-forget — the title poll then follows it.
   if (session && opts.deepLink) {
-    void tryDeepLink(session, ev, lang).then((ok) => {
+    void tryDeepLink(session, ev).then((ok) => {
       if (!ok) console.log(c.dim(`Couldn't auto-open the game — open ${ev.name} in ${label} and the overlay will follow.`));
     });
   }
@@ -566,7 +570,7 @@ export async function runOverlayStream(
           renderDelayed();
         } else if (msg.fn === "watch") {
           const target = msg.id ? ((await getEvents()).find((e) => e.id === String(msg.id)) ?? currentEv) : currentEv;
-          void tryDeepLink(session!, target, lang);
+          void tryDeepLink(session!, target);
         } else if (msg.fn === "pref" && typeof msg.key === "string") {
           panels = { ...panels, [msg.key]: !!msg.on };
           await setOverlayPanel(providerKey, msg.key, !!msg.on);
