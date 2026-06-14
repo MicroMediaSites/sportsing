@@ -92,6 +92,7 @@ export async function watch(args: string[]) {
 
   if (terms.length === 0) {
     console.error(c.red("Usage: sportsball fifa watch <team> [team] [--wait] [--provider peacock|fubo] [--url <link>] [--overlay] [--lang english|spanish]"));
+    console.error(c.dim("For a hands-off agent-driven session (open the game + answer Ask Claude / catchup), use  /loop agent-setup  — see  sportsball fifa agent-setup"));
     process.exitCode = 1;
     return;
   }
