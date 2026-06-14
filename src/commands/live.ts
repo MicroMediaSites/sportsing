@@ -18,7 +18,7 @@ export async function live(args: string[] = []) {
   // UI, so without --notify it would do nothing visible at all.
   if (wantQuiet && !wantNotify) {
     console.error(c.yellow("--quiet only makes sense with --notify (it hides the live view)."));
-    console.error(c.dim("Try: sportsball fifa live --notify --quiet &"));
+    console.error(c.dim("Try: sportsing fifa live --notify --quiet &"));
     return;
   }
 
@@ -27,7 +27,7 @@ export async function live(args: string[] = []) {
     await getMatches({ status: "IN_PLAY" }, 0);
   } catch (e) {
     if (e instanceof NoKeyError) {
-      console.error(c.yellow("Live scores need an API key. Run `sportsball setup` first."));
+      console.error(c.yellow("Live scores need an API key. Run `sportsing setup` first."));
       return;
     }
     throw e;
@@ -40,7 +40,7 @@ export async function live(args: string[] = []) {
       // --notify with no favourites would silently never alert; say so once.
       // All on stderr so --quiet keeps stdout clean for backgrounding.
       console.error(c.yellow("--notify is on but you have no favorite teams — you won't get alerts."));
-      console.error(c.dim("Add one with ") + c.bold("sportsball fifa fav add USA") + c.dim(" to get alerts."));
+      console.error(c.dim("Add one with ") + c.bold("sportsing fifa fav add USA") + c.dim(" to get alerts."));
       console.error("");
     }
   }
@@ -111,10 +111,10 @@ export async function live(args: string[] = []) {
         // Kickoff alerts are click-to-watch: clicking launches `watch <fav team>`
         // (terminal-notifier -execute). notify() degrades to a plain, non-clickable
         // notification when terminal-notifier is absent. Goal/full-time stay informational.
-        // process.execPath is the sportsball binary when distributed (compiled); under
+        // process.execPath is the sportsing binary when distributed (compiled); under
         // `bun run` dev it's the Bun runtime, so the click command only works compiled.
         const onClick = kickoffWatchCommand(e, matches, favorites, process.execPath);
-        notify(title, body, { group: `sportsball-${e.matchId}`, sound: e.kind === "goal", onClick });
+        notify(title, body, { group: `sportsing-${e.matchId}`, sound: e.kind === "goal", onClick });
       }
       prevSnapshot = matches;
     }

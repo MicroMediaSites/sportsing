@@ -1,10 +1,10 @@
 {
-  "name": "sportsball",
+  "name": "sportsing",
   "version": "0.1.0",
-  "description": "Sportsball — the FIFA World Cup 2026 in your terminal: schedule, favorites, live scores, ambient fav-alerts, browser streaming, highlights, stats, and AI analysis.",
+  "description": "Sportsing — the FIFA World Cup 2026 in your terminal: schedule, favorites, live scores, ambient fav-alerts, browser streaming, highlights, stats, and AI analysis.",
   "type": "module",
   "bin": {
-    "sportsball": "src/index.ts"
+    "sportsing": "src/index.ts"
   },
   "files": [
     "src",
@@ -17,18 +17,18 @@
   },
   "scripts": {
     "start": "bun run src/index.ts",
-    "build": "bun build src/index.ts --compile --outfile dist/sportsball",
+    "build": "bun build src/index.ts --compile --outfile dist/sportsing",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MicroMediaSites/sportsball.git"
+    "url": "git+https://github.com/MicroMediaSites/sportsing.git"
   },
   "bugs": {
-    "url": "https://github.com/MicroMediaSites/sportsball/issues"
+    "url": "https://github.com/MicroMediaSites/sportsing/issues"
   },
-  "homepage": "https://github.com/MicroMediaSites/sportsball#readme",
+  "homepage": "https://github.com/MicroMediaSites/sportsing#readme",
   "keywords": [
     "fifa",
     "world-cup",

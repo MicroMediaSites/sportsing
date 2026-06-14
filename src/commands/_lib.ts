@@ -43,7 +43,7 @@ export async function withFallback<T>(
       console.error(
         c.yellow(
           "No API key set — showing the offline schedule (no live scores/tables).\n" +
-            "Run `sportsball setup` for live data.",
+            "Run `sportsing setup` for live data.",
         ) + "\n",
       );
       const matches = await getOpenFootballMatches();
@@ -84,5 +84,5 @@ export async function applyMine(matches: Match[], args: string[]): Promise<Match
 
 /** Shared message for `--mine` with no favorites configured. */
 export function noFavoritesHint(): void {
-  console.log(c.dim("No favorite teams yet — add one with ") + c.bold("sportsball fifa fav add USA"));
+  console.log(c.dim("No favorite teams yet — add one with ") + c.bold("sportsing fifa fav add USA"));
 }

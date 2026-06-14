@@ -1,9 +1,9 @@
 name: Publish to npm
 
-# Publishes `sportsball` to npm when a GitHub Release is published.
+# Publishes `sportsing` to npm when a GitHub Release is published.
 # Uses npm TRUSTED PUBLISHING (OIDC) — no NPM_TOKEN secret. Configure the trusted
 # publisher once on npmjs.com (package → Settings → Trusted Publisher) pointing at
-# repo `MicroMediaSites/sportsball` and workflow `publish.yml`. Provenance is
+# repo `MicroMediaSites/sportsing` and workflow `publish.yml`. Provenance is
 # attested from this public repo build.
 
 on:

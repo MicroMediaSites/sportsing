@@ -1,4 +1,4 @@
-# ⚽ sportsball
+# ⚽ sportsing
 
 Sports in your terminal — the FIFA World Cup 2026 schedule, favorites, live
 scores, **ambient fav-alerts**, browser streaming, highlights, stats, and AI
@@ -6,23 +6,23 @@ analysis. No npm dependencies; ships as a self-contained [Bun](https://bun.sh)
 binary.
 
 ```
-sportsball fifa today
-sportsball fifa next --team USA
-sportsball today              # the `fifa` prefix is optional during the World Cup
+sportsing fifa today
+sportsing fifa next --team USA
+sportsing today              # the `fifa` prefix is optional during the World Cup
 ```
 
 ## Install
 
 ```sh
 bun install                 # dev deps (TypeScript, types)
-bun run build               # compiles a standalone binary → dist/sportsball
+bun run build               # compiles a standalone binary → dist/sportsing
 ```
 
-Then run `./dist/sportsball …`, or put it on your `PATH`. For live data, add a
+Then run `./dist/sportsing …`, or put it on your `PATH`. For live data, add a
 free [football-data.org](https://www.football-data.org) API key:
 
 ```sh
-sportsball fifa setup       # paste your key (or set FOOTBALL_DATA_API_KEY)
+sportsing fifa setup       # paste your key (or set FOOTBALL_DATA_API_KEY)
 ```
 
 Without a key, fixtures fall back to the offline openfootball schedule (no live
@@ -30,7 +30,7 @@ scores or tables).
 
 ## Commands
 
-`sportsball fifa <command>` (or just `sportsball <command>` during the Cup):
+`sportsing fifa <command>` (or just `sportsing <command>` during the Cup):
 
 | Command | What it does |
 |---|---|
@@ -46,12 +46,12 @@ scores or tables).
 | `fav [add\|rm\|list]` / `me` | Manage favorite teams / your dashboard |
 | `setup [key]` | Add your football-data.org API key |
 
-Run `sportsball fifa help` for the full list (`serve` and `ask` are the AI-bus
+Run `sportsing fifa help` for the full list (`serve` and `ask` are the AI-bus
 commands; `ask` is low-level plumbing that `serve` wraps).
 
 ## Watch
 
-`sportsball fifa watch [team] [team]` opens the broadcast in your own browser
+`sportsing fifa watch [team] [team]` opens the broadcast in your own browser
 (your real Chrome, via [ui-leaf](https://www.npmjs.com/package/@openthink/ui-leaf)):
 
 - **`--wait`** — block until the match goes live, then open it (deep-linked to the
@@ -85,9 +85,9 @@ yourself (see the **AI** section below).
 Turn `live` into an ambient alerter that pings you when your favorite teams play:
 
 ```sh
-sportsball fifa fav add USA                 # set up favorites first
-sportsball fifa live --notify               # live board + OS notifications
-sportsball fifa live --notify --quiet &     # headless: alerts only, backgroundable
+sportsing fifa fav add USA                 # set up favorites first
+sportsing fifa live --notify               # live board + OS notifications
+sportsing fifa live --notify --quiet &     # headless: alerts only, backgroundable
 ```
 
 Each refresh diffs the latest scores against the previous tick and raises an OS
@@ -95,7 +95,7 @@ notification for every **new** favorite-team event — so each kickoff, goal, an
 full-time alerts exactly once:
 
 - **Kickoff** — *click the notification to start watching* (launches
-  `sportsball fifa watch <team>` for that match).
+  `sportsing fifa watch <team>` for that match).
 - **Goal** — the scorer and the resulting scoreline (with a sound).
 - **Full time** — the final scoreline.
 
@@ -124,7 +124,7 @@ behavior without `terminal-notifier`.
 
 ## AI (analyze / predict / overlay "Ask Claude" + "Get caught up")
 
-sportsball never spawns a local model. AI features route to an **external** Claude
+sportsing never spawns a local model. AI features route to an **external** Claude
 agent over a file bus — opening a game is **not** enough; something must be serving
 the bus or the overlay's Ask Claude / Get caught up panels show "○ No agent".
 
@@ -139,8 +139,8 @@ In a Claude session, drop in:
 One supervisor loop that **is** the whole setup: it opens your game and keeps that
 `watch --wait` window alive (relaunching it if it dies), and it serves the bus so
 **Ask Claude** and **Get caught up** (catchup) are actually answered — by that
-Claude session itself (no local model is ever spawned). `sportsball fifa agent-setup`
-prints this recipe; `sportsball fifa` and the watch nag point at it.
+Claude session itself (no local model is ever spawned). `sportsing fifa agent-setup`
+prints this recipe; `sportsing fifa` and the watch nag point at it.
 
 > **The cost, honestly:** the loop consumes that Claude session as the always-on
 > answerer for as long as it runs — that's the trade you're choosing. Stop the loop
@@ -149,19 +149,19 @@ prints this recipe; `sportsball fifa` and the watch nag point at it.
 
 ### Low-level primitive — `serve`
 
-`sportsball fifa serve` is the bare answerer loop (it powers `analyze` / `predict`
+`sportsing fifa serve` is the bare answerer loop (it powers `analyze` / `predict`
 too). `agent-setup` supersedes the old manual two-step for the agent-driven flow,
 but `serve` remains the primitive if you want to compose it yourself:
 
 ```sh
-sportsball fifa watch --wait    # (backgrounded) opens the game when it's live
-/loop sportsball serve          # answer-only loop — no watch supervision
+sportsing fifa watch --wait    # (backgrounded) opens the game when it's live
+/loop sportsing serve          # answer-only loop — no watch supervision
 ```
 
 > **Run the answerer in a minimal-tool session.** Whether via `agent-setup` or
 > `serve`, the loop reads **untrusted** text (viewer questions + raw API fields)
 > into a tool-capable Claude session. Give that session no MCP/file tools and only
-> the `sportsball ask --reply` Bash capability, so a prompt-injection in a question
+> the `sportsing ask --reply` Bash capability, so a prompt-injection in a question
 > can't reach anything dangerous. `serve` prints this reminder each tick.
 
 ## Development

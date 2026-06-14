@@ -5,7 +5,7 @@ import { withFallback, sortByDate, matchHasTeam, noFavoritesHint } from "./_lib.
 import { matchLine, relativeTime } from "../format.ts";
 import type { Match, StandingsTable } from "../types.ts";
 
-// `sportsball fifa me` — a personalized dashboard for your favorite teams:
+// `sportsing fifa me` — a personalized dashboard for your favorite teams:
 // last result, next match + countdown, and current group position.
 export async function me(_args: string[]): Promise<void> {
   const favorites = await getFavorites();

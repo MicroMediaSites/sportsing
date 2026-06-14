@@ -1,7 +1,7 @@
 // Liveness primitive for a running `watch --wait`: a pidfile so a supervisor
 // (the agent-setup --check status + the /loop agent-setup skill) can tell whether
 // the watcher is alive and restart it after a silent death. Zero-dep — plain fs
-// over the sportsball cache dir.
+// over the sportsing cache dir.
 
 import { mkdirSync, writeFileSync, unlinkSync, readFileSync } from "fs";
 import { dirname, join } from "path";
@@ -9,7 +9,7 @@ import { CACHE_DIR } from "./config.ts";
 
 /** Stable, documented pidfile path for a `watch --wait` process. Other commands
  *  (e.g. `agent-setup --check`) locate the watcher here without guessing:
- *  `~/.cache/sportsball/watch-wait.pid` (CACHE_DIR/watch-wait.pid). */
+ *  `~/.cache/sportsing/watch-wait.pid` (CACHE_DIR/watch-wait.pid). */
 export const WATCH_PIDFILE = join(CACHE_DIR, "watch-wait.pid");
 
 /** True if `pid` names a process that currently exists. Uses signal 0, which does

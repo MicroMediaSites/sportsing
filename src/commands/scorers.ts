@@ -8,7 +8,7 @@ export async function scorers() {
     list = (await getScorers()).scorers;
   } catch (e) {
     if (e instanceof NoKeyError) {
-      console.error(c.yellow("Top scorers need live data. Run `sportsball setup` to add a free API key."));
+      console.error(c.yellow("Top scorers need live data. Run `sportsing setup` to add a free API key."));
       return;
     }
     throw e;

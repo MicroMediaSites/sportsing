@@ -4,7 +4,7 @@ import { matchLine, fmtDayHeader, stageLabel } from "../format.ts";
 import { withFallback, localDateOf, applyMine, noFavoritesHint } from "./_lib.ts";
 import type { Match } from "../types.ts";
 
-// `sportsball fifa results [--mine]` — finished games, newest first, grouped by
+// `sportsing fifa results [--mine]` — finished games, newest first, grouped by
 // local day. (Scores need an API key; the keyless schedule has no results.)
 export async function results(args: string[]) {
   const fetched = await withFallback(
@@ -21,7 +21,7 @@ export async function results(args: string[]) {
 
   console.log(c.bold(c.cyan(`⚽ World Cup 2026 — Results (${matches.length})`)));
   if (matches.length === 0) {
-    console.log(c.dim("\nNo finished matches yet.") + c.dim(" (Live scores need an API key — run `sportsball fifa setup`.)"));
+    console.log(c.dim("\nNo finished matches yet.") + c.dim(" (Live scores need an API key — run `sportsing fifa setup`.)"));
     return;
   }
 

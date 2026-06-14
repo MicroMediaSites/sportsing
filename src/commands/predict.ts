@@ -2,10 +2,10 @@ import { c } from "../ansi.ts";
 import { getEvents, type EspnEvent, type EspnCompetitor } from "../espn.ts";
 import { postQuestion, waitForAnswer } from "../ask-bus.ts";
 
-// `sportsball fifa predict <team> [team] [--prompt]` — resolve an upcoming match,
+// `sportsing fifa predict <team> [team] [--prompt]` — resolve an upcoming match,
 // gather both teams' tournament form so far, and have an EXTERNAL Claude agent
-// (looping on `sportsball fifa ask`) predict a scoreline + outcome with rationale.
-// sportsball never spawns a local Claude; it posts to the ask bus and waits.
+// (looping on `sportsing fifa ask`) predict a scoreline + outcome with rationale.
+// sportsing never spawns a local Claude; it posts to the ask bus and waits.
 // --prompt prints the prompt instead.
 
 interface FormGame {
@@ -19,7 +19,7 @@ export async function predict(args: string[]) {
   const promptOnly = args.includes("--prompt");
   const terms = args.filter((a) => !a.startsWith("--")).map((t) => t.toLowerCase());
   if (terms.length === 0) {
-    console.error(c.red("Usage: sportsball fifa predict <team> [team] [--prompt]"));
+    console.error(c.red("Usage: sportsing fifa predict <team> [team] [--prompt]"));
     process.exitCode = 1;
     return;
   }
@@ -48,7 +48,7 @@ export async function predict(args: string[]) {
   }
 
   process.stderr.write(c.dim("Posted to the ask bus — waiting for your Claude agent to answer…\n"));
-  process.stderr.write(c.dim("(keep one serving:  /loop sportsball serve)\n"));
+  process.stderr.write(c.dim("(keep one serving:  /loop sportsing serve)\n"));
   const id = await postQuestion({
     source: "predict",
     question: prompt,
@@ -59,7 +59,7 @@ export async function predict(args: string[]) {
   const prediction = await waitForAnswer(id, 180_000);
   if (prediction === null) {
     console.error(c.yellow("No Claude agent answered within 3 minutes."));
-    console.error(c.dim("Start a serving agent in another Claude session, then retry:  /loop sportsball serve"));
+    console.error(c.dim("Start a serving agent in another Claude session, then retry:  /loop sportsing serve"));
     console.error(c.dim("Or run with --prompt to predict elsewhere."));
     process.exitCode = 1;
     return;

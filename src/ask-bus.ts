@@ -1,11 +1,11 @@
-// The "ask bus" — a file-based mailbox that bridges sportsball's AI features to
-// an EXTERNAL Claude agent the user keeps running. sportsball NEVER spawns
+// The "ask bus" — a file-based mailbox that bridges sportsing's AI features to
+// an EXTERNAL Claude agent the user keeps running. sportsing NEVER spawns
 // `claude -p` or an agent-sdk call; instead it posts a question to this bus, and
-// a separate Claude session (looping `sportsball fifa ask --next`) picks it up,
+// a separate Claude session (looping `sportsing fifa ask --next`) picks it up,
 // answers succinctly, and posts the answer back. The overlay / analyze / predict
 // caller waits for the answer and renders it.
 //
-// Protocol (in ~/.cache/sportsball/ask/):
+// Protocol (in ~/.cache/sportsing/ask/):
 //   q-<id>.json  — a question (written by the caller, read by the agent)
 //   a-<id>.json  — its answer (written by the agent, read by the caller)
 // Files are written atomically (.tmp + rename) so a watcher never reads a

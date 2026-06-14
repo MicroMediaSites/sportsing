@@ -3,16 +3,16 @@ import { findCurrentMatch, getLiveMatch } from "../espn.ts";
 import { isServing } from "../ask-bus.ts";
 import { buildRecapPrompt, hasNotableEvents, requestRecap, type RecapInput } from "../recap.ts";
 
-// `sportsball fifa recap <team> [team] [--prompt]` — a "here's what you missed"
+// `sportsing fifa recap <team> [team] [--prompt]` — a "here's what you missed"
 // narrative for a match you're joining mid-stream. Like analyze/predict, the
 // narrative is written by an EXTERNAL Claude agent over the ask bus (no local
-// model is ever spawned); sportsball only fences the key events + score and
+// model is ever spawned); sportsing only fences the key events + score and
 // relays. --prompt prints the assembled prompt instead of posting it.
 export async function recap(args: string[]): Promise<void> {
   const promptOnly = args.includes("--prompt");
   const terms = args.filter((a) => !a.startsWith("--"));
   if (terms.length === 0) {
-    console.error(c.red("Usage: sportsball fifa recap <team> [team] [--prompt]"));
+    console.error(c.red("Usage: sportsing fifa recap <team> [team] [--prompt]"));
     process.exitCode = 1;
     return;
   }

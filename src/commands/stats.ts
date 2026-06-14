@@ -1,7 +1,7 @@
 import { c } from "../ansi.ts";
 import { findEvent, getMatchStats, type EspnTeamStats } from "../espn.ts";
 
-// `sportsball fifa stats <team> [team] [--json]` — per-match statistics
+// `sportsing fifa stats <team> [team] [--json]` — per-match statistics
 // (possession, shots, passes, cards…) from ESPN. Resolves the most recent
 // played match for the given team(s). --json emits the raw structured data
 // for a Claude agent to analyze.
@@ -27,7 +27,7 @@ export async function stats(args: string[]) {
   const json = args.includes("--json");
   const terms = args.filter((a) => !a.startsWith("--"));
   if (terms.length === 0) {
-    console.error(c.red("Usage: sportsball fifa stats <team> [team] [--json]"));
+    console.error(c.red("Usage: sportsing fifa stats <team> [team] [--json]"));
     process.exitCode = 1;
     return;
   }

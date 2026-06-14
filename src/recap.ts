@@ -2,7 +2,7 @@
 // into a short narrative — but it NEVER runs a model in-process. Like analyze /
 // predict, it packages the events as a `catchup` request on the ask bus and an
 // external Claude agent (a running `serve` loop) answers it. Zero `claude -p`,
-// zero agent-sdk: sportsball only fences the data and relays.
+// zero agent-sdk: sportsing only fences the data and relays.
 
 import { postQuestion, waitForAnswer, isServing } from "./ask-bus.ts";
 
@@ -89,7 +89,7 @@ export async function requestRecap(
     return {
       ok: false,
       reason: "no-agent",
-      message: "No Claude agent is serving — start one in another session:  /loop sportsball serve",
+      message: "No Claude agent is serving — start one in another session:  /loop sportsing serve",
     };
   }
   const id = await postQuestion({
@@ -104,7 +104,7 @@ export async function requestRecap(
     return {
       ok: false,
       reason: "timeout",
-      message: "No Claude agent answered in time — keep one serving:  /loop sportsball serve",
+      message: "No Claude agent answered in time — keep one serving:  /loop sportsing serve",
     };
   }
   return { ok: true, recap };

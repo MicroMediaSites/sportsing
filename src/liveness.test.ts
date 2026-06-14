@@ -18,6 +18,6 @@ test("pidAlive: invalid PIDs (<=0, non-integer) are not alive", () => {
 });
 
 test("WATCH_PIDFILE is a stable, locatable path under the cache dir", () => {
-  expect(WATCH_PIDFILE).toContain("sportsball");
+  expect(WATCH_PIDFILE).toContain("sportsing");
   expect(WATCH_PIDFILE.endsWith("watch-wait.pid")).toBe(true);
 });
