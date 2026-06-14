@@ -1,7 +1,7 @@
 {
   "name": "sportsing",
   "version": "0.1.0",
-  "description": "Sportsball — the FIFA World Cup 2026 in your terminal: schedule, favorites, live scores, ambient fav-alerts, browser streaming, highlights, stats, and AI analysis.",
+  "description": "Sportsing — the FIFA World Cup 2026 in your terminal: schedule, favorites, live scores, ambient fav-alerts, browser streaming, highlights, stats, and AI analysis.",
   "type": "module",
   "bin": {
     "sportsing": "src/index.ts"

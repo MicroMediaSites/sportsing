@@ -11,13 +11,20 @@
 import { homedir, tmpdir } from "os";
 import { join } from "path";
 import { mkdtemp, writeFile, mkdir } from "fs/promises";
-import { rmSync } from "fs";
+import { rmSync, existsSync } from "fs";
 import { c } from "./ansi.ts";
 
 /** Persistent Chrome profile path for a provider — one per provider so logins
- *  don't collide and two providers can run concurrently. */
+ *  don't collide and two providers can run concurrently. New profiles live under
+ *  sportsing/, but if a pre-rebrand profile already exists we keep using it IN
+ *  PLACE: it holds the provider's login cookies, and moving/copying a live Chrome
+ *  profile is unsafe (Singleton locks) and would force re-authentication. */
 export function profileDir(provider: string): string {
-  return join(homedir(), ".config", "sportsing", "chrome-" + provider.trim().toLowerCase());
+  const key = provider.trim().toLowerCase();
+  const current = join(homedir(), ".config", "sportsing", "chrome-" + key);
+  const legacy = join(homedir(), ".config", "sportsball", "chrome-" + key);
+  if (!existsSync(current) && existsSync(legacy)) return legacy;
+  return current;
 }
 
 /**
