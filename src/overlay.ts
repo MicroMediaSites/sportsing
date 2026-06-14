@@ -15,6 +15,11 @@ import { detectFromTitle, searchTerms } from "./match-detect.ts";
 import { postQuestion, waitForAnswer, isServing } from "./ask-bus.ts";
 import { requestRecap, type RecapInput, type RecapEvent } from "./recap.ts";
 
+/** Preferred broadcast language for providers (Fubo) that carry both a Fox
+ *  (English) and Telemundo (Spanish) airing of the same match. Consumed by the
+ *  deep-link tile-scorer (AGT-543) and the post-landing warning (AGT-544). */
+export type WatchLang = "english" | "spanish";
+
 const BOOTSTRAP = [
   "(function(){",
   "if(window.__sbInit)return;window.__sbInit=true;",
@@ -210,7 +215,10 @@ async function todaySnapshot(): Promise<Record<string, unknown>> {
 // a program-details page with a "Watch live" CTA, others (Peacock) go straight
 // to the player — so click a Watch/Play CTA if present and finish once a
 // <video> is actually playing. Returns true once routed (best-effort).
-async function tryDeepLink(session: CdpSession, ev: EspnEvent): Promise<boolean> {
+async function tryDeepLink(session: CdpSession, ev: EspnEvent, lang: WatchLang = "english"): Promise<boolean> {
+  // lang is the wanted broadcast language; the tile-scorer (AGT-543) will bias
+  // toward the matching airing and the post-landing check (AGT-544) warns on a
+  // mismatch. Threaded here now so those can read it without re-plumbing.
   const { home, away } = sides(ev);
   const A = searchTerms(home?.name ?? "", home?.abbreviation ?? "");
   const B = searchTerms(away?.name ?? "", away?.abbreviation ?? "");
@@ -341,9 +349,10 @@ export async function runOverlayStream(
   url: string,
   label: string,
   ev: EspnEvent,
-  opts: { deepLink?: boolean; windowSize?: { width: number; height: number } } = {},
+  opts: { deepLink?: boolean; windowSize?: { width: number; height: number }; lang?: WatchLang } = {},
 ): Promise<void> {
   const providerKey = label.toLowerCase();
+  const lang: WatchLang = opts.lang ?? "english";
   const port = await freePort();
   const win = await spawnStreamWindow(url, label, { debugPort: port, windowSize: opts.windowSize });
   if (!win) {
@@ -377,7 +386,7 @@ export async function runOverlayStream(
   // Dynamically open the game: find its tile on the hub and click it (the SPA
   // routes to the match). Fire-and-forget — the title poll then follows it.
   if (session && opts.deepLink) {
-    void tryDeepLink(session, ev).then((ok) => {
+    void tryDeepLink(session, ev, lang).then((ok) => {
       if (!ok) console.log(c.dim(`Couldn't auto-open the game — open ${ev.name} in ${label} and the overlay will follow.`));
     });
   }
@@ -557,7 +566,7 @@ export async function runOverlayStream(
           renderDelayed();
         } else if (msg.fn === "watch") {
           const target = msg.id ? ((await getEvents()).find((e) => e.id === String(msg.id)) ?? currentEv) : currentEv;
-          void tryDeepLink(session!, target);
+          void tryDeepLink(session!, target, lang);
         } else if (msg.fn === "pref" && typeof msg.key === "string") {
           panels = { ...panels, [msg.key]: !!msg.on };
           await setOverlayPanel(providerKey, msg.key, !!msg.on);

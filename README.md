@@ -61,6 +61,9 @@ commands; `ask` is low-level plumbing that `serve` wraps).
 - **`--provider peacock|fubo`** — override the configured default (Fubo by default;
   Peacock is Spanish/Telemundo).
 - **`--url <link>`** — jump straight to a specific game link, skipping the hub.
+- **`--lang english|spanish`** — preferred broadcast language (default `english`).
+  Biases deep-linking on providers that carry both airings (Fubo = Fox/English +
+  Telemundo/Spanish); Peacock is Spanish-only.
 
 ## Live fav-alerts
 
