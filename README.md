@@ -158,6 +158,12 @@ sportsball fifa watch --wait    # (backgrounded) opens the game when it's live
 /loop sportsball serve          # answer-only loop — no watch supervision
 ```
 
+> **Run the answerer in a minimal-tool session.** Whether via `agent-setup` or
+> `serve`, the loop reads **untrusted** text (viewer questions + raw API fields)
+> into a tool-capable Claude session. Give that session no MCP/file tools and only
+> the `sportsball ask --reply` Bash capability, so a prompt-injection in a question
+> can't reach anything dangerous. `serve` prints this reminder each tick.
+
 ## Development
 
 This is a stamp-governed repo — read [`AGENTS.md`](./AGENTS.md) before any git

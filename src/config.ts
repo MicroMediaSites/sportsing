@@ -1,6 +1,6 @@
 import { homedir } from "os";
 import { join } from "path";
-import { mkdir } from "fs/promises";
+import { mkdir, chmod } from "fs/promises";
 
 const CONFIG_DIR = join(homedir(), ".config", "sportsball");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
@@ -42,6 +42,9 @@ async function readConfig(): Promise<Config> {
 async function writeConfig(cfg: Config): Promise<void> {
   await mkdir(CONFIG_DIR, { recursive: true });
   await Bun.write(CONFIG_FILE, JSON.stringify(cfg, null, 2) + "\n");
+  // The config holds the user's football-data.org API key — keep it owner-only
+  // (0600) so other local users can't read it. Best-effort (no-op on Windows).
+  await chmod(CONFIG_FILE, 0o600).catch(() => {});
 }
 
 /** Resolve the football-data.org API key from env or config file. */

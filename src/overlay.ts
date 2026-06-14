@@ -25,7 +25,10 @@ const BOOTSTRAP = [
   "if(window.__sbInit)return;window.__sbInit=true;",
   "var D=" + JSON.stringify(OVERLAY_PANEL_DEFAULTS) + ";", // panel defaults — single source of truth (config.ts)
   "var PANELS=[['score','Score & clock'],['stats','Possession / shots'],['winprob','Win-probability breakdown'],['odds','Odds line'],['h2h','Head-to-head'],['events','Live events'],['scores','Other live scores'],['ask','Ask Claude'],['catchup','Get caught up']];",
-  "function esc(s){var d=document.createElement('div');d.appendChild(document.createTextNode(String(s==null?'':s)));return d.innerHTML;}",
+  // HTML-escape AND quote-escape: textContent→innerHTML handles <>&, but these
+  // values are also interpolated into double-quoted attributes (e.g. data-watch),
+  // so escape \" and ' too — API-controlled fields (ids) must not break out of an attr.
+  "function esc(s){var d=document.createElement('div');d.appendChild(document.createTextNode(String(s==null?'':s)));return d.innerHTML.replace(/\"/g,'&quot;').replace(/'/g,'&#39;');}",
   "function row(label,a,b){return '<div style=\"display:flex;justify-content:space-between;margin-top:3px\"><span>'+esc(a)+'</span><span style=\"color:#8b949e\">'+label+'</span><span>'+esc(b)+'</span></div>';}",
   // One outcome row for the win-probability breakdown: a colour dot + label on
   // the left, the percentage right-aligned. (The old layout reused row(), whose
