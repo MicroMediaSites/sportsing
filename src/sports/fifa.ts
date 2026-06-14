@@ -81,7 +81,7 @@ ${b("USAGE")}
 ${b("COMMANDS")}
   ${c.green("today")}              Matches today  ${c.dim("(--tomorrow, --yesterday, --offset N)")}
   ${c.green("next")}   ${c.dim("[--team X]")} Next upcoming match + countdown
-  ${c.green("live")}   ${c.dim("[--notify]")}  Auto-refreshing live scoreboard ${c.dim("(--notify: OS alerts for fav events)")}
+  ${c.green("live")} ${c.dim("[--notify [--quiet]]")} Live scoreboard ${c.dim("(--notify: OS alerts for fav events; --quiet: headless backgroundable alerter)")}
   ${c.green("watch")}  ${c.dim("[team]")}      Open the broadcast ${c.dim("(--wait, --overlay, --provider, --url)")}
          ${c.dim("--wait blocks until the game is live then opens it; no team = the next game")}
   ${c.green("highlights")} ${c.dim("<team>")}   Open a highlights search in your browser
