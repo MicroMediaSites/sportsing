@@ -1,8 +1,9 @@
 import { c } from "../ansi.ts";
 import { findCurrentMatch, resolveWatchTarget, type EspnEvent } from "../espn.ts";
 import { getStreamProvider } from "../config.ts";
-import { PROVIDERS, launchStream } from "../stream.ts";
+import { PROVIDERS, launchStream, spawnStreamWindow } from "../stream.ts";
 import { runOverlayStream, type WatchLang } from "../overlay.ts";
+import { freePort, attachToPage } from "../cdp.ts";
 import { writeWatchPidfile } from "../liveness.ts";
 import { getFlag } from "./_lib.ts";
 
@@ -54,6 +55,21 @@ export async function watch(args: string[]) {
     return;
   }
 
+  // `watch` opens a window and BLOCKS until you close it (or Ctrl-C). With no
+  // controlling TTY — an agent/build smoke-test, `< /dev/null` — nothing ever
+  // closes it, so it would hang forever holding a Chrome + ui-leaf process tree.
+  // Guard that: without a TTY, either run a bounded --smoke (open → confirm → tear
+  // down → exit 0) or refuse with a message naming the alternatives.
+  const wantSmoke = args.includes("--smoke") || args.includes("--check");
+  const interactive = process.stdin.isTTY === true;
+  if (!interactive) {
+    if (wantSmoke) return smokeWatch(url ?? provider.hub, provider.label, windowSize);
+    console.error(c.yellow("`watch` is interactive — it opens a stream window and blocks until you close it, so it isn't usable in scripts or smoke-tests."));
+    console.error(c.dim("Run it in a terminal, or use `--smoke` to just confirm the window opens and exit 0."));
+    process.exitCode = 1;
+    return;
+  }
+
   // --wait: block until a match is live, then open it. The whole point is to
   // open THE GAME, which needs the deep-link path (overlay), so --wait always
   // opens with the overlay + auto-navigation regardless of --overlay.
@@ -91,7 +107,7 @@ export async function watch(args: string[]) {
   }
 
   if (terms.length === 0) {
-    console.error(c.red("Usage: sportsball fifa watch <team> [team] [--wait] [--provider peacock|fubo] [--url <link>] [--overlay] [--lang english|spanish]"));
+    console.error(c.red("Usage: sportsball fifa watch <team> [team] [--wait] [--provider peacock|fubo] [--url <link>] [--overlay] [--lang english|spanish] [--smoke]"));
     console.error(c.dim("For a hands-off agent-driven session (open the game + answer Ask Claude / catchup), use  /loop agent-setup  — see  sportsball fifa agent-setup"));
     process.exitCode = 1;
     return;
@@ -157,6 +173,31 @@ function fmtEta(ms: number): string {
   const m = Math.floor((s % 3600) / 60);
   const ss = s % 60;
   return h ? `${h}h ${m}m` : m ? `${m}m ${ss}s` : `${ss}s`;
+}
+
+/**
+ * `watch --smoke`: prove the window-launch path works without blocking. Opens the
+ * stream window with a debug port, confirms Chrome came up + CDP is reachable,
+ * then tears it down and exits. Bounded (CDP attach has its own timeout) and
+ * leaves no survivors — win.close() reaps the ui-leaf/Chrome tree.
+ */
+async function smokeWatch(url: string, label: string, windowSize: { width: number; height: number } | undefined): Promise<void> {
+  const port = await freePort();
+  const win = await spawnStreamWindow(url, label, { debugPort: port, windowSize });
+  if (!win) {
+    process.exitCode = 1; // ui-leaf missing — spawnStreamWindow already explained
+    return;
+  }
+  try {
+    const session = await attachToPage(port, 15_000); // confirms the window + CDP came up
+    session.close();
+    console.log(c.green(`✓ watch --smoke: ${label} window opened and CDP attached — tearing it down.`));
+  } catch (e) {
+    console.error(c.yellow(`watch --smoke: the window/CDP didn't come up in time — ${e instanceof Error ? e.message : String(e)}`));
+    process.exitCode = 1;
+  } finally {
+    win.close();
+  }
 }
 
 /** Parse a `WxH` size string into a window size, or undefined if absent/invalid. */
