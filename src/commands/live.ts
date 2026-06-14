@@ -5,6 +5,7 @@ import { ymd, addDays, localDateOf, sortByDate } from "./_lib.ts";
 import { getFavorites } from "../config.ts";
 import { diffEvents, type MatchEvent } from "../events.ts";
 import { notify } from "../notify.ts";
+import { matchHasTeam } from "../match-util.ts";
 import type { Match } from "../types.ts";
 
 const REFRESH_MS = 60_000; // free tier note: scores are delayed; 60s is plenty.
@@ -107,7 +108,13 @@ export async function live(args: string[] = []) {
       // a baseline (a match already in play when you start raises no kickoff).
       for (const e of diffEvents(prevSnapshot, matches, favorites)) {
         const { title, body } = formatEvent(e);
-        notify(title, body, { group: `sportsball-${e.matchId}`, sound: e.kind === "goal" });
+        // Kickoff alerts are click-to-watch: clicking launches `watch <fav team>`
+        // (terminal-notifier -execute). notify() degrades to a plain, non-clickable
+        // notification when terminal-notifier is absent. Goal/full-time stay informational.
+        // process.execPath is the sportsball binary when distributed (compiled); under
+        // `bun run` dev it's the Bun runtime, so the click command only works compiled.
+        const onClick = kickoffWatchCommand(e, matches, favorites, process.execPath);
+        notify(title, body, { group: `sportsball-${e.matchId}`, sound: e.kind === "goal", onClick });
       }
       prevSnapshot = matches;
     }
@@ -124,6 +131,32 @@ export async function live(args: string[] = []) {
 
 function stageTag(m: Match): string {
   return c.dim("  " + stageLabel(m));
+}
+
+/** POSIX single-quote a string so it's safe as one shell argument. */
+function shQuote(s: string): string {
+  return `'${s.replace(/'/g, `'\\''`)}'`;
+}
+
+/**
+ * The click-to-watch command for a kickoff event, or undefined when none applies.
+ * Returns `<exe> fifa watch <fav>` (shell-quoted) where `fav` is the favourite
+ * term that put this match on the alert list — so clicking the kickoff alert opens
+ * that team's broadcast. Only kickoff events are clickable (goal/full-time are
+ * informational); returns undefined if the match or a matching favourite is gone.
+ */
+export function kickoffWatchCommand(
+  e: MatchEvent,
+  matches: Match[],
+  favorites: string[],
+  exe: string,
+): string | undefined {
+  if (e.kind !== "kickoff") return undefined;
+  const match = matches.find((m) => m.id === e.matchId);
+  if (!match) return undefined;
+  const fav = favorites.find((f) => matchHasTeam(match, f.trim().toLowerCase()));
+  if (!fav) return undefined;
+  return `${shQuote(exe)} fifa watch ${shQuote(fav.trim())}`;
 }
 
 /** Notification title + body for a fav match event. */
