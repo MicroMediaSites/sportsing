@@ -7,8 +7,42 @@
 // break is a one-file fix. Reuses api.ts's disk cache.
 
 import { cached, ApiError } from "./api.ts";
+import { c } from "./ansi.ts";
 
 const BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world";
+
+/**
+ * Detect a *structurally* wrong scoreboard response. ESPN is unofficial and
+ * returns HTTP 200 even when its JSON shape drifts, so the parser's `?? ""`
+ * fallbacks would silently degrade to blank stats — indistinguishable from
+ * "no data yet". This keys on shape, NOT emptiness: a date with no matches
+ * (`events: []`) and a pre-kickoff match with no stats are both fine.
+ *
+ * Off when: the `events` key is missing or not an array, or an *in-play* event
+ * has zero competitors or unnamed ("?") teams (a live match always has named
+ * competitors — if it doesn't, the nested shape changed).
+ */
+export function looksOff(raw: any): boolean {
+  if (!raw || typeof raw !== "object" || !Array.isArray(raw.events)) return true;
+  for (const e of raw.events) {
+    const comp = e?.competitions?.[0];
+    const state = comp?.status?.type?.state ?? e?.status?.type?.state;
+    if (state !== "in") continue; // only live matches must have full structure
+    const competitors = comp?.competitors ?? [];
+    if (competitors.length === 0) return true;
+    if (!competitors.every((cc: any) => cc?.team?.displayName ?? cc?.team?.name)) return true;
+  }
+  return false;
+}
+
+let driftWarned = false;
+
+/** Emit the ESPN-drift warning to stderr, at most once per process run. */
+function warnDriftOnce(): void {
+  if (driftWarned) return;
+  driftWarned = true;
+  console.error(c.yellow("⚠ ESPN data looks off — its format may have changed; it's an unofficial API."));
+}
 
 /** WC2026 scoreboard search window (YYYYMMDD) — opening day → final. */
 export const TOURNAMENT_START = "20260611";
@@ -62,6 +96,7 @@ export async function getScoreboard(dates: string, ttlMs = 60_000): Promise<Espn
     if (!res.ok) throw new ApiError(res.status, `ESPN scoreboard request failed (HTTP ${res.status}).`);
     return res.json();
   });
+  if (looksOff(raw)) warnDriftOnce();
   return (raw.events ?? []).map(normalizeEvent);
 }
 
