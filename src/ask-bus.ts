@@ -14,6 +14,7 @@
 import { mkdir, readdir, readFile, writeFile, rename, unlink, chmod } from "fs/promises";
 import { join } from "path";
 import { CACHE_DIR } from "./config.ts";
+import { fenceSafe } from "./prompt-fence.ts";
 
 const BUS_DIR = join(CACHE_DIR, "ask");
 const Q_PREFIX = "q-";
@@ -86,11 +87,18 @@ async function writeJsonAtomic(path: string, data: unknown): Promise<void> {
   await rename(tmp, path); // atomic on the same filesystem
 }
 
-/** Post a question to the bus; returns its id. */
+/** Post a question to the bus; returns its id.
+ *  `context` is a short label built from untrusted API fields (team names, the
+ *  fixture string) and gets rendered straight into the serving agent's prompt by
+ *  `serve`/`next`/`list`. Sanitize it here — the single chokepoint every caller
+ *  goes through — so it can't smuggle fence tags or control chars into that
+ *  prompt regardless of which command posted it. (`question` is already fenced by
+ *  its builder; the prompt-fence is idempotent, so double-fencing is harmless.) */
 export async function postQuestion(q: Omit<AskQuestion, "id" | "ts">): Promise<string> {
   await ensureDir();
   const id = newId();
-  const full: AskQuestion = { ...q, id, ts: Date.now() };
+  const context = q.context === undefined ? undefined : fenceSafe(q.context);
+  const full: AskQuestion = { ...q, context, id, ts: Date.now() };
   await writeJsonAtomic(join(BUS_DIR, Q_PREFIX + id + ".json"), full);
   return id;
 }

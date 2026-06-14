@@ -6,3 +6,10 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+  # devDependencies (TypeScript, Bun types — sportsing has no runtime deps).
+  # dependabot reads package.json/bun.lock via the npm ecosystem and opens PRs
+  # for CVE fixes and version bumps.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
