@@ -28,6 +28,7 @@ export const OVERLAY_PANEL_DEFAULTS: Record<string, boolean> = {
   events: false, // live match events (goals/cards/subs)
   scores: false, // other live matches
   ask: false, // "Ask Claude" — routed through the external agent bus
+  catchup: false, // "Get caught up" recap button — routed through the external agent bus
 };
 
 async function readConfig(): Promise<Config> {

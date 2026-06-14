@@ -13,12 +13,13 @@ import { freePort, attachToPage, type CdpSession } from "./cdp.ts";
 import { spawnStreamWindow } from "./stream.ts";
 import { detectFromTitle, searchTerms } from "./match-detect.ts";
 import { postQuestion, waitForAnswer, isServing } from "./ask-bus.ts";
+import { requestRecap, type RecapInput, type RecapEvent } from "./recap.ts";
 
 const BOOTSTRAP = [
   "(function(){",
   "if(window.__sbInit)return;window.__sbInit=true;",
   "var D=" + JSON.stringify(OVERLAY_PANEL_DEFAULTS) + ";", // panel defaults — single source of truth (config.ts)
-  "var PANELS=[['score','Score & clock'],['stats','Possession / shots'],['winprob','Win-probability breakdown'],['odds','Odds line'],['h2h','Head-to-head'],['events','Live events'],['scores','Other live scores'],['ask','Ask Claude']];",
+  "var PANELS=[['score','Score & clock'],['stats','Possession / shots'],['winprob','Win-probability breakdown'],['odds','Odds line'],['h2h','Head-to-head'],['events','Live events'],['scores','Other live scores'],['ask','Ask Claude'],['catchup','Get caught up']];",
   "function esc(s){var d=document.createElement('div');d.appendChild(document.createTextNode(String(s==null?'':s)));return d.innerHTML;}",
   "function row(label,a,b){return '<div style=\"display:flex;justify-content:space-between;margin-top:3px\"><span>'+esc(a)+'</span><span style=\"color:#8b949e\">'+label+'</span><span>'+esc(b)+'</span></div>';}",
   // One outcome row for the win-probability breakdown: a colour dot + label on
@@ -69,6 +70,7 @@ const BOOTSTRAP = [
   + "<div id=\"sb-pl-scores\" style=\"margin-top:8px;display:none\"></div>"
   + "<div id=\"sb-pl-h2h\" style=\"display:none\"><button id=\"sb-h2h\" style=\"margin-top:10px;width:100%;padding:6px;background:#1f6feb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px\">Head-to-head</button><div id=\"sb-h2h-out\" style=\"margin-top:8px\"></div></div>"
   + "<div id=\"sb-pl-ask\" style=\"display:none\"><div id=\"sb-ask-status\" style=\"font-size:10px;margin-top:8px\"></div><div style=\"display:flex;gap:6px;margin-top:5px\"><input id=\"sb-ask-in\" placeholder=\"Ask Claude about the match…\" style=\"flex:1;min-width:0;padding:6px 8px;border-radius:6px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:12px\"><button id=\"sb-ask-btn\" style=\"padding:6px 11px;background:#6e40c9;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px\">Ask</button></div><div id=\"sb-ask-out\" style=\"margin-top:8px;color:#c9d1d9;font-size:12px;white-space:pre-wrap\"></div></div>"
+  + "<div id=\"sb-pl-catchup\" style=\"display:none\"><button id=\"sb-catchup\" style=\"margin-top:10px;width:100%;padding:6px;background:#6e40c9;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px\">Get caught up</button><div id=\"sb-catchup-status\" style=\"font-size:10px;margin-top:6px\"></div><div id=\"sb-catchup-out\" style=\"margin-top:8px;color:#c9d1d9;font-size:12px;white-space:pre-wrap\"></div></div>"
   + "<div id=\"sb-pl-today\" style=\"display:none\"></div>"
   + "</div>';",
   "  document.body.appendChild(stats);",
@@ -85,6 +87,7 @@ const BOOTSTRAP = [
   "  document.getElementById('sb-h2h').addEventListener('click',function(){document.getElementById('sb-h2h-out').textContent='Loading…';call({fn:'headToHead'});});",
   "  var askIn=document.getElementById('sb-ask-in');function doAsk(){var q=(askIn.value||'').trim();if(!q)return;document.getElementById('sb-ask-out').textContent='Asking Claude…';call({fn:'ask',q:q});}",
   "  document.getElementById('sb-ask-btn').addEventListener('click',doAsk);",
+  "  document.getElementById('sb-catchup').addEventListener('click',function(){document.getElementById('sb-catchup-out').textContent='Catching you up…';call({fn:'catchup'});});",
   // stop key events reaching the player (so typing doesn't pause/seek the stream); Enter submits
   "  ['keydown','keyup','keypress'].forEach(function(t){askIn.addEventListener(t,function(e){e.stopPropagation();if(t==='keydown'&&e.key==='Enter'){e.preventDefault();doAsk();}});});",
   "}",
@@ -96,7 +99,7 @@ const BOOTSTRAP = [
   "    var dl=document.getElementById('sb-delay'),sl=document.getElementById('sb-slider'),dv=d.delay||0;if(dl)dl.textContent=dv>=60?(Math.floor(dv/60)+'m '+(dv%60)+'s'):(dv+'s');if(sl&&document.activeElement!==sl)sl.value=dv;",
   "    var cbx=document.querySelectorAll('#sb-cbs input[data-k]');for(var i=0;i<cbx.length;i++){var k=cbx[i].dataset.k;if(P[k]!==undefined)cbx[i].checked=!!P[k];}",
   // today (hub) view — the stats window shows the day's matches regardless of panels
-  "    if(d.mode==='today'){show('sb-stats',true);['sb-pl-score','sb-pl-stats','sb-pl-winprob','sb-pl-odds','sb-pl-events','sb-pl-scores','sb-pl-h2h','sb-pl-ai'].forEach(function(i){show(i,false);});var td=document.getElementById('sb-pl-today');show('sb-pl-today',true);td.innerHTML=matchList(d.games||[])||'<span style=\"color:#8b949e\">no matches today</span>';var fr0=document.getElementById('sb-fresh');if(fr0)fr0.textContent='';return;}",
+  "    if(d.mode==='today'){show('sb-stats',true);['sb-pl-score','sb-pl-stats','sb-pl-winprob','sb-pl-odds','sb-pl-events','sb-pl-scores','sb-pl-h2h','sb-pl-ask','sb-pl-catchup'].forEach(function(i){show(i,false);});var td=document.getElementById('sb-pl-today');show('sb-pl-today',true);td.innerHTML=matchList(d.games||[])||'<span style=\"color:#8b949e\">no matches today</span>';var fr0=document.getElementById('sb-fresh');if(fr0)fr0.textContent='';return;}",
   // match view — the window appears only when something is enabled
   "    show('sb-pl-today',false);show('sb-stats',anyPanel(P));",
   "    show('sb-pl-score',!!P.score);if(P.score){document.getElementById('sb-score').textContent=d.home+' '+d.homeScore+' – '+d.awayScore+' '+d.away;document.getElementById('sb-clock').innerHTML=statusCell(d.state,d.kickoff,d.detail,d.id);var wpEl=document.getElementById('sb-wp');if(d.winProb){var fav=d.winProb[0]>=d.winProb[2]?d.home:d.away;wpEl.textContent=fav+' '+Math.max(d.winProb[0],d.winProb[2])+'%';}else wpEl.textContent='';}",
@@ -107,9 +110,11 @@ const BOOTSTRAP = [
   "    show('sb-pl-scores',!!P.scores);if(P.scores){var os=d.otherScores||[],sh='<div style=\"color:#8b949e;font-size:11px;margin-bottom:4px\">Other live scores</div>';sh+=matchList(os)||'<div style=\"color:#8b949e;font-size:11px\">no other live matches</div>';document.getElementById('sb-pl-scores').innerHTML=sh;}",
   "    show('sb-pl-h2h',!!P.h2h);",
   "    show('sb-pl-ask',!!P.ask);if(P.ask){var ast=document.getElementById('sb-ask-status');if(ast){if(d.serving){ast.textContent='\\u25cf Claude agent connected';ast.style.color='#3fb950';}else{ast.textContent='\\u25cb No agent \\u2014 run  /loop sportsball serve  to enable answers';ast.style.color='#d29922';}}}",
+  "    show('sb-pl-catchup',!!P.catchup);if(P.catchup){var cst=document.getElementById('sb-catchup-status');if(cst){if(d.serving){cst.textContent='\\u25cf Claude agent connected';cst.style.color='#3fb950';}else{cst.textContent='\\u25cb No agent \\u2014 run  /loop sportsball serve  to enable recaps';cst.style.color='#d29922';}}}",
   "    var fr=document.getElementById('sb-fresh');if(fr)fr.textContent=d.at?'⟳ '+d.at:'';},",
   "  result:function(d){mk();var o=document.getElementById('sb-h2h-out');if(!o)return;var g=(d&&d.games)||[];var h='<div style=\"color:#8b949e;font-size:11px;margin-bottom:4px\">Past meetings — '+esc((d&&d.team)||'')+'</div>';if(!g.length)h+='<div style=\"color:#8b949e\">none found</div>';for(var i=0;i<g.length;i++){var col=g[i].result==='W'?'#3fb950':g[i].result==='L'?'#f85149':'#8b949e';h+='<div style=\"display:flex;gap:8px;padding:2px 0;border-bottom:1px solid #21262d\"><span style=\"color:#8b949e;width:5.5rem\">'+esc(g[i].date)+'</span><b style=\"width:2.5rem\">'+esc(g[i].score)+'</b><span style=\"color:'+col+'\">'+esc(g[i].result)+'</span></div>';}o.innerHTML=h;},",
-  "  askResult:function(t){mk();var o=document.getElementById('sb-ask-out');if(o)o.textContent=t||'(no response)';}",
+  "  askResult:function(t){mk();var o=document.getElementById('sb-ask-out');if(o)o.textContent=t||'(no response)';},",
+  "  catchupResult:function(t){mk();var o=document.getElementById('sb-catchup-out');if(o)o.textContent=t||'(no response)';}",
   "};",
   "mk();",
   "})();",
@@ -399,12 +404,38 @@ export async function runOverlayStream(
     }
   };
 
-  const renderDelayed = () => {
-    if (!buffer.length) return;
+  // The buffered snapshot from `delaySec` ago — what the user's (delayed) stream
+  // is actually showing. Used both to render and to build a spoiler-safe recap.
+  const delayedSnapshot = (): Record<string, unknown> | null => {
+    if (!buffer.length) return null;
     const cutoff = Date.now() - delaySec * 1000;
     let chosen = buffer[0]!;
     for (const b of buffer) if (b.t <= cutoff) chosen = b;
-    push({ ...chosen.data, delay: delaySec, panels, serving });
+    return chosen.data;
+  };
+
+  const renderDelayed = () => {
+    const data = delayedSnapshot();
+    if (data) push({ ...data, delay: delaySec, panels, serving });
+  };
+
+  // "Get caught up" — recap the match using ONLY the events the delayed stream
+  // has reached (delayedSnapshot honors delaySec), so it never spoils ahead of
+  // the video. Routes through the AGT-538 catchup serve-bus request (no local
+  // model); requestRecap handles the empty / no-agent / timeout cases.
+  const runCatchup = async (): Promise<string> => {
+    const snap = delayedSnapshot();
+    if (!snap || snap.mode !== "match") return "Open a live match first — nothing to catch up on yet.";
+    const { home, away } = sides(currentEv);
+    const events = Array.isArray(snap.events) ? (snap.events as RecapEvent[]) : [];
+    const input: RecapInput = {
+      fixture: currentEv.name,
+      scoreline: `${snap.home ?? home?.abbreviation ?? "?"} ${snap.homeScore ?? "0"}–${snap.awayScore ?? "0"} ${snap.away ?? away?.abbreviation ?? "?"}`,
+      detail: String(snap.detail ?? ""),
+      events: events.slice().reverse(), // buffer stores newest-first; recap reads chronological
+    };
+    const res = await requestRecap(input, { maxChars: 600 });
+    return res.ok ? res.recap : res.message;
   };
 
   const tick = async () => {
@@ -516,6 +547,9 @@ export async function runOverlayStream(
         } else if (msg.fn === "ask" && typeof msg.q === "string") {
           const text = await askViaBus(currentEv, msg.q);
           session?.send("Runtime.evaluate", { expression: "window.__sb&&window.__sb.askResult(" + JSON.stringify(text) + ")" }).catch(() => {});
+        } else if (msg.fn === "catchup") {
+          const text = await runCatchup();
+          session?.send("Runtime.evaluate", { expression: "window.__sb&&window.__sb.catchupResult(" + JSON.stringify(text) + ")" }).catch(() => {});
         } else if (msg.fn === "delay") {
           const next = typeof msg.set === "number" ? msg.set : delaySec + (Number(msg.d) || 0);
           delaySec = Math.min(300, Math.max(0, Math.round(next))); // 0–5 min
