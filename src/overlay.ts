@@ -432,7 +432,7 @@ export async function runOverlayStream(
       fixture: currentEv.name,
       scoreline: `${snap.home ?? home?.abbreviation ?? "?"} ${snap.homeScore ?? "0"}–${snap.awayScore ?? "0"} ${snap.away ?? away?.abbreviation ?? "?"}`,
       detail: String(snap.detail ?? ""),
-      events: events.slice().reverse(), // buffer stores newest-first; recap reads chronological
+      events: events.slice().reverse(), // snapshot.events are newest-first (getLiveMatch order); recap reads chronological
     };
     const res = await requestRecap(input, { maxChars: 600 });
     return res.ok ? res.recap : res.message;
