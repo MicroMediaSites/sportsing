@@ -57,23 +57,58 @@ function canonical(token: string): string {
   return NAME_TO_TLA[n] ?? n; // TLA when known, else the normalized token
 }
 
+export type StreamLang = "english" | "spanish";
+
 export type PageContext =
-  | { kind: "match"; teams: [string, string] }
+  | { kind: "match"; teams: [string, string]; lang?: StreamLang }
   | { kind: "today" }
   | { kind: "unknown" };
 
+// Team names that are *distinctively* one language (the normalized form differs
+// across English/Spanish), so seeing one in a title reveals the broadcast cast.
+// Language-neutral names (Mexico, Paraguay, Australia, Argentina, Portugal,
+// Uruguay, Colombia, Senegal, Ecuador, Canada, Haiti) carry no signal.
+const NEUTRAL_NAMES = new Set([
+  "mexico", "paraguay", "australia", "argentina", "portugal",
+  "uruguay", "colombia", "senegal", "ecuador", "canada", "haiti",
+]);
+const SPANISH_NAMES = new Set(Object.keys(NAME_TO_TLA).filter((k) => !NEUTRAL_NAMES.has(k)));
+const ENGLISH_NAMES = new Set([
+  "united states", "qatar", "switzerland", "brazil", "morocco", "turkey", "turkiye",
+  "south korea", "south africa", "czechia", "czech republic", "bosnia and herzegovina",
+  "scotland", "algeria", "belgium", "germany", "spain", "england", "france", "croatia",
+  "netherlands", "holland", "japan",
+]);
+
+/** Infer the broadcast language from the two team tokens + provider suffix.
+ *  Conservative: returns undefined when undeterminable (so callers never warn on
+ *  a guess). A distinctive Spanish/English team name wins; otherwise Peacock's
+ *  World Cup feed is Telemundo (Spanish) only. */
+function inferLang(a: string, b: string, isPeacock: boolean): StreamLang | undefined {
+  const na = normalize(a);
+  const nb = normalize(b);
+  if (SPANISH_NAMES.has(na) || SPANISH_NAMES.has(nb)) return "spanish";
+  if (ENGLISH_NAMES.has(na) || ENGLISH_NAMES.has(nb)) return "english";
+  if (isPeacock) return "spanish";
+  return undefined; // e.g. Fubo + only language-neutral names — can't tell
+}
+
 /**
  * Classify a stream page from its title.
- *  - "<A> v. <B> - Provider"  → match (teams canonicalized to TLA/name)
+ *  - "<A> v. <B> - Provider"  → match (teams canonicalized to TLA/name; lang when known)
  *  - World Cup hub / home     → today
  *  - anything else            → unknown (overlay keeps its current match)
  */
 export function detectFromTitle(title: string): PageContext {
-  const t = (title || "").replace(/\s*[-|]\s*(Peacock|Fubo|fubo\.tv).*$/i, "").trim();
+  const raw = title || "";
+  const isPeacock = /peacock/i.test(raw);
+  const t = raw.replace(/\s*[-|]\s*(Peacock|Fubo|fubo\.tv).*$/i, "").trim();
 
   const vs = t.match(/^(.+?)\s+(?:v\.?|vs\.?|versus)\s+(.+)$/i);
   if (vs && vs[1] && vs[2]) {
-    return { kind: "match", teams: [canonical(vs[1]), canonical(vs[2])] };
+    const lang = inferLang(vs[1], vs[2], isPeacock);
+    const teams: [string, string] = [canonical(vs[1]), canonical(vs[2])];
+    return lang ? { kind: "match", teams, lang } : { kind: "match", teams };
   }
 
   const n = normalize(t);

@@ -404,6 +404,7 @@ export async function runOverlayStream(
   let ticks = 0;
   let running = false;
   let serving = false; // whether a Claude agent is currently answering the ask bus
+  let langWarned = false; // wrong-language-cast warning fires at most once per run
 
   const push = (data: unknown) =>
     session?.send("Runtime.evaluate", { expression: "window.__sb&&window.__sb.update(" + JSON.stringify(data) + ")" }).catch(() => {});
@@ -476,6 +477,17 @@ export async function runOverlayStream(
               }
             } catch {
               /* keep current */
+            }
+            // Wrong-cast safety net: after a deep-link, if the landed page's
+            // language (from the title) disagrees with the wanted one, warn once.
+            // Silent when it matches or can't be determined (ctx.lang undefined).
+            if (opts.deepLink && !langWarned && ctx.lang && ctx.lang !== lang) {
+              langWarned = true;
+              const cast = ctx.lang === "spanish" ? "Spanish (Telemundo)" : "English (Fox)";
+              const wantNet = lang === "english" ? "Fox" : "Telemundo";
+              console.log(
+                c.yellow(`⚠ Landed on the ${cast} cast, but you asked for ${lang} — re-run with --lang ${lang}, or --url <${wantNet} link> to force it.`),
+              );
             }
           }
           mode = "match";
