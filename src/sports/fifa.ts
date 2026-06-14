@@ -10,6 +10,7 @@ import { results } from "../commands/results.ts";
 import { stats } from "../commands/stats.ts";
 import { analyze } from "../commands/analyze.ts";
 import { predict } from "../commands/predict.ts";
+import { ask, serve } from "../commands/ask.ts";
 import { watch } from "../commands/watch.ts";
 import { highlights } from "../commands/highlights.ts";
 import { teams } from "../commands/teams.ts";
@@ -35,6 +36,8 @@ const ROUTES: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   stats,
   analyze,
   predict,
+  ask,
+  serve,
   watch,
   highlights,
   live: () => live(),
@@ -91,6 +94,8 @@ ${b("COMMANDS")}
   ${c.green("stats")}  ${c.dim("<team> [team]")} Match statistics ${c.dim("(--json)")}
   ${c.green("analyze")} ${c.dim("<team> [team]")} AI tactical read of a match ${c.dim("(--prompt)")}
   ${c.green("predict")} ${c.dim("<team> [team]")} AI prediction of an upcoming match ${c.dim("(--prompt)")}
+  ${c.green("serve")}              Serve the AI bus from a Claude agent ${c.dim("(use: /loop sportsball serve)")}
+  ${c.green("ask")}    ${c.dim("--next|--reply")} Low-level AI-bus plumbing ${c.dim("(serve wraps this)")}
   ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
   ${c.green("me")}                 Dashboard for your favorite teams
   ${c.green("setup")}  ${c.dim("[key]")}      Add your free football-data.org API key
@@ -102,6 +107,12 @@ ${b("DATA")}
   Live data: football-data.org (free key, World Cup included).
   Without a key, fixtures fall back to the offline openfootball schedule.
   Set FOOTBALL_DATA_API_KEY or run ${b("sportsball fifa setup")}.
+
+${b("AI (analyze / predict / overlay Ask Claude)")}
+  sportsball never spawns a local Claude. AI features post questions to a bus;
+  keep ONE Claude session serving answers — it just waits for prompts:
+  ${c.dim("/loop sportsball serve")}
+  Each tick prints the next question as a prompt; the agent answers + replies.
 
 ${b("EXAMPLES")}
   sportsball fifa today

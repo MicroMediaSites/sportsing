@@ -135,6 +135,8 @@ export interface LiveMatch {
   winProb?: [number, number, number];
   /** Raw 3-way odds line, e.g. "QAT +1500 / X +600 / SUI -525". */
   oddsLine?: string;
+  /** Notable in-match events (goals, cards, subs…), most recent first. */
+  events?: { clock: string; type: string; team: string; text: string }[];
 }
 
 /** American moneyline → implied probability (0–1). */
@@ -170,6 +172,19 @@ export async function getLiveMatch(eventId: string, ttlMs = 5_000): Promise<Live
   const homeAbbr = hc?.team?.abbreviation ?? "?";
   const awayAbbr = ac?.team?.abbreviation ?? "?";
 
+  // Notable in-match events (goals, cards, subs, VAR…) from the summary's
+  // keyEvents feed — most recent first, capped so the overlay panel stays small.
+  const events = (raw.keyEvents ?? [])
+    .map((k: any) => ({
+      clock: k.clock?.displayValue ?? "",
+      type: k.type?.text ?? "",
+      team: k.team?.abbreviation ?? k.team?.displayName ?? "",
+      text: k.text ?? k.shortText ?? "",
+    }))
+    .filter((e: { type: string; text: string }) => e.type || e.text)
+    .reverse()
+    .slice(0, 8);
+
   // Win probability + odds line, derived from the 3-way moneyline.
   let winProb: [number, number, number] | undefined;
   let oddsLine: string | undefined;
@@ -200,6 +215,7 @@ export async function getLiveMatch(eventId: string, ttlMs = 5_000): Promise<Live
     onTarget: pair("shotsOnTarget"),
     winProb,
     oddsLine,
+    events,
   };
 }
 

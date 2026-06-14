@@ -1,10 +1,12 @@
 import { c } from "../ansi.ts";
 import { getEvents, type EspnEvent, type EspnCompetitor } from "../espn.ts";
-import { runClaude, ClaudeNotFoundError } from "../agent.ts";
+import { postQuestion, waitForAnswer } from "../ask-bus.ts";
 
 // `sportsball fifa predict <team> [team] [--prompt]` — resolve an upcoming match,
-// gather both teams' tournament form so far, and have a local Claude agent
-// predict a scoreline + outcome with rationale. --prompt prints the prompt.
+// gather both teams' tournament form so far, and have an EXTERNAL Claude agent
+// (looping on `sportsball fifa ask`) predict a scoreline + outcome with rationale.
+// sportsball never spawns a local Claude; it posts to the ask bus and waits.
+// --prompt prints the prompt instead.
 
 interface FormGame {
   opponent: string;
@@ -45,20 +47,25 @@ export async function predict(args: string[]) {
     return;
   }
 
-  process.stderr.write(c.dim("Predicting with local Claude…\n"));
-  try {
-    const prediction = await runClaude(prompt);
-    console.log(c.bold(c.cyan(`⚽ ${home.name} vs ${away.name} — prediction`)) + "\n");
-    console.log(prediction);
-  } catch (e) {
-    if (e instanceof ClaudeNotFoundError) {
-      console.error(c.yellow("Predictions need the `claude` CLI (Claude Code) on your PATH."));
-      console.error(c.dim("Install it, or re-run with --prompt to predict elsewhere."));
-    } else {
-      console.error(c.red("Prediction failed: " + (e instanceof Error ? e.message : String(e))));
-    }
+  process.stderr.write(c.dim("Posted to the ask bus — waiting for your Claude agent to answer…\n"));
+  process.stderr.write(c.dim("(keep one serving:  /loop sportsball serve)\n"));
+  const id = await postQuestion({
+    source: "predict",
+    question: prompt,
+    context: `${home.name} vs ${away.name}`,
+    hint: "Follow the format requested in the prompt (scoreline, W/D/W probs, 2–3 sentences).",
+    maxChars: null,
+  });
+  const prediction = await waitForAnswer(id, 180_000);
+  if (prediction === null) {
+    console.error(c.yellow("No Claude agent answered within 3 minutes."));
+    console.error(c.dim("Start a serving agent in another Claude session, then retry:  /loop sportsball serve"));
+    console.error(c.dim("Or run with --prompt to predict elsewhere."));
     process.exitCode = 1;
+    return;
   }
+  console.log(c.bold(c.cyan(`⚽ ${home.name} vs ${away.name} — prediction`)) + "\n");
+  console.log(prediction);
 }
 
 /** The earliest *upcoming* (not-yet-played) match matching all terms, or null.
