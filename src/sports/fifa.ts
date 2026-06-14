@@ -20,6 +20,7 @@ import { next } from "../commands/next.ts";
 import { scorers } from "../commands/scorers.ts";
 import { live } from "../commands/live.ts";
 import { recap } from "../commands/recap.ts";
+import { agentSetup } from "../commands/agent-setup.ts";
 import { setup } from "../commands/setup.ts";
 import { fav } from "../commands/fav.ts";
 import { me } from "../commands/me.ts";
@@ -40,6 +41,7 @@ const ROUTES: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   recap,
   ask,
   serve,
+  "agent-setup": agentSetup,
   watch,
   highlights,
   live,
@@ -99,6 +101,7 @@ ${b("COMMANDS")}
   ${c.green("analyze")} ${c.dim("<team> [team]")} AI tactical read of a match ${c.dim("(--prompt)")}
   ${c.green("predict")} ${c.dim("<team> [team]")} AI prediction of an upcoming match ${c.dim("(--prompt)")}
   ${c.green("recap")}  ${c.dim("<team> [team]")} "Here's what you missed" — AI recap of a match's key events ${c.dim("(--prompt)")}
+  ${c.green("agent-setup")}        Set up an agent-driven watch session ${c.dim("(points at /loop agent-setup)")}
   ${c.green("serve")}              Serve the AI bus from a Claude agent ${c.dim("(use: /loop sportsball serve)")}
   ${c.green("ask")}    ${c.dim("--next|--reply")} Low-level AI-bus plumbing ${c.dim("(serve wraps this)")}
   ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
@@ -116,10 +119,12 @@ ${b("DATA")}
 ${b("AI (analyze / predict / overlay “Ask Claude”)")}
   sportsball never spawns a local Claude — an external Claude agent answers.
   Opening a game is NOT enough for "Ask Claude"; it needs a serve loop too.
-  ${b("To watch a game AND use Ask Claude, run both:")}
+  ${b("Easiest (blessed) setup — one supervisor loop:")}
+    ${c.dim("/loop agent-setup")}              ${c.dim("# opens the game + answers Ask/catchup (see: sportsball fifa agent-setup)")}
+  ${b("Or compose the two steps yourself:")}
     ${c.dim("sportsball fifa watch --wait")}   ${c.dim("# (backgrounded) opens the game when live")}
     ${c.dim("/loop sportsball serve")}          ${c.dim("# answers Ask questions + analyze/predict")}
-  Without the serve loop, the Ask panel shows “No agent”. The serve loop just
+  Without an answerer loop, the Ask panel shows “No agent”. The serve loop just
   waits for prompts; each tick prints a question for you to answer + reply.
 
 ${b("EXAMPLES")}
