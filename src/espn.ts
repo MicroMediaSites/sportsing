@@ -26,6 +26,8 @@ export function looksOff(raw: any): boolean {
   if (!raw || typeof raw !== "object" || !Array.isArray(raw.events)) return true;
   for (const e of raw.events) {
     const comp = e?.competitions?.[0];
+    // Status lives on the competition, but ESPN sometimes mirrors it on the event
+    // itself — check both, same fallback normalizeEvent uses.
     const state = comp?.status?.type?.state ?? e?.status?.type?.state;
     if (state !== "in") continue; // only live matches must have full structure
     const competitors = comp?.competitors ?? [];
