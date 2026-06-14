@@ -1,17 +1,24 @@
-// Launch a live-stream window via ui-leaf (>=1.3.0): a chromeless app-mode
-// Chrome window on a *persistent* profile (so provider logins survive), pointed
-// at a streaming URL through a tiny redirect view.
+// Launch a live-stream window via ui-leaf: a chromeless app-mode Chrome window
+// on a *persistent* profile (so provider logins survive), pointed at a streaming
+// URL through a tiny redirect view.
+//
+// ui-leaf is a declared dependency (`@openthink/ui-leaf`), driven through its
+// `spawnUiLeaf` SDK — NOT a globally-installed CLI resolved off PATH. The version
+// is pinned in package.json and the platform-specific native binary is fetched by
+// ui-leaf's postinstall, so there's no separate global-install step and no
+// version skew between sportsing and ui-leaf.
 //
 // Why a redirect view: ui-leaf is bring-your-own-view (it serves a local view),
-// so we serve a one-line view that navigates the window to the external
-// provider URL. The window survives the navigation; the persistent profile keeps
-// the login. Critically, we hold ui-leaf's stdin OPEN for the window's lifetime —
-// closing stdin (EOF) tears the window down.
+// so we serve a one-line view that navigates the window to the external provider
+// URL. The window survives the navigation; the persistent profile keeps the
+// login. The SDK holds the binary's stdin open for the window's lifetime; the
+// returned handle's kill() tears it down.
 
 import { homedir, tmpdir } from "os";
 import { join } from "path";
 import { mkdtemp, writeFile, mkdir } from "fs/promises";
 import { rmSync, existsSync } from "fs";
+import { mount } from "@openthink/ui-leaf";
 import { c } from "./ansi.ts";
 
 /** Persistent Chrome profile path for a provider — one per provider so logins
@@ -77,38 +84,21 @@ export interface StreamWindow {
 
 /**
  * Spawn a persistent-profile app-mode Chrome window forwarded to `url`, without
- * blocking or installing signal handlers — the caller owns lifecycle. Pass
- * `debugPort` to expose CDP (for the overlay). Returns null if ui-leaf is absent.
+ * installing signal handlers — the caller owns lifecycle. Pass `debugPort` to
+ * expose CDP (for the overlay). Awaits the window coming up; returns null (with
+ * an actionable message) if ui-leaf's native binary can't launch.
  */
 export async function spawnStreamWindow(
   url: string,
   label: string,
   opts: { debugPort?: number; windowSize?: { width: number; height: number } } = {},
 ): Promise<StreamWindow | null> {
-  if (!Bun.which("ui-leaf")) {
-    console.error(c.yellow("Streaming needs the `ui-leaf` CLI (>=1.3.0)."));
-    console.error(c.dim("Install it: npm i -g @openthink/ui-leaf@latest"));
-    return null;
-  }
-
   // Embed the view + write it to a temp viewsRoot at launch, so this works from
   // the compiled binary (no views/ dir to ship alongside it).
   const viewsRoot = await mkdtemp(join(tmpdir(), "sportsing-stream-"));
   await writeFile(join(viewsRoot, "stream.tsx"), REDIRECT_VIEW);
   const dir = profileDir(label);
   await mkdir(dir, { recursive: true });
-
-  const config = {
-    version: "1",
-    view: "stream",
-    viewsRoot,
-    data: { url, label },
-    shell: "app",
-    profile: { dir },
-    ...(opts.debugPort ? { debugPort: opts.debugPort } : {}),
-    ...(opts.windowSize ? { windowSize: opts.windowSize } : {}),
-    port: 0,
-  };
 
   const cleanup = () => {
     try {
@@ -118,14 +108,49 @@ export async function spawnStreamWindow(
     }
   };
 
-  const proc = Bun.spawn(["ui-leaf", "mount"], { stdin: "pipe", stdout: "ignore", stderr: "ignore" });
-  proc.stdin.write(JSON.stringify(config) + "\n");
-  // Hold stdin open — do NOT end it (EOF tears the window down).
+  // Teardown goes through an AbortSignal, not view.close(): aborting the signal
+  // is the path the SDK wires to "send close, then SIGKILL after a 5s grace", so
+  // it reliably reaps the ui-leaf/Chrome tree even if the binary stops responding
+  // to the graceful close message. view.close() alone is graceful-only and can
+  // hang. (This is the clean-reap behavior the old proc.kill() relied on.)
+  const ac = new AbortController();
+
+  // mount() resolves once the window is up and rejects if the native binary is
+  // missing or the child dies before serving. The SDK resolves that binary from
+  // this package's node_modules; a standalone `bun build --compile` artifact has
+  // none, so honor UI_LEAF_BINARY_PATH as the escape hatch to point at one.
+  let view;
+  try {
+    view = await mount({
+      view: "stream",
+      viewsRoot,
+      data: { url, label },
+      shell: "app",
+      profile: { dir },
+      ...(opts.debugPort ? { debugPort: opts.debugPort } : {}),
+      ...(opts.windowSize ? { windowSize: opts.windowSize } : {}),
+      port: 0,
+      silent: true, // keep the launch quiet (matches the old stdout/stderr: "ignore")
+      signal: ac.signal,
+      ...(process.env.UI_LEAF_BINARY_PATH ? { binaryPath: process.env.UI_LEAF_BINARY_PATH } : {}),
+    });
+  } catch (err) {
+    cleanup();
+    console.error(c.yellow("Couldn't launch the ui-leaf browser window."));
+    console.error(
+      c.dim(
+        "If you installed sportsing from npm, reinstall so its ui-leaf binary is fetched (npm i -g sportsing). " +
+          "If you're running the standalone binary, set UI_LEAF_BINARY_PATH to an installed ui-leaf-bin.",
+      ),
+    );
+    console.error(c.dim(String(err instanceof Error ? err.message : err)));
+    return null;
+  }
 
   return {
-    exited: proc.exited.then(() => cleanup()),
+    exited: view.closed.then(() => cleanup()),
     close: () => {
-      proc.kill();
+      ac.abort();
       cleanup();
     },
   };
