@@ -12,7 +12,7 @@ import { getStreamDelay, setStreamDelay, getOverlayPanels, setOverlayPanel, OVER
 import { freePort, attachToPage, type CdpSession } from "./cdp.ts";
 import { spawnStreamWindow } from "./stream.ts";
 import { detectFromTitle, searchTerms } from "./match-detect.ts";
-import { postQuestion, waitForAnswer } from "./ask-bus.ts";
+import { postQuestion, waitForAnswer, isServing } from "./ask-bus.ts";
 
 const BOOTSTRAP = [
   "(function(){",
@@ -68,7 +68,7 @@ const BOOTSTRAP = [
   + "<div id=\"sb-pl-events\" style=\"margin-top:8px;display:none\"></div>"
   + "<div id=\"sb-pl-scores\" style=\"margin-top:8px;display:none\"></div>"
   + "<div id=\"sb-pl-h2h\" style=\"display:none\"><button id=\"sb-h2h\" style=\"margin-top:10px;width:100%;padding:6px;background:#1f6feb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px\">Head-to-head</button><div id=\"sb-h2h-out\" style=\"margin-top:8px\"></div></div>"
-  + "<div id=\"sb-pl-ask\" style=\"display:none\"><div style=\"display:flex;gap:6px;margin-top:10px\"><input id=\"sb-ask-in\" placeholder=\"Ask Claude about the match…\" style=\"flex:1;min-width:0;padding:6px 8px;border-radius:6px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:12px\"><button id=\"sb-ask-btn\" style=\"padding:6px 11px;background:#6e40c9;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px\">Ask</button></div><div id=\"sb-ask-out\" style=\"margin-top:8px;color:#c9d1d9;font-size:12px;white-space:pre-wrap\"></div></div>"
+  + "<div id=\"sb-pl-ask\" style=\"display:none\"><div id=\"sb-ask-status\" style=\"font-size:10px;margin-top:8px\"></div><div style=\"display:flex;gap:6px;margin-top:5px\"><input id=\"sb-ask-in\" placeholder=\"Ask Claude about the match…\" style=\"flex:1;min-width:0;padding:6px 8px;border-radius:6px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:12px\"><button id=\"sb-ask-btn\" style=\"padding:6px 11px;background:#6e40c9;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px\">Ask</button></div><div id=\"sb-ask-out\" style=\"margin-top:8px;color:#c9d1d9;font-size:12px;white-space:pre-wrap\"></div></div>"
   + "<div id=\"sb-pl-today\" style=\"display:none\"></div>"
   + "</div>';",
   "  document.body.appendChild(stats);",
@@ -106,7 +106,7 @@ const BOOTSTRAP = [
   "    show('sb-pl-events',!!P.events);if(P.events){var ev=d.events||[],eh='<div style=\"color:#8b949e;font-size:11px;margin-bottom:4px\">Live events</div>';if(!ev.length)eh+='<div style=\"color:#8b949e;font-size:11px\">none yet</div>';for(var j=0;j<ev.length;j++){eh+='<div style=\"display:flex;gap:8px;padding:2px 0;font-size:12px\"><span style=\"color:#8b949e;width:2.6rem\">'+esc(ev[j].clock)+'</span><b style=\"width:2.4rem\">'+esc(ev[j].team)+'</b><span style=\"flex:1\">'+esc(ev[j].text||ev[j].type)+'</span></div>';}document.getElementById('sb-pl-events').innerHTML=eh;}",
   "    show('sb-pl-scores',!!P.scores);if(P.scores){var os=d.otherScores||[],sh='<div style=\"color:#8b949e;font-size:11px;margin-bottom:4px\">Other live scores</div>';sh+=matchList(os)||'<div style=\"color:#8b949e;font-size:11px\">no other live matches</div>';document.getElementById('sb-pl-scores').innerHTML=sh;}",
   "    show('sb-pl-h2h',!!P.h2h);",
-  "    show('sb-pl-ask',!!P.ask);",
+  "    show('sb-pl-ask',!!P.ask);if(P.ask){var ast=document.getElementById('sb-ask-status');if(ast){if(d.serving){ast.textContent='\\u25cf Claude agent connected';ast.style.color='#3fb950';}else{ast.textContent='\\u25cb No agent \\u2014 run  /loop sportsball serve  to enable answers';ast.style.color='#d29922';}}}",
   "    var fr=document.getElementById('sb-fresh');if(fr)fr.textContent=d.at?'⟳ '+d.at:'';},",
   "  result:function(d){mk();var o=document.getElementById('sb-h2h-out');if(!o)return;var g=(d&&d.games)||[];var h='<div style=\"color:#8b949e;font-size:11px;margin-bottom:4px\">Past meetings — '+esc((d&&d.team)||'')+'</div>';if(!g.length)h+='<div style=\"color:#8b949e\">none found</div>';for(var i=0;i<g.length;i++){var col=g[i].result==='W'?'#3fb950':g[i].result==='L'?'#f85149':'#8b949e';h+='<div style=\"display:flex;gap:8px;padding:2px 0;border-bottom:1px solid #21262d\"><span style=\"color:#8b949e;width:5.5rem\">'+esc(g[i].date)+'</span><b style=\"width:2.5rem\">'+esc(g[i].score)+'</b><span style=\"color:'+col+'\">'+esc(g[i].result)+'</span></div>';}o.innerHTML=h;},",
   "  askResult:function(t){mk();var o=document.getElementById('sb-ask-out');if(o)o.textContent=t||'(no response)';}",
@@ -127,6 +127,12 @@ function sides(ev: EspnEvent) {
 // ask bus and waits for an EXTERNAL Claude agent (one the user keeps looping on
 // `sportsball fifa ask`) to answer. The answer is capped short for the panel.
 async function askViaBus(ev: EspnEvent, question: string): Promise<string> {
+  // Fail fast (and instructively) if nobody is serving the bus — otherwise the
+  // question would just sit until the 2-min timeout. This is the common gotcha:
+  // opening the stream does NOT start an answerer.
+  if (!(await isServing())) {
+    return "No Claude agent is serving. In a Claude session, run:  /loop sportsball serve  — then ask again.";
+  }
   const live = await getLiveMatch(ev.id).catch(() => null);
   const ctx = live
     ? `${live.homeAbbr} ${live.homeScore}-${live.awayScore} ${live.awayAbbr} (${live.detail})`
@@ -349,6 +355,7 @@ export async function runOverlayStream(
   let lastTitle = "";
   let ticks = 0;
   let running = false;
+  let serving = false; // whether a Claude agent is currently answering the ask bus
 
   const push = (data: unknown) =>
     session?.send("Runtime.evaluate", { expression: "window.__sb&&window.__sb.update(" + JSON.stringify(data) + ")" }).catch(() => {});
@@ -367,13 +374,18 @@ export async function runOverlayStream(
     const cutoff = Date.now() - delaySec * 1000;
     let chosen = buffer[0]!;
     for (const b of buffer) if (b.t <= cutoff) chosen = b;
-    push({ ...chosen.data, delay: delaySec, panels });
+    push({ ...chosen.data, delay: delaySec, panels, serving });
   };
 
   const tick = async () => {
     if (running || !session) return;
     running = true;
     try {
+      try {
+        serving = await isServing();
+      } catch {
+        serving = false;
+      }
       const title = await readTitle();
       if (title !== lastTitle) {
         lastTitle = title;
@@ -397,7 +409,7 @@ export async function runOverlayStream(
       }
 
       if (mode === "today") {
-        push({ ...(await todaySnapshot()), panels });
+        push({ ...(await todaySnapshot()), panels, serving });
         ticks++;
         return;
       }

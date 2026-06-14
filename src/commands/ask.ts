@@ -29,7 +29,7 @@ export async function ask(args: string[]): Promise<void> {
 // answerer, so no `claude -p` is ever spawned.
 export async function serve(args: string[]): Promise<void> {
   const waitSec = numFlag(args, "--wait") ?? 60;
-  const q = await nextPending(Math.max(0, waitSec) * 1000);
+  const q = await nextPending(Math.max(0, waitSec) * 1000, true); // mark serving
   if (!q) {
     console.log(
       'No pending sportsball AI questions right now — nothing to do this tick. ' +
@@ -62,7 +62,7 @@ export async function serve(args: string[]): Promise<void> {
 async function next(args: string[]): Promise<void> {
   const waitSec = numFlag(args, "--wait") ?? 0;
   const json = args.includes("--json");
-  const q = await nextPending(Math.max(0, waitSec) * 1000);
+  const q = await nextPending(Math.max(0, waitSec) * 1000, true); // mark serving
   if (!q) {
     console.log(json ? "null" : c.dim("No pending questions."));
     return;

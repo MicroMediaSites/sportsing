@@ -53,6 +53,27 @@ function assertId(id: string): void {
   if (typeof id !== "string" || !ID_RE.test(id)) throw new Error(`invalid ask id: ${JSON.stringify(id)}`);
 }
 
+const HEARTBEAT_FILE = join(BUS_DIR, ".serving");
+
+/** A serving agent (`serve` / `ask --next`) refreshes this while it waits, so a
+ *  caller can tell whether anyone is listening before posting a question that
+ *  would otherwise just time out. */
+export async function touchHeartbeat(): Promise<void> {
+  await ensureDir();
+  await writeFile(HEARTBEAT_FILE, String(Date.now())).catch(() => {});
+}
+
+/** True if a serving agent refreshed the heartbeat within `maxAgeMs` (default
+ *  90s — comfortably longer than a `serve` loop's gap between ticks). */
+export async function isServing(maxAgeMs = 90_000): Promise<boolean> {
+  try {
+    const ts = Number(await readFile(HEARTBEAT_FILE, "utf8"));
+    return Number.isFinite(ts) && Date.now() - ts < maxAgeMs;
+  } catch {
+    return false;
+  }
+}
+
 async function writeJsonAtomic(path: string, data: unknown): Promise<void> {
   const tmp = path + ".tmp";
   await writeFile(tmp, JSON.stringify(data));
@@ -118,10 +139,13 @@ export async function listPending(): Promise<AskQuestion[]> {
   return out.sort((a, b) => a.ts - b.ts);
 }
 
-/** The oldest pending question, optionally blocking up to `waitMs` for one. */
-export async function nextPending(waitMs = 0): Promise<AskQuestion | null> {
+/** The oldest pending question, optionally blocking up to `waitMs` for one. When
+ *  `markServing` is set, refreshes the serving heartbeat each poll so callers can
+ *  detect that an agent is listening (used by `serve` / `ask --next`). */
+export async function nextPending(waitMs = 0, markServing = false): Promise<AskQuestion | null> {
   const deadline = Date.now() + waitMs;
   for (;;) {
+    if (markServing) await touchHeartbeat();
     const pending = await listPending();
     if (pending.length) return pending[0]!;
     if (Date.now() >= deadline) return null;
