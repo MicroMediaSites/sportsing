@@ -1,0 +1,8 @@
+version: 2
+updates:
+  # Keep the SHA-pinned GitHub Actions current: dependabot opens a PR that bumps
+  # both the pinned SHA and the trailing version comment when a new release lands.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly

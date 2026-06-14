@@ -76,6 +76,13 @@ commands; `ask` is low-level plumbing that `serve` wraps).
   keep `watch --wait` alive; it still blocks (it's reaped via the pidfile), so it's
   not a smoke-test — use `--smoke` for that.
 
+> **A note on how the overlay attaches.** When `watch` needs to inject the stats
+> overlay it launches Chrome with a DevTools remote-debugging port and drives the
+> page over CDP. That port is bound to **loopback (127.0.0.1) only** and used just
+> long enough to inject the overlay, but while the window is open any *local*
+> process could in principle attach to it. This is the same posture as any
+> CDP-automation tool; it's only a concern on a shared/multi-user machine.
+
 For a hands-off, agent-driven session — open the game **and** keep "Ask Claude" /
 "Get caught up" answered — use **`/loop agent-setup`** instead of running `watch`
 yourself (see the **AI** section below).

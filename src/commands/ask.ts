@@ -18,7 +18,7 @@ export async function ask(args: string[]): Promise<void> {
   if (args.includes("--reply")) return reply(args);
   if (args.includes("--list")) return list();
   if (args.includes("--next") || args.length === 0) return next(args);
-  console.error(c.red('Usage: sportsing fifa ask [--next [--wait N] [--json] | --reply <id> "<answer>" | --list]'));
+  console.error(c.red("Usage: sportsing fifa ask [--next [--wait N] [--json] | --reply <id> (answer on stdin) | --list]"));
   process.exitCode = 1;
 }
 
@@ -93,17 +93,34 @@ async function next(args: string[]): Promise<void> {
 async function reply(args: string[]): Promise<void> {
   const i = args.indexOf("--reply");
   const id = args[i + 1];
-  let answer = args
+  const argAnswer = args
     .slice(i + 2)
     .filter((a) => a !== "--json")
     .join(" ")
     .trim();
-  // Allow piping a (possibly multi-line) answer on stdin: `… | sportsing fifa ask --reply <id>`.
-  if (!answer && !process.stdin.isTTY) {
+  // When there's no controlling TTY — i.e. the serving agent's context — the
+  // answer MUST come from stdin (the quoted-heredoc path). The answer can echo
+  // untrusted viewer/API text; a quoted-arg path would invite shell injection at
+  // the call site, so we refuse to read an arg answer there and read stdin only.
+  // Interactively (a human at a TTY) a quoted-arg answer is still accepted.
+  let answer: string;
+  if (process.stdin.isTTY !== true) {
+    if (argAnswer) {
+      console.error(
+        c.red(
+          "Refusing an answer passed as a command argument with no TTY: deliver it on stdin instead " +
+            "(`sportsing fifa ask --reply <id> <<'SBEOF' … SBEOF`). A quoted arg can echo untrusted text and inject shell.",
+        ),
+      );
+      process.exitCode = 1;
+      return;
+    }
     answer = (await new Response(Bun.stdin.stream()).text()).trim();
+  } else {
+    answer = argAnswer;
   }
   if (!id || !answer) {
-    console.error(c.red("Usage: sportsing fifa ask --reply <id>   (answer on stdin: `… <<'SBEOF' <answer> SBEOF`, or pipe it). A quoted-arg answer also works but isn't injection-safe for echoed text."));
+    console.error(c.red("Usage: sportsing fifa ask --reply <id>   (answer on stdin: `… <<'SBEOF' <answer> SBEOF`, or pipe it). Interactively, a quoted-arg answer also works."));
     process.exitCode = 1;
     return;
   }
