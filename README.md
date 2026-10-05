@@ -91,6 +91,7 @@ through playoffs. Times are local; preseason games are tagged `PRE`, postseason
 | `bracket [--season YYYY]` | Playoff bracket (projected before the postseason) |
 | `fav [add\|rm\|list]` | Manage NBA favorites (`fav add UTAH`, `fav add Jazz`) |
 | `watch [team] [--wait] [--provider X] [--url L] [--smoke]` | Open the game where you can watch it — see **Where to watch** below |
+| `live [--notify [--quiet]]` | Auto-refreshing live board; `--notify` alerts for favorites — see **Live fav-alerts** below |
 
 `--team X` (abbreviation or name; NBA.com codes like `UTA` work too) picks one
 team for `today` / `next` / `schedule` / `results`; `--mine` limits them to your
@@ -151,6 +152,7 @@ sportsing next       # each favorite's next game + countdown, soonest first
 sportsing me         # last result + next game per favorite team
 ```
 
+Bare `live --notify` alerts across every sport too (see **Live fav-alerts**).
 Every other command needs a sport — a bare one (e.g. `sportsing standings`)
 prints the sports that have it and exits non-zero.
 
@@ -217,6 +219,8 @@ Turn `live` into an ambient alerter that pings you when your favorite teams play
 sportsing fifa fav add USA                 # set up favorites first
 sportsing fifa live --notify               # live board + OS notifications
 sportsing fifa live --notify --quiet &     # headless: alerts only, backgroundable
+sportsing nba live --notify                # same for the NBA (and `nhl live`)
+sportsing live --notify --quiet &          # one alerter for every sport with a favorite
 ```
 
 Each refresh diffs the latest scores against the previous tick and raises an OS
@@ -227,6 +231,20 @@ full-time alerts exactly once:
   `sportsing fifa watch <team>` for that match).
 - **Goal** — the scorer and the resulting scoreline (with a sound).
 - **Full time** — the final scoreline.
+
+NBA and NHL alert on what matters per sport, not every basket:
+
+- **NHL** — puck drop, every goal (with a sound), end of each period, overtime /
+  shootout, final.
+- **NBA** — tip-off, lead changes, a close finish (≤ 5 points with ≤ 5:00 left in
+  the 4th or OT, once per game), final.
+- **Tip-off / puck drop** are click-to-watch, routed like `<sport> watch` (see
+  **Where to watch**): a game on Fubo or League Pass opens on click; an
+  over-the-air-only game names its channel instead (nothing to click into).
+
+Bare `sportsing live --notify` polls every sport you have a favorite in from one
+process; a sport that can't load (e.g. FIFA without an API key) is reported and
+the rest keep alerting. Without `--quiet` it logs each alert as a line.
 
 Flags:
 
@@ -239,7 +257,7 @@ Flags:
 
 ### Click-to-watch requires `terminal-notifier`
 
-Clickable kickoff notifications use
+Clickable kickoff / tip-off / puck-drop notifications use
 [`terminal-notifier`](https://github.com/julienXX/terminal-notifier) (macOS):
 
 ```sh
@@ -249,7 +267,8 @@ brew install terminal-notifier
 Notifications **degrade gracefully** when it's absent: on macOS they fall back to
 `osascript` (plain banner, no click action); on Linux to `notify-send`; otherwise
 to a terminal bell. Nothing errors — you just don't get the one-click-to-watch
-behavior without `terminal-notifier`.
+behavior without `terminal-notifier`. A click opens a Terminal window running
+`watch` (Ctrl-C or close the stream window to stop).
 
 ## AI (analyze / predict / overlay "Ask Claude" + "Get caught up")
 
