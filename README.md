@@ -58,6 +58,24 @@ scores or tables).
 Run `sportsing fifa help` for the full list (`serve` and `ask` are the AI-bus
 commands; `ask` is low-level plumbing that `serve` wraps).
 
+## NBA
+
+`sportsing nba <command>` — the NBA via ESPN's free API (no key), preseason
+through playoffs. Times are local; preseason games are tagged `PRE`, postseason
+(incl. play-in) `POST`.
+
+| Command | What it does |
+|---|---|
+| `today [--tomorrow\|--yesterday\|--offset N]` | One day's games |
+| `next` | Next game + countdown |
+| `schedule` | A team's whole season by day (league-wide: next 7 days) |
+| `results` | Finished games, newest first (league-wide: last 7 days) |
+| `fav [add\|rm\|list]` | Manage NBA favorites (`fav add UTAH`, `fav add Jazz`) |
+
+`--team X` (abbreviation or name; NBA.com codes like `UTA` work too) picks one
+team for `today` / `next` / `schedule` / `results`; `--mine` limits them to your
+NBA favorites. NBA favorites are separate from FIFA ones.
+
 ## Watch
 
 `sportsing fifa watch [team] [team]` opens the broadcast in your own browser

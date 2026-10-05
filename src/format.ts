@@ -1,5 +1,6 @@
 import { c, pad, visibleLen } from "./ansi.ts";
 import type { Match, StandingRow, Stage } from "./types.ts";
+import type { Game, GameCompetitor } from "./game.ts";
 
 export function teamLabel(t: { name: string | null; tla?: string | null }): string {
   return t.tla || t.name || "TBD";
@@ -175,6 +176,48 @@ export function relativeTime(iso: string): string {
   else if (hours >= 1) s = `${hours}h ${mins % 60}m`;
   else s = `${mins}m`;
   return diff >= 0 ? `in ${s}` : `${s} ago`;
+}
+
+// --- Sport-neutral Game lines (NBA/NHL) ---
+
+/** Season-phase tag: "PRE" for preseason, "POST" for postseason (incl. the
+ *  NBA play-in), "" for the regular season. Plain text, for tests/alignment. */
+export function phaseTag(g: Game): string {
+  return g.seasonType === "preseason" ? "PRE" : g.seasonType === "postseason" ? "POST" : "";
+}
+
+/** Status column: local tip-off time before the game, a LIVE badge + the
+ *  source's clock text during it, the source's final text after it. */
+function gameStatus(g: Game): string {
+  if (g.state === "pre") return c.cyan(fmtTimeOnly(g.date));
+  if (g.state === "in") return c.bgGreen(c.bold(" LIVE ")) + (g.detail ? c.green(" " + g.detail) : "");
+  return c.dim(g.detail || "Final");
+}
+
+/** Score as a number for comparison; NaN when not yet scored. */
+const scoreNum = (s: string) => (s === "" ? NaN : Number(s));
+
+function side(t: GameCompetitor, other: GameCompetitor, g: Game): string {
+  const label = t.abbreviation || t.name;
+  if (g.state === "pre") return pad(label, 5) + "    ";
+  const won = g.state === "post" && scoreNum(t.score) > scoreNum(other.score);
+  const text = pad(label, 5) + pad(t.score, 4, "right");
+  return won ? c.bold(c.white(text)) : text;
+}
+
+/** One game as an aligned line, US style (away @ home):
+ *  "UTAH  109  @  DEN    97   Final  PRE". */
+export function gameLine(g: Game): string {
+  const tag = phaseTag(g);
+  const tagStr = tag === "PRE" ? c.yellow(tag) : tag === "POST" ? c.magenta(tag) : "";
+  return (
+    side(g.away, g.home, g) +
+    c.dim("  @  ") +
+    side(g.home, g.away, g) +
+    "   " +
+    pad(gameStatus(g), 12) +
+    (tagStr ? " " + tagStr : "")
+  ).trimEnd();
 }
 
 export { visibleLen };
