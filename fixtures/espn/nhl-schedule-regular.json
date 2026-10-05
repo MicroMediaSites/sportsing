@@ -1,0 +1,642 @@
+{
+  "events": [
+    {
+      "id": "401891828",
+      "date": "2026-10-02T01:30Z",
+      "name": "Chicago Blackhawks at Utah Mammoth",
+      "shortName": "CHI @ UTA",
+      "season": {
+        "year": 2027,
+        "displayName": "2026-27"
+      },
+      "seasonType": {
+        "id": "2",
+        "type": 2,
+        "name": "Regular Season",
+        "abbreviation": "reg"
+      },
+      "timeValid": true,
+      "competitions": [
+        {
+          "id": "401891828",
+          "date": "2026-10-02T01:30Z",
+          "attendance": 14111,
+          "type": {
+            "id": "1",
+            "text": "Standard",
+            "abbreviation": "STD",
+            "slug": "standard",
+            "type": "standard"
+          },
+          "timeValid": true,
+          "neutralSite": false,
+          "boxscoreAvailable": true,
+          "ticketsAvailable": false,
+          "venue": {
+            "fullName": "Delta Center",
+            "address": {
+              "city": "Salt Lake City",
+              "state": "UT",
+              "country": "USA"
+            }
+          },
+          "competitors": [
+            {
+              "id": "129764",
+              "type": "team",
+              "order": 0,
+              "homeAway": "home",
+              "winner": true,
+              "team": {
+                "id": "129764",
+                "location": "Utah",
+                "nickname": "Mammoth",
+                "abbreviation": "UTA",
+                "displayName": "Utah Mammoth",
+                "shortDisplayName": "Mammoth"
+              },
+              "score": {
+                "value": 6.0,
+                "displayValue": "6"
+              },
+              "record": [
+                {
+                  "id": "1",
+                  "abbreviation": "Game",
+                  "displayName": "Record Year To Date",
+                  "shortDisplayName": "YTD",
+                  "description": "Team Record year to date",
+                  "type": "ytd",
+                  "displayValue": "1-0-0, 2 PTS"
+                },
+                {
+                  "id": "2",
+                  "abbreviation": "HOME",
+                  "displayName": "Home",
+                  "shortDisplayName": "HOME",
+                  "description": "Home Record",
+                  "type": "home",
+                  "displayValue": "1-0-0"
+                },
+                {
+                  "id": "3",
+                  "abbreviation": "AWAY",
+                  "displayName": "Away",
+                  "shortDisplayName": "AWAY",
+                  "description": "Away Record",
+                  "type": "road",
+                  "displayValue": "0-0-0"
+                }
+              ],
+              "curatedRank": {
+                "current": 99
+              }
+            },
+            {
+              "id": "4",
+              "type": "team",
+              "order": 1,
+              "homeAway": "away",
+              "winner": false,
+              "team": {
+                "id": "4",
+                "location": "Chicago",
+                "nickname": "Blackhawks",
+                "abbreviation": "CHI",
+                "displayName": "Chicago Blackhawks",
+                "shortDisplayName": "Blackhawks"
+              },
+              "score": {
+                "value": 0.0,
+                "displayValue": "0"
+              },
+              "record": [
+                {
+                  "id": "1",
+                  "abbreviation": "Game",
+                  "displayName": "Record Year To Date",
+                  "shortDisplayName": "YTD",
+                  "description": "Team Record year to date",
+                  "type": "ytd",
+                  "displayValue": "0-2-0, 0 PTS"
+                },
+                {
+                  "id": "2",
+                  "abbreviation": "HOME",
+                  "displayName": "Home",
+                  "shortDisplayName": "HOME",
+                  "description": "Home Record",
+                  "type": "home",
+                  "displayValue": "0-0-0"
+                },
+                {
+                  "id": "3",
+                  "abbreviation": "AWAY",
+                  "displayName": "Away",
+                  "shortDisplayName": "AWAY",
+                  "description": "Away Record",
+                  "type": "road",
+                  "displayValue": "0-2-0"
+                }
+              ],
+              "curatedRank": {
+                "current": 99
+              }
+            }
+          ],
+          "notes": [],
+          "broadcasts": [
+            {
+              "type": {
+                "id": "4",
+                "shortName": "Streaming"
+              },
+              "market": {
+                "id": "1",
+                "type": "National"
+              },
+              "media": {
+                "shortName": "Disney+"
+              },
+              "lang": "en",
+              "region": "us",
+              "partnered": false
+            },
+            {
+              "type": {
+                "id": "4",
+                "shortName": "Streaming"
+              },
+              "market": {
+                "id": "1",
+                "type": "National"
+              },
+              "media": {
+                "shortName": "ESPN+"
+              },
+              "lang": "en",
+              "region": "us",
+              "partnered": false
+            },
+            {
+              "type": {
+                "id": "4",
+                "shortName": "Streaming"
+              },
+              "market": {
+                "id": "1",
+                "type": "National"
+              },
+              "media": {
+                "shortName": "Hulu"
+              },
+              "lang": "en",
+              "region": "us",
+              "partnered": false
+            }
+          ],
+          "status": {
+            "clock": 0.0,
+            "displayClock": "0:00",
+            "period": 3,
+            "type": {
+              "id": "3",
+              "name": "STATUS_FINAL",
+              "state": "post",
+              "completed": true,
+              "description": "Final",
+              "detail": "Final",
+              "shortDetail": "Final"
+            },
+            "featuredAthletes": [
+              {
+                "name": "winningGoalie",
+                "displayName": "Winning Goalie",
+                "shortDisplayName": "Winning Goalie",
+                "abbreviation": "W",
+                "playerId": 3942065,
+                "athlete": {
+                  "id": "3942065",
+                  "lastName": "Vejmelka",
+                  "displayName": "Karel Vejmelka",
+                  "shortName": "K. Vejmelka"
+                },
+                "team": {
+                  "id": "129764",
+                  "name": "Mammoth"
+                },
+                "projections": {
+                  "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/events/401891828/competitions/401891828/competitors/129764/roster/3942065/projections?lang=en&region=us"
+                }
+              },
+              {
+                "name": "losingGoalie",
+                "displayName": "Losing Goalie",
+                "shortDisplayName": "Losing Goalie",
+                "abbreviation": "L",
+                "playerId": 4894729,
+                "athlete": {
+                  "id": "4894729",
+                  "lastName": "Soderblom",
+                  "displayName": "Arvid Soderblom",
+                  "shortName": "A. Soderblom"
+                },
+                "team": {
+                  "id": "4",
+                  "name": "Blackhawks"
+                },
+                "projections": {
+                  "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/events/401891828/competitions/401891828/competitors/4/roster/4894729/projections?lang=en&region=us"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "401892443",
+      "date": "2026-10-04T22:00Z",
+      "name": "Utah Mammoth at New York Rangers",
+      "shortName": "UTA @ NYR",
+      "season": {
+        "year": 2027,
+        "displayName": "2026-27"
+      },
+      "seasonType": {
+        "id": "2",
+        "type": 2,
+        "name": "Regular Season",
+        "abbreviation": "reg"
+      },
+      "timeValid": true,
+      "competitions": [
+        {
+          "id": "401892443",
+          "date": "2026-10-04T22:00Z",
+          "attendance": 17377,
+          "type": {
+            "id": "1",
+            "text": "Standard",
+            "abbreviation": "STD",
+            "slug": "standard",
+            "type": "standard"
+          },
+          "timeValid": true,
+          "neutralSite": false,
+          "boxscoreAvailable": true,
+          "ticketsAvailable": false,
+          "venue": {
+            "fullName": "Madison Square Garden",
+            "address": {
+              "city": "New York",
+              "state": "NY",
+              "country": "USA"
+            }
+          },
+          "competitors": [
+            {
+              "id": "13",
+              "type": "team",
+              "order": 0,
+              "homeAway": "home",
+              "winner": true,
+              "team": {
+                "id": "13",
+                "location": "New York",
+                "nickname": "Rangers",
+                "abbreviation": "NYR",
+                "displayName": "New York Rangers",
+                "shortDisplayName": "Rangers"
+              },
+              "score": {
+                "value": 4.0,
+                "displayValue": "4"
+              },
+              "record": [
+                {
+                  "id": "1",
+                  "abbreviation": "Game",
+                  "displayName": "Record Year To Date",
+                  "shortDisplayName": "YTD",
+                  "description": "Team Record year to date",
+                  "type": "ytd",
+                  "displayValue": "3-1-0, 6 PTS"
+                },
+                {
+                  "id": "2",
+                  "abbreviation": "HOME",
+                  "displayName": "Home",
+                  "shortDisplayName": "HOME",
+                  "description": "Home Record",
+                  "type": "home",
+                  "displayValue": "2-0-0"
+                },
+                {
+                  "id": "3",
+                  "abbreviation": "AWAY",
+                  "displayName": "Away",
+                  "shortDisplayName": "AWAY",
+                  "description": "Away Record",
+                  "type": "road",
+                  "displayValue": "1-1-0"
+                }
+              ],
+              "curatedRank": {
+                "current": 99
+              }
+            },
+            {
+              "id": "129764",
+              "type": "team",
+              "order": 1,
+              "homeAway": "away",
+              "winner": false,
+              "team": {
+                "id": "129764",
+                "location": "Utah",
+                "nickname": "Mammoth",
+                "abbreviation": "UTA",
+                "displayName": "Utah Mammoth",
+                "shortDisplayName": "Mammoth"
+              },
+              "score": {
+                "value": 2.0,
+                "displayValue": "2"
+              },
+              "record": [
+                {
+                  "id": "1",
+                  "abbreviation": "Game",
+                  "displayName": "Record Year To Date",
+                  "shortDisplayName": "YTD",
+                  "description": "Team Record year to date",
+                  "type": "ytd",
+                  "displayValue": "2-1-0, 4 PTS"
+                },
+                {
+                  "id": "2",
+                  "abbreviation": "HOME",
+                  "displayName": "Home",
+                  "shortDisplayName": "HOME",
+                  "description": "Home Record",
+                  "type": "home",
+                  "displayValue": "1-0-0"
+                },
+                {
+                  "id": "3",
+                  "abbreviation": "AWAY",
+                  "displayName": "Away",
+                  "shortDisplayName": "AWAY",
+                  "description": "Away Record",
+                  "type": "road",
+                  "displayValue": "1-1-0"
+                }
+              ],
+              "curatedRank": {
+                "current": 99
+              }
+            }
+          ],
+          "notes": [],
+          "broadcasts": [
+            {
+              "type": {
+                "id": "4",
+                "shortName": "Streaming"
+              },
+              "market": {
+                "id": "1",
+                "type": "National"
+              },
+              "media": {
+                "shortName": "ESPN+"
+              },
+              "lang": "en",
+              "region": "us",
+              "partnered": false
+            },
+            {
+              "type": {
+                "id": "1",
+                "shortName": "TV"
+              },
+              "market": {
+                "id": "2",
+                "type": "Home"
+              },
+              "media": {
+                "shortName": "MSG"
+              },
+              "lang": "en",
+              "region": "us",
+              "partnered": false
+            },
+            {
+              "type": {
+                "id": "1",
+                "shortName": "TV"
+              },
+              "market": {
+                "id": "3",
+                "type": "Away"
+              },
+              "media": {
+                "shortName": "Utah 16"
+              },
+              "lang": "en",
+              "region": "us",
+              "partnered": false
+            }
+          ],
+          "status": {
+            "clock": 0.0,
+            "displayClock": "0:00",
+            "period": 3,
+            "type": {
+              "id": "3",
+              "name": "STATUS_FINAL",
+              "state": "post",
+              "completed": true,
+              "description": "Final",
+              "detail": "Final",
+              "shortDetail": "Final"
+            },
+            "featuredAthletes": [
+              {
+                "name": "winningGoalie",
+                "displayName": "Winning Goalie",
+                "shortDisplayName": "Winning Goalie",
+                "abbreviation": "W",
+                "playerId": 3151297,
+                "athlete": {
+                  "id": "3151297",
+                  "lastName": "Shesterkin",
+                  "displayName": "Igor Shesterkin",
+                  "shortName": "I. Shesterkin"
+                },
+                "team": {
+                  "id": "13",
+                  "name": "Rangers"
+                },
+                "projections": {
+                  "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/events/401892443/competitions/401892443/competitors/13/roster/3151297/projections?lang=en&region=us"
+                }
+              },
+              {
+                "name": "losingGoalie",
+                "displayName": "Losing Goalie",
+                "shortDisplayName": "Losing Goalie",
+                "abbreviation": "L",
+                "playerId": 3942065,
+                "athlete": {
+                  "id": "3942065",
+                  "lastName": "Vejmelka",
+                  "displayName": "Karel Vejmelka",
+                  "shortName": "K. Vejmelka"
+                },
+                "team": {
+                  "id": "129764",
+                  "name": "Mammoth"
+                },
+                "projections": {
+                  "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/events/401892443/competitions/401892443/competitors/129764/roster/3942065/projections?lang=en&region=us"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "401892500",
+      "date": "2026-10-14T01:00Z",
+      "name": "Toronto Maple Leafs at Utah Mammoth",
+      "shortName": "TOR @ UTA",
+      "season": {
+        "year": 2027,
+        "displayName": "2026-27"
+      },
+      "seasonType": {
+        "id": "2",
+        "type": 2,
+        "name": "Regular Season",
+        "abbreviation": "reg"
+      },
+      "timeValid": true,
+      "competitions": [
+        {
+          "id": "401892500",
+          "date": "2026-10-14T01:00Z",
+          "attendance": 0,
+          "type": {
+            "id": "1",
+            "text": "Standard",
+            "abbreviation": "STD",
+            "slug": "standard",
+            "type": "standard"
+          },
+          "timeValid": true,
+          "neutralSite": false,
+          "boxscoreAvailable": false,
+          "ticketsAvailable": true,
+          "venue": {
+            "fullName": "Delta Center",
+            "address": {
+              "city": "Salt Lake City",
+              "state": "UT",
+              "country": "USA"
+            }
+          },
+          "competitors": [
+            {
+              "id": "129764",
+              "type": "team",
+              "order": 0,
+              "homeAway": "home",
+              "team": {
+                "id": "129764",
+                "location": "Utah",
+                "nickname": "Mammoth",
+                "abbreviation": "UTA",
+                "displayName": "Utah Mammoth",
+                "shortDisplayName": "Mammoth"
+              },
+              "curatedRank": {
+                "current": 99
+              }
+            },
+            {
+              "id": "21",
+              "type": "team",
+              "order": 1,
+              "homeAway": "away",
+              "team": {
+                "id": "21",
+                "location": "Toronto",
+                "nickname": "Maple Leafs",
+                "abbreviation": "TOR",
+                "displayName": "Toronto Maple Leafs",
+                "shortDisplayName": "Maple Leafs"
+              },
+              "curatedRank": {
+                "current": 99
+              }
+            }
+          ],
+          "notes": [],
+          "broadcasts": [
+            {
+              "type": {
+                "id": "4",
+                "shortName": "Streaming"
+              },
+              "market": {
+                "id": "1",
+                "type": "National"
+              },
+              "media": {
+                "shortName": "ESPN+",
+                "logo": "https://a.espncdn.com/guid/322a7e47-3cdb-3b5c-ab1b-678e1f2c27e5/logos/default.png",
+                "darkLogo": "https://a.espncdn.com/guid/322a7e47-3cdb-3b5c-ab1b-678e1f2c27e5/logos/default-dark.png"
+              },
+              "lang": "en",
+              "region": "us",
+              "partnered": false
+            },
+            {
+              "type": {
+                "id": "1",
+                "shortName": "TV"
+              },
+              "market": {
+                "id": "2",
+                "type": "Home"
+              },
+              "media": {
+                "shortName": "Utah 16"
+              },
+              "lang": "en",
+              "region": "us",
+              "partnered": false
+            }
+          ],
+          "status": {
+            "clock": 0.0,
+            "displayClock": "0:00",
+            "period": 0,
+            "type": {
+              "id": "1",
+              "name": "STATUS_SCHEDULED",
+              "state": "pre",
+              "completed": false,
+              "description": "Scheduled",
+              "detail": "Tue, October 13th at 9:00 PM EDT",
+              "shortDetail": "10/13 - 9:00 PM EDT"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

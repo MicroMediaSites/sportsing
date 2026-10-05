@@ -1,0 +1,383 @@
+{
+  "events": [
+    {
+      "id": "401914127",
+      "uid": "s:40~l:46~e:401914127",
+      "date": "2026-10-04T23:00Z",
+      "name": "Utah Jazz at Denver Nuggets",
+      "shortName": "UTAH @ DEN",
+      "season": {
+        "year": 2027,
+        "type": 1,
+        "slug": "preseason"
+      },
+      "competitions": [
+        {
+          "id": "401914127",
+          "uid": "s:40~l:46~e:401914127~c:401914127",
+          "date": "2026-10-04T23:00Z",
+          "attendance": 7860,
+          "type": {
+            "id": "1",
+            "abbreviation": "STD"
+          },
+          "timeValid": true,
+          "neutralSite": false,
+          "conferenceCompetition": false,
+          "playByPlayAvailable": true,
+          "recent": true,
+          "venue": {
+            "id": "2207",
+            "fullName": "CU Events Center",
+            "address": {
+              "city": "Boulder",
+              "state": "CO"
+            },
+            "indoor": true
+          },
+          "competitors": [
+            {
+              "id": "7",
+              "uid": "s:40~l:46~t:7",
+              "type": "team",
+              "order": 0,
+              "homeAway": "home",
+              "winner": false,
+              "team": {
+                "id": "7",
+                "uid": "s:40~l:46~t:7",
+                "location": "Denver",
+                "name": "Nuggets",
+                "abbreviation": "DEN",
+                "displayName": "Denver Nuggets",
+                "shortDisplayName": "Nuggets",
+                "color": "0e2240",
+                "alternateColor": "fec524",
+                "isActive": true,
+                "venue": {
+                  "id": "892"
+                },
+                "logo": "https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/den.png"
+              },
+              "score": "97",
+              "linescores": [
+                {
+                  "value": 26.0,
+                  "displayValue": "26",
+                  "period": 1
+                },
+                {
+                  "value": 26.0,
+                  "displayValue": "26",
+                  "period": 2
+                },
+                {
+                  "value": 25.0,
+                  "displayValue": "25",
+                  "period": 3
+                },
+                {
+                  "value": 20.0,
+                  "displayValue": "20",
+                  "period": 4
+                }
+              ],
+              "records": [
+                {
+                  "name": "overall",
+                  "abbreviation": "Game",
+                  "type": "total",
+                  "summary": "0-1"
+                },
+                {
+                  "name": "Home",
+                  "type": "home",
+                  "summary": "0-1"
+                },
+                {
+                  "name": "Road",
+                  "type": "road",
+                  "summary": "0-0"
+                }
+              ]
+            },
+            {
+              "id": "26",
+              "uid": "s:40~l:46~t:26",
+              "type": "team",
+              "order": 1,
+              "homeAway": "away",
+              "winner": true,
+              "team": {
+                "id": "26",
+                "uid": "s:40~l:46~t:26",
+                "location": "Utah",
+                "name": "Jazz",
+                "abbreviation": "UTAH",
+                "displayName": "Utah Jazz",
+                "shortDisplayName": "Jazz",
+                "color": "4e008e",
+                "alternateColor": "79a3dc",
+                "isActive": true,
+                "venue": {
+                  "id": "3093"
+                },
+                "logo": "https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/utah.png"
+              },
+              "score": "109",
+              "linescores": [
+                {
+                  "value": 36.0,
+                  "displayValue": "36",
+                  "period": 1
+                },
+                {
+                  "value": 27.0,
+                  "displayValue": "27",
+                  "period": 2
+                },
+                {
+                  "value": 25.0,
+                  "displayValue": "25",
+                  "period": 3
+                },
+                {
+                  "value": 21.0,
+                  "displayValue": "21",
+                  "period": 4
+                }
+              ],
+              "records": [
+                {
+                  "name": "overall",
+                  "abbreviation": "Game",
+                  "type": "total",
+                  "summary": "1-0"
+                },
+                {
+                  "name": "Home",
+                  "type": "home",
+                  "summary": "0-0"
+                },
+                {
+                  "name": "Road",
+                  "type": "road",
+                  "summary": "1-0"
+                }
+              ]
+            }
+          ],
+          "notes": [],
+          "status": {
+            "clock": 0.0,
+            "displayClock": "0.0",
+            "period": 4,
+            "type": {
+              "id": "3",
+              "name": "STATUS_FINAL",
+              "state": "post",
+              "completed": true,
+              "description": "Final",
+              "detail": "Final",
+              "shortDetail": "Final"
+            }
+          },
+          "broadcasts": [
+            {
+              "market": "national",
+              "names": [
+                "NBA TV"
+              ]
+            }
+          ],
+          "format": {
+            "regulation": {
+              "periods": 4
+            }
+          },
+          "startDate": "2026-10-04T23:00Z",
+          "broadcast": "NBA TV",
+          "geoBroadcasts": [
+            {
+              "type": {
+                "id": "1",
+                "shortName": "TV"
+              },
+              "market": {
+                "id": "1",
+                "type": "National"
+              },
+              "media": {
+                "shortName": "NBA TV"
+              },
+              "lang": "en",
+              "region": "us"
+            }
+          ],
+          "highlights": [
+            {
+              "id": 50106547,
+              "cerebroId": "6ac3023bf18aef7bd1a80a0c",
+              "source": "espn",
+              "headline": "Utah Jazz vs. Denver Nuggets: Game Highlights",
+              "description": "Utah Jazz vs. Denver Nuggets: Game Highlights",
+              "lastModified": "2026-10-05T01:53:24Z",
+              "originalPublishDate": "2026-10-05T01:49:48Z",
+              "duration": 65,
+              "timeRestrictions": {
+                "embargoDate": "2026-10-05T01:49:37Z",
+                "expirationDate": "2027-07-31T04:00:00Z"
+              },
+              "deviceRestrictions": {
+                "devices": [
+                  "settop",
+                  "tablet",
+                  "handset",
+                  "ipad",
+                  "desktop"
+                ],
+                "type": "whitelist"
+              },
+              "geoRestrictions": {
+                "countries": [
+                  "PR",
+                  "HN",
+                  "PY",
+                  "HT",
+                  "IE",
+                  "AG",
+                  "ZA",
+                  "AI",
+                  "AM",
+                  "AO",
+                  "AR",
+                  "AS",
+                  "RE",
+                  "ZM",
+                  "AU",
+                  "AW",
+                  "ZW",
+                  "BB",
+                  "JM",
+                  "BF",
+                  "RW",
+                  "BI",
+                  "BJ",
+                  "BM",
+                  "BO",
+                  "BQ",
+                  "BR",
+                  "SC",
+                  "BS",
+                  "BW",
+                  "BZ",
+                  "SL",
+                  "KE",
+                  "SN",
+                  "SR",
+                  "SS",
+                  "CD",
+                  "ST",
+                  "KM",
+                  "KN",
+                  "CF",
+                  "SV",
+                  "CG",
+                  "SX",
+                  "CI",
+                  "SZ",
+                  "CL",
+                  "CM",
+                  "CO",
+                  "KY",
+                  "TC",
+                  "CR",
+                  "CU",
+                  "TG",
+                  "CV",
+                  "LC",
+                  "TT",
+                  "LR",
+                  "TZ",
+                  "LS",
+                  "DO",
+                  "UG",
+                  "UK",
+                  "UM",
+                  "MF",
+                  "MG",
+                  "US",
+                  "EC",
+                  "ML",
+                  "MP",
+                  "UY",
+                  "MQ",
+                  "MS",
+                  "MU",
+                  "MW",
+                  "MX",
+                  "VC",
+                  "ER",
+                  "MZ",
+                  "VE",
+                  "ET",
+                  "VG",
+                  "NA",
+                  "VI",
+                  "NE",
+                  "NG",
+                  "NI",
+                  "NZ",
+                  "GA",
+                  "GB",
+                  "GD",
+                  "GF",
+                  "GH",
+                  "GM",
+                  "GN",
+                  "GP",
+                  "GQ",
+                  "GT",
+                  "GU",
+                  "GW",
+                  "PA",
+                  "GY",
+                  "PE",
+                  "PH"
+                ],
+                "type": "whitelist"
+              },
+              "thumbnail": "https://espnmedia-cdn.akamaized.net/espn/media/common/wsc/2026/1005/96f93cb7-9e57-4ef2-9056-fe6edce0f32a/96f93cb7-9e57-4ef2-9056-fe6edce0f32a.jpg",
+              "ad": {
+                "bundle": "nba_top_plays",
+                "sport": "nba"
+              },
+              "tracking": {
+                "coverageType": "Final Game Highlight",
+                "leagueName": "NBA",
+                "program": "NBA TV",
+                "sportName": "basketball",
+                "trackingId": "dm_20261004_NBA_utah_jazz_vs_denver_nuggets_game_highlights",
+                "trackingName": "NBA_One-Play (Utah Jazz vs. Denver Nuggets: Game Highlights) 2026/10/04 ESHEET"
+              }
+            }
+          ]
+        }
+      ],
+      "status": {
+        "clock": 0.0,
+        "displayClock": "0.0",
+        "period": 4,
+        "type": {
+          "id": "3",
+          "name": "STATUS_FINAL",
+          "state": "post",
+          "completed": true,
+          "description": "Final",
+          "detail": "Final",
+          "shortDetail": "Final"
+        }
+      }
+    }
+  ]
+}
