@@ -1,6 +1,16 @@
 import { test, expect } from "bun:test";
 // Pure helpers only — these tests never read or write ~/.config/sportsing.
-import { parseFavorite, formatFavorite, favoritesFor, withFavorite, withoutFavorite } from "./config.ts";
+import {
+  parseFavorite,
+  formatFavorite,
+  favoritesFor,
+  withFavorite,
+  withoutFavorite,
+  parseSubscriptions,
+  subscriptionsOf,
+  parseHomeMarket,
+  homeMarketOf,
+} from "./config.ts";
 
 test("parseFavorite: prefixed entries split into sport + team", () => {
   expect(parseFavorite("nba:UTAH")).toEqual({ sport: "nba", team: "UTAH" });
@@ -64,4 +74,31 @@ test("legacy unprefixed favorites read as fifa and migrate to prefixed on write"
 
 test("blank entries are ignored", () => {
   expect(favoritesFor(["", "  ", "USA"], "fifa")).toEqual(["USA"]);
+});
+
+// ── Subscriptions + home market (pure helpers) ───────────────────────────────
+test("parseSubscriptions: commas/spaces, any case, deduped, canonical order", () => {
+  expect(parseSubscriptions(["local-ota,FUBO", "fubo", " nba-league-pass "])).toEqual({
+    subscriptions: ["fubo", "nba-league-pass", "local-ota"],
+    invalid: [],
+  });
+});
+
+test("parseSubscriptions: reports unrecognized ids", () => {
+  expect(parseSubscriptions(["fubo,espn+", "hulu", "espn+"])).toEqual({ subscriptions: ["fubo"], invalid: ["espn+", "hulu"] });
+});
+
+test("subscriptionsOf: tolerates missing / malformed stored values", () => {
+  expect(subscriptionsOf(undefined)).toEqual([]);
+  expect(subscriptionsOf("fubo")).toEqual([]);
+  expect(subscriptionsOf(["fubo", 3, "gone-service", "local-ota"])).toEqual(["fubo", "local-ota"]);
+});
+
+test("home market: defaults to utah; only known markets parse", () => {
+  expect(homeMarketOf(undefined)).toBe("utah");
+  expect(homeMarketOf("atlantis")).toBe("utah");
+  expect(homeMarketOf(" Utah ")).toBe("utah");
+  expect(parseHomeMarket("UTAH")).toBe("utah");
+  expect(parseHomeMarket("atlantis")).toBeNull();
+  expect(parseHomeMarket("constructor")).toBeNull();
 });
