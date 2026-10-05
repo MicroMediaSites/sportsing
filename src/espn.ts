@@ -25,8 +25,9 @@ export type League = (typeof LEAGUES)[keyof typeof LEAGUES];
 /** The default league — every pre-existing (World Cup) call site uses it. */
 export const FIFA: League = LEAGUES.fifa;
 
-/** ESPN season types for team schedules (`seasontype=`). */
-export const SEASON_TYPES = { preseason: 1, regular: 2, postseason: 3 } as const;
+/** ESPN season types for team schedules (`seasontype=`). 5 is the NBA play-in,
+ *  which ESPN schedules separately from the postseason proper (3). */
+export const SEASON_TYPES = { preseason: 1, regular: 2, postseason: 3, playIn: 5 } as const;
 export type SeasonType = (typeof SEASON_TYPES)[keyof typeof SEASON_TYPES];
 
 const SITE = "https://site.api.espn.com/apis/site/v2/sports";
@@ -284,11 +285,20 @@ export async function getTeamSchedule(
   return (await rawTeamSchedule(league, team, seasonType, ttlMs)).map(normalizeEvent);
 }
 
-/** Raw schedule events (drift-checked) — shared by getTeamSchedule/getTeamGames. */
-async function rawTeamSchedule(league: League, team: string | number, seasonType: SeasonType, ttlMs: number): Promise<any[]> {
+/** Raw schedule events (drift-checked) — shared by getTeamSchedule/getTeamGames/
+ *  getTeamPlayoffGames. `season` (ESPN year, e.g. 2026 for 2025-26) defaults to
+ *  the current one. */
+async function rawTeamSchedule(
+  league: League,
+  team: string | number,
+  seasonType: SeasonType,
+  ttlMs: number,
+  season?: number,
+): Promise<any[]> {
+  const seasonQs = season === undefined ? "" : `&season=${season}`;
   const raw = await fetchEspn(
-    espnUrl(league, `teams/${encodeURIComponent(String(team))}/schedule?seasontype=${seasonType}`),
-    espnCacheKey(league, `sched${seasonType}`, team),
+    espnUrl(league, `teams/${encodeURIComponent(String(team))}/schedule?seasontype=${seasonType}${seasonQs}`),
+    espnCacheKey(league, `sched${seasonType}${season === undefined ? "" : `_${season}`}`, team),
     ttlMs,
     "team schedule",
   );
@@ -304,6 +314,82 @@ export async function getTeamGames(
   ttlMs = 5 * 60_000,
 ): Promise<Game[]> {
   return (await rawTeamSchedule(league, team, seasonType, ttlMs)).map((e) => toGame(e, seasonType));
+}
+
+// --- Postseason (bracket) ---
+
+export type Conference = "East" | "West";
+
+/** A postseason or play-in game plus where it sits in the bracket. */
+export interface PlayoffGame {
+  game: Game;
+  /** 1 = first round … 4 = the league final; null for play-in or unrecognized. */
+  round: number | null;
+  /** The game's conference; null for the league final (and unrecognized notes). */
+  conference: Conference | null;
+  playIn: boolean;
+  /** The note without conference/game number, e.g. "7th Place vs 8th Place". */
+  label: string;
+}
+
+/** ESPN competition type → round. Observed 2025-26 for both NBA and NHL. */
+const ROUND_CODES: Record<string, number> = { RD16: 1, QTR: 2, SEMI: 3, FINAL: 4 };
+
+/**
+ * Interpret a postseason event's note and competition type. Notes look like
+ * "East 1st Round - Game 5", "West Final - Game 2", "NBA Finals - Game 4",
+ * "Stanley Cup Final - Game 1", and for the play-in (season type 5)
+ * "NBA Play-In - East - 7th Place vs 8th Place". Exported for tests.
+ */
+export function toPlayoffGame(e: any, requested?: SeasonType): PlayoffGame {
+  const game = toGame(e, requested);
+  const comp = e?.competitions?.[0] ?? {};
+  const headline = String(comp?.notes?.[0]?.headline ?? e?.notes?.[0]?.headline ?? "");
+  const type = Number(e?.seasonType?.type ?? e?.season?.type ?? requested);
+  const playIn = type === SEASON_TYPES.playIn || /play-?in/i.test(headline);
+  const conf = /\b(East|West)\b/.exec(headline)?.[1] as Conference | undefined;
+  if (playIn) {
+    const label = headline.split(/\s+-\s+/).slice(2).join(" - ") || headline;
+    return { game, round: null, conference: conf ?? null, playIn, label };
+  }
+  const label = headline.replace(/\s+-\s+Game\s+\d+$/i, "");
+  const round = ROUND_CODES[String(comp?.type?.abbreviation ?? "")] ?? null;
+  return { game, round, conference: round === 4 ? null : (conf ?? null), playIn, label };
+}
+
+/** One team's postseason (3) or play-in (5) games, optionally for a past
+ *  `season` (ESPN year). Empty when the team didn't make it / nothing's set. */
+export async function getTeamPlayoffGames(
+  league: League,
+  team: string | number,
+  seasonType: typeof SEASON_TYPES.postseason | typeof SEASON_TYPES.playIn,
+  season?: number,
+  ttlMs = 5 * 60_000,
+): Promise<PlayoffGame[]> {
+  return (await rawTeamSchedule(league, team, seasonType, ttlMs, season)).map((e) => toPlayoffGame(e, seasonType));
+}
+
+export interface LeagueSeason {
+  /** ESPN season year (the year the season ends). */
+  year: number;
+  /** ESPN season type now: 1 pre, 2 regular, 3 post, 4 off-season, 5 play-in. */
+  type: number;
+}
+
+/** Parse the league's current season from a scoreboard response; null if
+ *  absent. Exported for tests. */
+export function parseLeagueSeason(raw: any): LeagueSeason | null {
+  const s = raw?.leagues?.[0]?.season ?? raw?.season;
+  const year = Number(s?.year);
+  const type = Number(s?.type?.type ?? s?.type);
+  return Number.isInteger(year) && year > 0 && Number.isInteger(type) ? { year, type } : null;
+}
+
+/** The league's current season and phase, from today's scoreboard. */
+export async function getLeagueSeason(league: League, ttlMs = 10 * 60_000): Promise<LeagueSeason | null> {
+  const raw = await fetchEspn(espnUrl(league, "scoreboard"), espnCacheKey(league, "sb_today"), ttlMs, "scoreboard");
+  if (looksOff(raw)) warnDriftOnce();
+  return parseLeagueSeason(raw);
 }
 
 /** A single day's scoreboard (`YYYYMMDD`) in `league` as `Game`s. Same cache
