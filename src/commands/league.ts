@@ -18,6 +18,7 @@ import { launchStream, pickProvider } from "../stream.ts";
 import { EXAMPLE_TEAM, addDays, getFlag, localDateOf, mineFavorites, noFavoritesHint, ymd } from "./_lib.ts";
 import { fav } from "./fav.ts";
 import { fmtEta, parseSize, positionalTerms, smokeWatch, waitPollMs } from "./watch.ts";
+import { leagueBracket } from "./league-bracket.ts";
 
 export interface LeagueConfig {
   /** CLI namespace and favorites key, e.g. "nba" (`sportsing nba …`, `nba:UTAH`). */
@@ -515,6 +516,7 @@ const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<vo
   results,
   standings,
   season,
+  bracket: (cfg, args) => leagueBracket(cfg, args, favoriteIds),
   fav: leagueFav,
   watch,
 };
@@ -537,6 +539,7 @@ ${b("COMMANDS")}
   ${c.green("results")}            Finished games, newest first ${c.dim(`(league-wide: last ${WINDOW_DAYS} days)`)}
   ${c.green("standings")}          Regular-season standings, favorites ★ ${c.dim("(--conference X, --division X)")}
   ${c.green("season")} ${c.dim("[team]")}      Favorites' season: record, splits, playoff race
+  ${c.green("bracket")}            Playoff bracket ${c.dim("(projected before the postseason; --season YYYY for a past one)")}
   ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
 ${cfg.watchProvider ? `  ${c.green("watch")}  ${c.dim("[team]")}      Open the stream ${c.dim("(--wait, --provider, --url, --smoke)")}\n` : ""}
 ${b("FILTER")}
