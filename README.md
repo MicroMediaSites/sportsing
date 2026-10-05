@@ -27,6 +27,13 @@ bun install -g sportsing     # or: npm install -g sportsing
 sportsing --version
 ```
 
+To update later, run `sportsing upgrade`. It checks npm for the latest release
+and reinstalls it with whichever of npm or bun installed your copy.
+`sportsing upgrade --check` only compares your version with the latest and
+installs nothing. A source checkout, a compiled binary or an `npx`/`bunx`
+run isn't updated in place. For those, the command prints how to update
+instead.
+
 From source:
 
 ```sh
