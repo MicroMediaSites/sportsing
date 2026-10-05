@@ -1,18 +1,33 @@
 # ⚽ sportsing
 
-Sports in your terminal — the FIFA World Cup 2026 schedule, favorites, live
-scores, **ambient fav-alerts**, browser streaming, highlights, stats, and AI
-analysis. Runs on [Bun](https://bun.sh); its one runtime dependency,
+Sports in your terminal — the FIFA World Cup 2026, the **NBA**, and the
+**NHL**: schedules, favorites across every sport, live scores, standings, playoff
+brackets, **where to watch**, **ambient fav-alerts**, browser streaming,
+highlights, stats, and AI analysis. Runs on [Bun](https://bun.sh); its one runtime dependency,
 [ui-leaf](https://www.npmjs.com/package/@openthink/ui-leaf), powers the
 browser-streaming window and is installed (with its native binary) automatically.
 
 ```
 sportsing fifa today
-sportsing fifa next --team USA
+sportsing nba schedule --team UTAH
+sportsing nhl next --team UTAH
 sportsing today              # your favorite teams across every sport (fifa, nba, nhl)
 ```
 
+> **Upgrading from 0.1.x?** Bare commands other than `today` / `next` / `me` now
+> need a sport prefix (`sportsing serve` → `sportsing fifa serve`), and favorites
+> are now stored per sport. See **Upgrading to 0.2.0** below.
+
 ## Install
+
+From npm (needs [Bun](https://bun.sh) on your `PATH` — the CLI runs on it):
+
+```sh
+bun install -g sportsing     # or: npm install -g sportsing
+sportsing --version
+```
+
+From source:
 
 ```sh
 bun install                 # deps: ui-leaf (+ its browser binary) and dev types
@@ -71,11 +86,19 @@ through playoffs. Times are local; preseason games are tagged `PRE`, postseason
 | `next` | Next game + countdown |
 | `schedule` | A team's whole season by day (league-wide: next 7 days) |
 | `results` | Finished games, newest first (league-wide: last 7 days) |
+| `standings [--conference X] [--division X]` | Regular-season standings, favorites marked ★ |
+| `season [team]` | Your favorites' season: record, home/away splits, playoff race |
+| `bracket [--season YYYY]` | Playoff bracket (projected before the postseason) |
 | `fav [add\|rm\|list]` | Manage NBA favorites (`fav add UTAH`, `fav add Jazz`) |
+| `watch [team] [--wait] [--provider X] [--url L] [--smoke]` | Open the game where you can watch it — see **Where to watch** below |
 
 `--team X` (abbreviation or name; NBA.com codes like `UTA` work too) picks one
 team for `today` / `next` / `schedule` / `results`; `--mine` limits them to your
 NBA favorites. NBA favorites are separate from FIFA ones.
+
+`today` / `next` / `schedule` show a **WATCH** column once you've set your
+subscriptions (see **Where to watch**). `sportsing nba watch` opens Jazz games on
+Fubo by default.
 
 ## NHL
 
@@ -87,6 +110,34 @@ final status uses hockey periods: `12:34 - 2nd`, `End of 3rd`, `OT`, `SO`,
 `--team X` takes an abbreviation or name — `UTAH`, `UTA`, `Mammoth`, and
 NHL.com codes like `TBL` / `LAK` all work. NHL favorites (`fav add UTAH`) are
 separate from NBA and FIFA ones, so the Jazz and the Mammoth can both be `UTAH`.
+
+`standings`, `season`, `bracket`, and `watch` work exactly as for the NBA. There's
+no default NHL streaming provider: `nhl watch` follows **Where to watch** — an
+over-the-air game prints its channel (e.g. Utah 16) and opens nothing.
+
+## Where to watch (NBA / NHL)
+
+Tell sportsing what you can watch with and where you live, once — it applies to
+every sport:
+
+```sh
+sportsing subscriptions set fubo nba-league-pass local-ota   # whichever you have (or `none`)
+sportsing subscriptions market utah                          # home market (default: utah)
+sportsing subscriptions                                      # show them (alias: subs)
+```
+
+From each game's broadcasts (ESPN), sportsing then works out how *you* can watch
+it:
+
+- **WATCH column** in `today` / `next` / `schedule`: the service (`Fubo`,
+  `NBA League Pass`) or over-the-air channel, `✗` if you can't watch it, `?` if it
+  can't tell. With no subscriptions set, a one-line hint replaces the column.
+- **`<sport> watch`** acts on the same answer: opens Fubo or League Pass, prints
+  the channel for an over-the-air-only game (nothing to open; exits 0), or says
+  why a game isn't watchable (exits 1). `--provider` / `--url` override it.
+- **League Pass** covers out-of-market NBA games only — blacked out when a
+  home-market team plays or the game has a national broadcast. National
+  exclusives you don't carry are flagged.
 
 ## Your teams, every sport
 
@@ -103,7 +154,24 @@ sportsing me         # last result + next game per favorite team
 Every other command needs a sport — a bare one (e.g. `sportsing standings`)
 prints the sports that have it and exits non-zero.
 
-## Watch
+Favorites are stored per sport as `<sport>:<team>` (`nba:UTAH`, `nhl:UTAH`,
+`fifa:USA`) in `~/.config/sportsing/config.json`; add and remove them with each
+sport's `fav` command.
+
+## Upgrading to 0.2.0
+
+- **Breaking — bare commands need a sport.** In 0.1.x every bare command ran as a
+  FIFA command (`sportsing serve` meant `sportsing fifa serve`). Now only `today`,
+  `next`, and `me` work bare (across every sport); everything else needs its
+  prefix: `sportsing fifa serve`, `sportsing fifa live --notify`,
+  `sportsing fifa watch USA`, `sportsing fifa fav add USA`, and so on. Update any
+  scripts, aliases, or launchd jobs that call a bare command.
+- **Favorites are scoped by sport.** Existing unprefixed favorites (`"USA"`) are
+  read as FIFA favorites (`fifa:USA`) — nothing is lost. The file is rewritten in
+  the prefixed form the next time you add or remove a favorite. Downgrading to
+  0.1.x after that would see `fifa:USA` as a team name, so don't mix versions.
+
+## Watch (FIFA)
 
 `sportsing fifa watch [team] [team]` opens the broadcast in your own browser
 (your real Chrome, via [ui-leaf](https://www.npmjs.com/package/@openthink/ui-leaf)):

@@ -3,8 +3,12 @@ import { c } from "./ansi.ts";
 import { ApiError } from "./api.ts";
 import { SPORTS as REGISTRY, bare } from "./commands/cross.ts";
 import { subscriptions } from "./commands/subscriptions.ts";
+import pkg from "../package.json" with { type: "json" };
 
-const VERSION = "0.1.0";
+// Single source of truth: package.json (a hardcoded copy drifted to a stale
+// 0.1.0 while the package shipped 0.1.2). The JSON import is inlined by
+// `bun build --compile`, and npm always ships package.json.
+const VERSION: string = pkg.version;
 
 // Sport namespaces. Add a new sport by writing src/sports/<sport>.ts and
 // registering it in SPORTS in src/commands/cross.ts (which also makes the bare
