@@ -186,12 +186,55 @@ export function phaseTag(g: Game): string {
   return g.seasonType === "preseason" ? "PRE" : g.seasonType === "postseason" ? "POST" : "";
 }
 
-/** Status column: local tip-off time before the game, a LIVE badge + the
- *  source's clock text during it, the source's final text after it. */
-function gameStatus(g: Game): string {
+/** How a league names its periods. Leagues that set this get live/final
+ *  status rendered from `period` + `clock` in their own terms (hockey:
+ *  1st/2nd/3rd/OT/SO) instead of the source's status text. */
+export interface PeriodNaming {
+  /** Periods in regulation (NHL: 3). Later periods are overtime. */
+  regulation: number;
+  /** True if a regular-season/preseason tie after one OT goes to a shootout
+   *  (NHL). Postseason overtime never ends in one. */
+  shootout: boolean;
+}
+
+const ordinal = (n: number): string => {
+  const tens = n % 100;
+  const suffix = tens >= 11 && tens <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th";
+  return n + suffix;
+};
+
+/** Name of period `g.period` under `naming`: "1st".."3rd", then "OT" (playoff
+ *  multi-OT: "2OT", "3OT", …), or "SO" for a shootout. "" before the game. */
+export function periodLabel(g: Pick<Game, "period" | "seasonType">, naming: PeriodNaming): string {
+  const p = g.period;
+  if (p <= 0) return "";
+  if (p <= naming.regulation) return ordinal(p);
+  const ot = p - naming.regulation;
+  if (naming.shootout && g.seasonType !== "postseason" && ot > 1) return "SO";
+  return ot === 1 ? "OT" : `${ot}OT`;
+}
+
+/** Plain status text from period + clock: "12:34 - 2nd", "End of 2nd", "SO",
+ *  "Final", "Final/OT", "Final/SO". Only for live and finished games. A live
+ *  game with no clock at all falls back to the source's text — only an
+ *  explicit "0:00" means the period has ended. */
+export function periodStatus(g: Game, naming: PeriodNaming): string {
+  const label = periodLabel(g, naming);
+  if (g.state === "post") return g.period > naming.regulation ? `Final/${label}` : "Final";
+  if (!label) return g.detail;
+  if (label === "SO") return "SO";
+  if (!g.clock) return g.detail || label;
+  return g.clock !== "0:00" ? `${g.clock} - ${label}` : `End of ${label}`;
+}
+
+/** Status column: local start time before the game, a LIVE badge + the clock
+ *  text during it, the final text after it. Clock/final text comes from the
+ *  league's period naming when given, else the source's own status text. */
+function gameStatus(g: Game, naming?: PeriodNaming): string {
   if (g.state === "pre") return c.cyan(fmtTimeOnly(g.date));
-  if (g.state === "in") return c.bgGreen(c.bold(" LIVE ")) + (g.detail ? c.green(" " + g.detail) : "");
-  return c.dim(g.detail || "Final");
+  const text = naming ? periodStatus(g, naming) : g.detail;
+  if (g.state === "in") return c.bgGreen(c.bold(" LIVE ")) + (text ? c.green(" " + text) : "");
+  return c.dim(text || "Final");
 }
 
 /** Score as a number for comparison; NaN when not yet scored. */
@@ -206,8 +249,9 @@ function side(t: GameCompetitor, other: GameCompetitor, g: Game): string {
 }
 
 /** One game as an aligned line, US style (away @ home):
- *  "UTAH  109  @  DEN    97   Final  PRE". */
-export function gameLine(g: Game): string {
+ *  "UTAH  109  @  DEN    97   Final  PRE". `naming` renders the status in the
+ *  league's period terms (see `PeriodNaming`). */
+export function gameLine(g: Game, naming?: PeriodNaming): string {
   const tag = phaseTag(g);
   const tagStr = tag === "PRE" ? c.yellow(tag) : tag === "POST" ? c.magenta(tag) : "";
   return (
@@ -215,7 +259,7 @@ export function gameLine(g: Game): string {
     c.dim("  @  ") +
     side(g.home, g.away, g) +
     "   " +
-    pad(gameStatus(g), 12) +
+    pad(gameStatus(g, naming), 12) +
     (tagStr ? " " + tagStr : "")
   ).trimEnd();
 }

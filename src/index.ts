@@ -3,6 +3,7 @@ import { c } from "./ansi.ts";
 import { ApiError } from "./api.ts";
 import { fifa } from "./sports/fifa.ts";
 import { nba } from "./sports/nba.ts";
+import { nhl } from "./sports/nhl.ts";
 import { subscriptions } from "./commands/subscriptions.ts";
 
 const VERSION = "0.1.0";
@@ -12,6 +13,7 @@ const VERSION = "0.1.0";
 const SPORTS: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   fifa,
   nba,
+  nhl,
 };
 
 function help() {
@@ -24,6 +26,7 @@ ${b("USAGE")}
 ${b("SPORTS")}
   ${c.green("fifa")}               FIFA World Cup 2026 ${c.dim("— sportsing fifa help")}
   ${c.green("nba")}                NBA, preseason through playoffs ${c.dim("— sportsing nba help")}
+  ${c.green("nhl")}                NHL, preseason through playoffs ${c.dim("— sportsing nhl help")}
 
 ${b("SETTINGS")}
   ${c.green("subscriptions")}      What you can watch with + home market ${c.dim("— alias: subs")}
@@ -36,6 +39,7 @@ ${b("EXAMPLES")}
   sportsing fifa today
   sportsing fifa next --team USA
   sportsing nba schedule --team UTAH
+  sportsing nhl next --team UTAH
   sportsing today              ${c.dim("(= sportsing fifa today)")}
 `);
 }
