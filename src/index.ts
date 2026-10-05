@@ -3,6 +3,7 @@ import { c } from "./ansi.ts";
 import { ApiError } from "./api.ts";
 import { SPORTS as REGISTRY, bare } from "./commands/cross.ts";
 import { subscriptions } from "./commands/subscriptions.ts";
+import { upgrade } from "./commands/upgrade.ts";
 import pkg from "../package.json" with { type: "json" };
 
 // Single source of truth: package.json (a hardcoded copy drifted to a stale
@@ -38,6 +39,7 @@ ${b("YOUR TEAMS")} ${c.dim("(favorites across every sport, each row tagged with 
 
 ${b("SETTINGS")}
   ${c.green("subscriptions")}      What you can watch with + home market ${c.dim("— alias: subs")}
+  ${c.green("upgrade")}            Install the latest release ${c.dim("(--check: just compare versions)")}
 
 ${b("EXAMPLES")}
   sportsing fifa today
@@ -67,6 +69,10 @@ async function dispatch(): Promise<void> {
   // Cross-sport settings (not tied to any one sport's namespace).
   if (first === "subscriptions" || first === "subs") {
     await subscriptions(rest);
+    return;
+  }
+  if (first === "upgrade") {
+    await upgrade(rest, VERSION);
     return;
   }
 
