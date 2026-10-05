@@ -1,7 +1,7 @@
 import { test, expect, afterEach, spyOn } from "bun:test";
 // Pure helpers + the commands over fake sports — no network, never reads or
 // writes ~/.config/sportsing.
-import { SPORTS, bareHint, lastAndNext, matchState, me, next, nextPerTeam, noFavoritesHint, tagged, today, type Row, type Sport } from "./cross.ts";
+import { SPORTS, alertersSummary, bareHint, live, lastAndNext, matchState, me, next, nextPerTeam, noFavoritesHint, tagged, today, type Row, type Sport } from "./cross.ts";
 
 const strip = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
 const HOUR = 3_600_000;
@@ -18,6 +18,7 @@ function sport(key: string, over: Partial<Sport> = {}): Sport {
     has: () => false,
     favoritesOn: async () => null,
     favoriteTeams: async () => null,
+    alerter: async () => null,
     ...over,
   };
 }
@@ -165,4 +166,26 @@ test("me shows last + next per team, grouped by sport", async () => {
   expect(text).toContain("  last game j0");
   expect(text).toMatch(/ {2}next game j1 {2}in 2d/);
   expect(text).toContain("* Utah Mammoth NHL\n  no games found");
+});
+
+test("bare live needs --notify (and nothing else); it names the per-sport boards", async () => {
+  const sports = [sport("fifa", { has: (c) => c === "live" }), sport("nba", { has: (c) => c === "live" })];
+  for (const args of [[], ["--quiet"], ["--notify", "--team", "UTAH"]]) {
+    process.exitCode = 0;
+    const { err } = await capture(() => live(sports, args));
+    expect(err[0]).toContain("sportsing live --notify [--quiet]");
+    expect(err[1]).toContain("sportsing fifa live · sportsing nba live");
+    expect(process.exitCode).toBe(1);
+  }
+});
+
+test("bare live --notify with no favorites anywhere: the add-a-favorite hint, no alerter started", async () => {
+  const { out } = await capture(() => live([sport("nba"), sport("nhl")], ["--notify", "--quiet"]));
+  expect(out.join("\n")).toContain("No favorite teams yet");
+});
+
+test("alertersSummary names each sport's teams", () => {
+  expect(alertersSummary([{ label: "NBA", teams: ["Utah Jazz"] }, { label: "FIFA", teams: ["USA", "Mexico"] }])).toBe(
+    "NBA: Utah Jazz · FIFA: USA, Mexico",
+  );
 });

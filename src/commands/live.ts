@@ -2,13 +2,12 @@ import { c } from "../ansi.ts";
 import { getMatches, NoKeyError } from "../api.ts";
 import { matchLine, fmtTimeOnly, stageLabel } from "../format.ts";
 import { ymd, addDays, localDateOf, sortByDate } from "./_lib.ts";
-import { getFavorites } from "../config.ts";
+import { getApiKey, getFavorites } from "../config.ts";
 import { diffEvents, type MatchEvent } from "../events.ts";
-import { notify } from "../notify.ts";
+import { LIVE_REFRESH_MS, raise, type Alert, type Alerter } from "../alerts.ts";
+import { inTerminal, selfInvocation, watchCommand } from "../click-to-watch.ts";
 import { matchHasTeam } from "../match-util.ts";
 import type { Match } from "../types.ts";
-
-const REFRESH_MS = 60_000; // free tier note: scores are delayed; 60s is plenty.
 
 export async function live(args: string[] = []) {
   const wantNotify = args.includes("--notify");
@@ -52,21 +51,10 @@ export async function live(args: string[] = []) {
     console.error(c.dim(`Favorite-team alerts running (${who}) — Ctrl-C to stop.`));
   }
 
-  // Previous tick's full snapshot of today's matches, for fav-event diffing.
-  // diffEvents only emits transitions between prev→cur, so an event fires once
-  // and never re-alerts on a later unchanged tick (AGT-507 idempotency).
-  let prevSnapshot: Match[] = [];
+  const feed = wantNotify ? fifaFeed(favorites, selfInvocation()) : null;
 
   const tick = async () => {
-    const now = new Date();
-    const today = ymd(now);
-    // Query ±1 UTC day, then keep only matches on today's local calendar date
-    // (a local day straddles two UTC days — see today.ts).
-    const { matches: raw } = await getMatches(
-      { dateFrom: ymd(addDays(now, -1)), dateTo: ymd(addDays(now, 1)) },
-      20_000,
-    );
-    const matches = raw.filter((m) => localDateOf(m.utcDate) === today);
+    const matches = await matchesToday();
 
     // Full-screen scoreboard — skipped in --quiet so the command can be
     // backgrounded without alt-screen clears corrupting the parent shell.
@@ -102,26 +90,13 @@ export async function live(args: string[] = []) {
       }
     }
 
-    if (wantNotify) {
-      // Diff this snapshot against the previous tick's and alert on new fav
-      // events. The first tick has an empty prevSnapshot, so it only establishes
-      // a baseline (a match already in play when you start raises no kickoff).
-      for (const e of diffEvents(prevSnapshot, matches, favorites)) {
-        const { title, body } = formatEvent(e);
-        // Kickoff alerts are click-to-watch: clicking launches `watch <fav team>`
-        // (terminal-notifier -execute). notify() degrades to a plain, non-clickable
-        // notification when terminal-notifier is absent. Goal/full-time stay informational.
-        // process.execPath is the sportsing binary when distributed (compiled); under
-        // `bun run` dev it's the Bun runtime, so the click command only works compiled.
-        const onClick = kickoffWatchCommand(e, matches, favorites, process.execPath);
-        notify(title, body, { group: `sportsing-${e.matchId}`, sound: e.kind === "goal", onClick });
-      }
-      prevSnapshot = matches;
-    }
+    // The first tick only establishes a baseline (a match already in play when
+    // you start raises no kickoff).
+    if (feed) for (const a of feed(matches)) raise(a);
   };
 
   await tick();
-  const interval = setInterval(() => tick().catch((e) => console.error(c.red(String(e)))), REFRESH_MS);
+  const interval = setInterval(() => tick().catch((e) => console.error(c.red(String(e)))), LIVE_REFRESH_MS); // free tier: scores are delayed; 60s is plenty
   process.on("SIGINT", () => {
     clearInterval(interval);
     process.stdout.write("\n");
@@ -133,14 +108,54 @@ function stageTag(m: Match): string {
   return c.dim("  " + stageLabel(m));
 }
 
-/** POSIX single-quote a string so it's safe as one shell argument. */
-function shQuote(s: string): string {
-  return `'${s.replace(/'/g, `'\\''`)}'`;
+/** Today's matches (local calendar day). football-data filters by UTC date, so
+ *  query ±1 UTC day and keep the local day (a local day straddles two UTC days). */
+async function matchesToday(): Promise<Match[]> {
+  const now = new Date();
+  const today = ymd(now);
+  const { matches } = await getMatches({ dateFrom: ymd(addDays(now, -1)), dateTo: ymd(addDays(now, 1)) }, 20_000);
+  return matches.filter((m) => localDateOf(m.utcDate) === today);
+}
+
+/**
+ * A stateful fav-alert feed: hand it each tick's matches and it returns the
+ * alerts for new favourite events since the previous tick. diffEvents only
+ * emits prev→cur transitions, so an event fires once and never re-alerts on a
+ * later unchanged tick (AGT-507 idempotency); the first tick is the baseline.
+ *
+ * Kickoff alerts are click-to-watch: clicking opens a Terminal running
+ * `fifa watch <fav team>` (terminal-notifier -execute; notify() drops the click
+ * when terminal-notifier is absent). Goal/full-time stay informational.
+ */
+export function fifaFeed(favorites: string[], exe: string[]): (matches: Match[]) => Alert[] {
+  let prev: Match[] = [];
+  return (matches) => {
+    const alerts = diffEvents(prev, matches, favorites).map((e): Alert => {
+      const { title, body } = formatEvent(e);
+      const onClick = kickoffWatchCommand(e, matches, favorites, exe);
+      return {
+        title,
+        body,
+        options: { group: `sportsing-${e.matchId}`, sound: e.kind === "goal", onClick: onClick && inTerminal(onClick) },
+      };
+    });
+    prev = matches;
+    return alerts;
+  };
+}
+
+/** FIFA's alerter for bare `sportsing live --notify`; null with no FIFA favorites. */
+export async function fifaAlerter(): Promise<Alerter | null> {
+  const favorites = await getFavorites("fifa");
+  if (favorites.length === 0) return null;
+  if (!(await getApiKey())) throw new Error("FIFA alerts need an API key — run `sportsing fifa setup`.");
+  const feed = fifaFeed(favorites, selfInvocation());
+  return { label: "FIFA", teams: favorites, poll: async () => feed(await matchesToday()) };
 }
 
 /**
  * The click-to-watch command for a kickoff event, or undefined when none applies.
- * Returns `<exe> fifa watch <fav>` (shell-quoted) where `fav` is the favourite
+ * Returns `<exe…> fifa watch <fav>` (shell-quoted) where `fav` is the favourite
  * term that put this match on the alert list — so clicking the kickoff alert opens
  * that team's broadcast. Only kickoff events are clickable (goal/full-time are
  * informational); returns undefined if the match or a matching favourite is gone.
@@ -149,14 +164,14 @@ export function kickoffWatchCommand(
   e: MatchEvent,
   matches: Match[],
   favorites: string[],
-  exe: string,
+  exe: string[],
 ): string | undefined {
   if (e.kind !== "kickoff") return undefined;
   const match = matches.find((m) => m.id === e.matchId);
   if (!match) return undefined;
   const fav = favorites.find((f) => matchHasTeam(match, f.trim().toLowerCase()));
   if (!fav) return undefined;
-  return `${shQuote(exe)} fifa watch ${shQuote(fav.trim())}`;
+  return watchCommand(exe, "fifa", fav.trim());
 }
 
 /** Notification title + body for a fav match event. */

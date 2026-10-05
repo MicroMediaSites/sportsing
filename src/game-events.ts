@@ -197,6 +197,11 @@ export const GAME_RULES = {
 
 export type GameSport = keyof typeof GAME_RULES;
 
+/** True if `sport` has an alert rule set. */
+export function isGameSport(sport: string): sport is GameSport {
+  return Object.hasOwn(GAME_RULES, sport);
+}
+
 /**
  * Diff two `Game` snapshots into events using `sport`'s rule set.
  *
