@@ -1,6 +1,6 @@
 {
   "name": "sportsing",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Sportsing — sports in your terminal: the FIFA World Cup 2026, the NBA, and the NHL. Schedules, favorites across every sport, live scores, standings, where-to-watch, browser streaming, highlights, stats, and AI analysis.",
   "type": "module",
   "bin": {
