@@ -8,13 +8,15 @@
 // (`--team`, favorites) is resolved to a team via the league's /teams list.
 
 import { c } from "../ansi.ts";
+import { getFavorites, getStreamProvider } from "../config.ts";
 import { getScoreboardGames, getStandings, getTeamGames, getTeams, SEASON_TYPES, type EspnTeam, type League } from "../espn.ts";
 import { fmtDate, fmtDayHeader, gameLine, relativeTime } from "../format.ts";
 import type { Game } from "../game.ts";
 import { STANDINGS_LAYOUTS, groupMatches, loadStandingsView, renderStandingsTable, type StandingsLevel } from "../standings.ts";
-import { getFavorites } from "../config.ts";
+import { launchStream, pickProvider } from "../stream.ts";
 import { EXAMPLE_TEAM, addDays, getFlag, localDateOf, mineFavorites, noFavoritesHint, ymd } from "./_lib.ts";
 import { fav } from "./fav.ts";
+import { fmtEta, parseSize, positionalTerms, smokeWatch, waitPollMs } from "./watch.ts";
 
 export interface LeagueConfig {
   /** CLI namespace and favorites key, e.g. "nba" (`sportsing nba …`, `nba:UTAH`). */
@@ -28,6 +30,9 @@ export interface LeagueConfig {
   /** Extra accepted team abbreviations → the ESPN /teams abbreviation
    *  (e.g. NBA.com's "UTA" → ESPN's "UTAH"). */
   aliases: Record<string, string>;
+  /** Default streaming provider key (see PROVIDERS in stream.ts) for
+   *  `<sport> watch` when config sets none; absent = no default. */
+  watchProvider?: string;
 }
 
 /** How far `schedule` looks ahead / `results` looks back league-wide, and how
@@ -77,6 +82,37 @@ export function espnDate(d: Date): string {
 /** The first not-yet-started game at or after `now` (input sorted ascending). */
 export function firstUpcoming(games: Game[], now: number): Game | null {
   return games.find((g) => g.state === "pre" && Date.parse(g.date) >= now) ?? null;
+}
+
+/** How long after its scheduled start a not-yet-live game still counts as the
+ *  one to watch (late tip-offs, a lagging feed) before `watch` moves past it. */
+const START_GRACE_MS = 3 * 60 * 60_000;
+
+/**
+ * The game `watch` is about, from games sorted ascending: a live one if any,
+ * else the first scheduled game that hasn't started — or is within
+ * START_GRACE_MS past its start and simply hasn't flipped live yet (so
+ * `--wait` doesn't skip a late tip-off for the following game).
+ */
+export function watchTarget(games: Game[], now: number): Game | null {
+  return (
+    games.find((g) => g.state === "in") ??
+    games.find((g) => g.state === "pre" && Date.parse(g.date) >= now - START_GRACE_MS) ??
+    null
+  );
+}
+
+/** ESPN scoreboard date (YYYYMMDD) a game is listed under — scoreboards are
+ *  grouped by US-Eastern day, whatever the local time zone. */
+export function easternScoreboardDate(iso: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(iso));
+  const get = (t: string) => parts.find((p) => p.type === t)!.value;
+  return get("year") + get("month") + get("day");
 }
 
 /** Finished games, newest first. */
@@ -313,6 +349,124 @@ async function leagueFav(cfg: LeagueConfig, args: string[]): Promise<void> {
   return fav(args, cfg.sport);
 }
 
+/** Who/what `watch` follows: a positional team, else the league's favorites. */
+async function watchScope(cfg: LeagueConfig, args: string[]): Promise<{ ids: Set<string>; label: string } | null> {
+  const input = positionalTerms(args).join(" ").trim();
+  const teams = await getTeams(cfg.league);
+  if (input) {
+    const t = resolveTeam(teams, input, cfg.aliases) ?? unknownTeam(cfg, input);
+    return { ids: new Set([t.id]), label: t.name };
+  }
+  const favs = await getFavorites(cfg.sport);
+  const ids = favoriteIds(cfg, teams, favs);
+  return ids.size ? { ids, label: "your favorites" } : null;
+}
+
+/** `● LIVE`/start-time line for a game, with where it airs. */
+function describeWatchGame(g: Game): string {
+  const on = g.broadcasts.length ? c.dim(`  on ${g.broadcasts.map((b) => b.name).join(", ")}`) : "";
+  const when = g.state === "in" ? c.green("● LIVE") : c.dim(`${fmtDate(g.date)} — starts ${relativeTime(g.date)}`);
+  return `${g.name}  ${when}${on}`;
+}
+
+/** Poll until the scoped teams' next game is live, then return it. The season
+ *  schedule (5-min cache) picks the target; its day's scoreboard (short cache)
+ *  gives the fresh state. Blocks until then — Ctrl-C to stop. */
+async function waitForLeagueLive(cfg: LeagueConfig, ids: Set<string>, who: string): Promise<Game> {
+  console.log(c.bold(c.cyan(`⌛ Waiting for ${who}'s next game to go live…`)) + c.dim("  (Ctrl-C to stop)"));
+  let lastId = "";
+  for (;;) {
+    let target: Game | null = null;
+    try {
+      target = watchTarget(await scopedSeasons(cfg, ids), Date.now());
+      if (target && target.state !== "in") {
+        const day = await getScoreboardGames(cfg.league, easternScoreboardDate(target.date), 30_000);
+        target = day.find((g) => g.id === target!.id) ?? target;
+      }
+    } catch (e) {
+      console.error(c.dim("  (data fetch failed, retrying) " + (e instanceof Error ? e.message : String(e))));
+    }
+
+    if (target?.state === "in") {
+      console.log(c.green(`● ${target.name} is LIVE — opening…`));
+      return target;
+    }
+
+    let pollMs = 60_000;
+    if (!target) {
+      console.log(c.dim(`  Nothing scheduled for ${who} yet — checking again in 60s.`));
+    } else {
+      if (target.id !== lastId) {
+        console.log(c.dim(`  Next up: ${describeWatchGame(target)}`));
+        lastId = target.id;
+      }
+      const ms = Date.parse(target.date) - Date.now();
+      console.log(c.dim(ms > 0 ? `  starts in ${fmtEta(ms)}.` : "  at/just past start — waiting for it to flip live."));
+      pollMs = waitPollMs(ms);
+    }
+    await new Promise((r) => setTimeout(r, pollMs));
+  }
+}
+
+/**
+ * `watch [team] [--wait] [--provider X] [--url L] [--size WxH] [--smoke]` —
+ * open the sport's hub on the streaming provider (config `streamProviders`,
+ * else the league default) in that provider's persistent Chrome profile, so an
+ * existing login is reused. No team = your favorites. `--wait` blocks until the
+ * next game is live, then opens it. `--smoke` opens the window, confirms it
+ * came up over CDP, and tears it down (bounded; for scripts and agents).
+ */
+async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
+  const url = getFlag(args, "--url");
+  const providerFlag = getFlag(args, "--provider");
+  const sizeFlag = getFlag(args, "--size");
+  const windowSize = parseSize(sizeFlag);
+  if (sizeFlag && !windowSize) {
+    console.warn(c.yellow(`Ignoring --size "${sizeFlag}" — expected WxH, e.g. 660x500. Opening at the default size.`));
+  }
+
+  const key = providerFlag ?? (await getStreamProvider(cfg.sport)) ?? cfg.watchProvider;
+  if (!key) {
+    console.error(c.red(`No streaming provider for ${cfg.label}. Pass --provider, or set streamProviders.${cfg.sport} in the config.`));
+    process.exitCode = 1;
+    return;
+  }
+  const pick = pickProvider(key, cfg.sport);
+  if (!pick.ok) {
+    console.error(c.red(pick.error));
+    process.exitCode = 1;
+    return;
+  }
+  const target = url ?? pick.hub;
+
+  if (args.includes("--smoke")) return smokeWatch(target, pick.label, windowSize);
+  // watch blocks until the window is closed; with no TTY nothing ever closes it.
+  if (process.stdin.isTTY !== true) {
+    console.error(c.yellow("`watch` is interactive — it opens a stream window and blocks until you close it."));
+    console.error(c.dim(`Run it in a terminal, or use \`sportsing ${cfg.sport} watch --smoke\` to just confirm the window opens.`));
+    process.exitCode = 1;
+    return;
+  }
+
+  const scope = await watchScope(cfg, args);
+  if (!scope) {
+    console.error(c.red(`Usage: sportsing ${cfg.sport} watch <team> [--wait] [--provider ${pick.key}] [--url <link>] [--smoke]`));
+    console.error(c.dim(`Or add a favorite (sportsing ${cfg.sport} fav add ${EXAMPLE_TEAM[cfg.sport] ?? "<team>"}) and omit the team.`));
+    process.exitCode = 1;
+    return;
+  }
+
+  if (args.includes("--wait")) {
+    await waitForLeagueLive(cfg, scope.ids, scope.label);
+  } else {
+    const g = watchTarget(await scopedSeasons(cfg, scope.ids), Date.now());
+    console.log(g ? describeWatchGame(g) : c.dim(`No upcoming ${cfg.label} games for ${scope.label}.`));
+  }
+  // No per-game deep link (yet): open the hub and pick the game's tile.
+  if (!url) console.log(c.dim(`Opening ${pick.label}'s ${cfg.label} hub — pick the game there (use --url for a direct link).`));
+  await launchStream(target, pick.label, { windowSize, icon: cfg.icon });
+}
+
 const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<void>> = {
   today,
   next,
@@ -320,6 +474,7 @@ const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<vo
   results,
   standings,
   fav: leagueFav,
+  watch,
 };
 
 const ALIASES: Record<string, string> = { t: "today", n: "next", st: "standings" };
@@ -340,7 +495,7 @@ ${b("COMMANDS")}
   ${c.green("results")}            Finished games, newest first ${c.dim(`(league-wide: last ${WINDOW_DAYS} days)`)}
   ${c.green("standings")}          Regular-season standings, favorites ★ ${c.dim("(--conference X, --division X)")}
   ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
-
+${cfg.watchProvider ? `  ${c.green("watch")}  ${c.dim("[team]")}      Open the stream ${c.dim("(--wait, --provider, --url, --smoke)")}\n` : ""}
 ${b("FILTER")}
   ${c.dim("--team X")} on today/next/schedule/results picks one team (abbreviation or name).
   ${c.dim("--mine")} on today/next/schedule/results limits output to your ${cfg.label} favorites.

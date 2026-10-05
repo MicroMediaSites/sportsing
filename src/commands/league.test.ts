@@ -2,7 +2,16 @@ import { test, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 // Pure helpers only — no network, never reads or writes ~/.config/sportsing.
-import { resolveTeam, gameHasTeam, mergeGames, espnDate, firstUpcoming, finishedNewestFirst } from "./league.ts";
+import {
+  resolveTeam,
+  gameHasTeam,
+  mergeGames,
+  espnDate,
+  firstUpcoming,
+  finishedNewestFirst,
+  watchTarget,
+  easternScoreboardDate,
+} from "./league.ts";
 import { NBA } from "../sports/nba.ts";
 import { toGame, SEASON_TYPES, type EspnTeam } from "../espn.ts";
 import { gameLine, phaseTag } from "../format.ts";
@@ -124,4 +133,42 @@ test("gameLine: scheduled games show no score; live games show LIVE + clock", ()
     away: { id: "26", name: "Utah Jazz", abbreviation: "UTAH", score: "72" },
   });
   expect(strip(gameLine(live))).toMatch(/^UTAH\s+72\s+@\s+DEN\s+70\s+LIVE\s+4:21 - 3rd POST$/);
+});
+
+// ── watch ────────────────────────────────────────────────────────────────────
+
+const H = 60 * 60_000;
+const T0 = Date.parse("2026-10-04T23:00Z");
+
+test("watchTarget: a live game wins over an earlier-listed upcoming one", () => {
+  const games = [game({ id: "a", date: "2026-10-04T22:00Z" }), game({ id: "b", state: "in" })];
+  expect(watchTarget(games, T0)?.id).toBe("b");
+});
+
+test("watchTarget: else the first game that hasn't started; finished games skipped", () => {
+  const games = [
+    game({ id: "old", state: "post", date: "2026-10-01T23:00Z" }),
+    game({ id: "next", date: "2026-10-06T01:00Z" }),
+    game({ id: "later", date: "2026-10-08T01:00Z" }),
+  ];
+  expect(watchTarget(games, T0)?.id).toBe("next");
+  expect(watchTarget([game({ id: "old", state: "post" })], T0)).toBeNull();
+});
+
+test("watchTarget: a game past its start but not yet live is still the target (late tip-off)", () => {
+  const games = [game({ id: "late", date: new Date(T0 - 20 * 60_000).toISOString() }), game({ id: "tomorrow", date: new Date(T0 + 24 * H).toISOString() })];
+  expect(watchTarget(games, T0)?.id).toBe("late");
+  // …but not forever: well past the grace window it moves on.
+  expect(watchTarget(games, T0 + 4 * H)?.id).toBe("tomorrow");
+});
+
+test("easternScoreboardDate: ESPN's US-Eastern day, not UTC", () => {
+  // 01:00Z on the 5th is 9 PM EDT on the 4th — a late Jazz tip-off.
+  expect(easternScoreboardDate("2026-10-05T01:00Z")).toBe("20261004");
+  expect(easternScoreboardDate("2026-10-04T23:00Z")).toBe("20261004");
+  expect(easternScoreboardDate("2026-10-05T05:00Z")).toBe("20261005");
+});
+
+test("NBA watches on Fubo by default", () => {
+  expect(NBA.watchProvider).toBe("fubo");
 });

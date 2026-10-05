@@ -51,16 +51,48 @@ export function openInBrowser(url: string): void {
 
 export interface Provider {
   label: string;
-  hub: string;
+  /** Hub page per sport namespace (`fifa`, `nba`, …). A provider without a hub
+   *  for a sport can't be picked for that sport's `watch`. */
+  hubs: Partial<Record<string, string>>;
 }
 
-// US WC 2026 rights: English on Fox (→ Fubo), Spanish on Telemundo (→ Peacock).
 export const PROVIDERS: Record<string, Provider> = {
-  // Land on the World Cup section (not the generic home) so the deep-link can
-  // find the game tiles.
-  peacock: { label: "Peacock", hub: "https://www.peacocktv.com/watch/sports-La-Copa-Mundial-de-la-FIFA-2026" },
-  fubo: { label: "Fubo", hub: "https://www.fubo.tv/p/world-cup" },
+  // US WC 2026 rights: English on Fox (→ Fubo), Spanish on Telemundo (→ Peacock).
+  // FIFA hubs land on the World Cup section (not the generic home) so the
+  // deep-link can find the game tiles.
+  peacock: {
+    label: "Peacock",
+    hubs: { fifa: "https://www.peacocktv.com/watch/sports-La-Copa-Mundial-de-la-FIFA-2026" },
+  },
+  fubo: {
+    label: "Fubo",
+    hubs: {
+      fifa: "https://www.fubo.tv/p/world-cup",
+      // Jazz local (and national NBA) games on Fubo — the league page, same /p/
+      // section scheme as the World Cup hub.
+      nba: "https://www.fubo.tv/p/nba",
+    },
+  },
 };
+
+export type ProviderPick = { ok: true; key: string; label: string; hub: string } | { ok: false; error: string };
+
+/** Resolve a provider key to its hub for `sport`: unknown keys and providers
+ *  with no hub for that sport are errors naming the valid choices. */
+export function pickProvider(
+  key: string,
+  sport: string,
+  providers: Record<string, Provider> = PROVIDERS,
+): ProviderPick {
+  const k = key.trim().toLowerCase();
+  const forSport = Object.keys(providers).filter((p) => providers[p]!.hubs[sport]);
+  const known = forSport.join(", ") || "none";
+  const provider = providers[k];
+  if (!provider) return { ok: false, error: `Unknown provider "${k}". Known: ${known}.` };
+  const hub = provider.hubs[sport];
+  if (!hub) return { ok: false, error: `${provider.label} has no ${sport} hub. Known for ${sport}: ${known}.` };
+  return { ok: true, key: k, label: provider.label, hub };
+}
 
 const REDIRECT_VIEW = `import { useEffect } from "react";
 import type { ViewProps } from "@openthink/ui-leaf/view";
@@ -163,7 +195,7 @@ export async function spawnStreamWindow(
 export async function launchStream(
   url: string,
   label: string,
-  opts: { windowSize?: { width: number; height: number } } = {},
+  opts: { windowSize?: { width: number; height: number }; icon?: string } = {},
 ): Promise<void> {
   const win = await spawnStreamWindow(url, label, opts);
   if (!win) {
@@ -171,7 +203,7 @@ export async function launchStream(
     return;
   }
 
-  console.log(c.bold(c.cyan(`⚽ Opening ${label}`)) + c.dim(`  ${url}`));
+  console.log(c.bold(c.cyan(`${opts.icon ?? "⚽"} Opening ${label}`)) + c.dim(`  ${url}`));
   console.log(c.dim("Close the window (or press Ctrl-C) when you're done."));
 
   const stop = () => {

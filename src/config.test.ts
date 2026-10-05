@@ -10,6 +10,7 @@ import {
   subscriptionsOf,
   parseHomeMarket,
   homeMarketOf,
+  streamProviderFor,
 } from "./config.ts";
 
 test("parseFavorite: prefixed entries split into sport + team", () => {
@@ -101,4 +102,16 @@ test("home market: defaults to utah; only known markets parse", () => {
   expect(parseHomeMarket("UTAH")).toBe("utah");
   expect(parseHomeMarket("atlantis")).toBeNull();
   expect(parseHomeMarket("constructor")).toBeNull();
+});
+
+test("streamProviderFor: per-sport entry, lowercased; null when unset", () => {
+  expect(streamProviderFor({ streamProviders: { nba: " Fubo " } }, "nba")).toBe("fubo");
+  expect(streamProviderFor({}, "nba")).toBeNull();
+  expect(streamProviderFor({ streamProviders: { nba: "  " } }, "nba")).toBeNull();
+});
+
+test("streamProviderFor: legacy streamProvider applies to fifa only; per-sport entry wins", () => {
+  expect(streamProviderFor({ streamProvider: "peacock" }, "fifa")).toBe("peacock");
+  expect(streamProviderFor({ streamProvider: "peacock" }, "nba")).toBeNull();
+  expect(streamProviderFor({ streamProvider: "peacock", streamProviders: { fifa: "fubo" } }, "fifa")).toBe("fubo");
 });

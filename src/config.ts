@@ -17,8 +17,12 @@ interface Config {
   /** Sport-scoped favorites, `<sport>:<team>` (e.g. `nba:UTAH`, `fifa:USA`).
    *  Legacy unprefixed entries (pre-NBA/NHL) read as `fifa:<team>`. */
   favorites?: string[];
-  /** Preferred streaming provider for `fifa watch` (peacock | fubo). */
+  /** Preferred streaming provider for `fifa watch` (peacock | fubo). Predates
+   *  per-sport providers, so it only ever applies to fifa. */
   streamProvider?: string;
+  /** Preferred streaming provider per sport for `<sport> watch`, e.g.
+   *  `{ "nba": "fubo" }`. Overrides the sport's built-in default. */
+  streamProviders?: Record<string, string>;
   /** Calibrated overlay delay (seconds) per provider, to sync stats to the stream. */
   streamDelay?: Record<string, number>;
   /** Overlay panel choices (the gear/settings) — per provider → { panel: on }. */
@@ -78,10 +82,18 @@ export async function setApiKey(key: string): Promise<void> {
   await writeConfig(cfg);
 }
 
-/** Preferred streaming provider for `fifa watch`, or null if unset. */
-export async function getStreamProvider(): Promise<string | null> {
-  const cfg = await readConfig();
-  return cfg.streamProvider?.trim().toLowerCase() || null;
+/** A sport's configured streaming provider (lowercased), or null if unset:
+ *  `streamProviders[sport]`, falling back to the legacy `streamProvider` for
+ *  fifa only. Pure over the parsed config. */
+export function streamProviderFor(cfg: Pick<Config, "streamProvider" | "streamProviders">, sport: string): string | null {
+  const s = sport.trim().toLowerCase();
+  const v = cfg.streamProviders?.[s] ?? (s === "fifa" ? cfg.streamProvider : undefined);
+  return v?.trim().toLowerCase() || null;
+}
+
+/** Preferred streaming provider for `<sport> watch`, or null if unset. */
+export async function getStreamProvider(sport: string): Promise<string | null> {
+  return streamProviderFor(await readConfig(), sport);
 }
 
 export async function setStreamProvider(provider: string): Promise<void> {
