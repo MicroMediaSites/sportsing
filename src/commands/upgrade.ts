@@ -1,5 +1,6 @@
 import { existsSync, realpathSync } from "fs";
 import { c } from "../ansi.ts";
+import { restartDaemonIfLoaded, systemLaunchd, type Launchd } from "../daemon-io.ts";
 import {
   REGISTRY_LATEST_URL,
   canSelfUpgrade,
@@ -42,7 +43,7 @@ async function fetchLatest(): Promise<string> {
 }
 
 /** Realpath of the running entry script, so npm/bun bin symlinks resolve to the package. */
-function runningScript(): string {
+export function runningScript(): string {
   try {
     return realpathSync(Bun.main);
   } catch {
@@ -63,7 +64,7 @@ function installedVersion(bin: string): string | null {
 }
 
 // `sportsing upgrade [--check]` — self-update to the latest npm release.
-export async function upgrade(args: string[], current: string): Promise<void> {
+export async function upgrade(args: string[], current: string, launchd: Launchd = systemLaunchd()): Promise<void> {
   if (args.includes("--help") || args.includes("-h") || args[0] === "help") return usage();
   const unknown = args.filter((a) => a !== "--check");
   if (unknown.length) {
@@ -134,4 +135,9 @@ export async function upgrade(args: string[], current: string): Promise<void> {
     return fail(`Install finished, but ${bin} still reports ${now}. Check which sportsing is on your PATH.`);
   }
   console.log(c.green(`✓ sportsing ${current} → ${now}`));
+
+  // A loaded daemon is still running the old code: restart it onto the new.
+  const restart = restartDaemonIfLoaded(launchd);
+  if (restart === "restarted") console.log(c.green("✓ restarted sportsing daemon on the new version"));
+  else if (restart !== "not-loaded") console.error(c.yellow(`Couldn't restart the daemon (${restart.error}) — run: sportsing daemon install`));
 }

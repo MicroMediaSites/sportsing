@@ -61,3 +61,11 @@ When smoke-testing changes, **do not run `watch` / `watch --overlay` blockingly:
 `/loop agent-setup` supervisor run `watch --wait` headless (no TTY) on purpose,
 blocking until the game opens, and reaps it via the pidfile. Don't use it to
 "smoke-test" — it will block. For tests use `--smoke`.
+
+`sportsing daemon` is the same story: `daemon run` loops forever and `daemon
+install` / `uninstall` write `~/Library/LaunchAgents` and call launchctl — never
+run those from an agent. Smoke it with `daemon run --once --dry-run` (one poll,
+acts on nothing, writes no state) under a temp `HOME`, `daemon status`, and
+`daemon install --dry-run` (prints the plist, touches nothing). The child it
+spawns for a game start is `<sport> watch <team> --supervised` — blocking by
+design, like FIFA's.

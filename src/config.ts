@@ -1,6 +1,7 @@
 import { homedir } from "os";
 import { join } from "path";
 import { mkdir, chmod } from "fs/promises";
+import { daemonModeOf, type DaemonMode } from "./daemon.ts";
 import { SUBSCRIPTIONS, HOME_MARKETS, DEFAULT_HOME_MARKET, isSubscription, type Subscription } from "./watchability.ts";
 
 const CONFIG_DIR = join(homedir(), ".config", "sportsing");
@@ -32,6 +33,8 @@ interface Config {
   subscriptions?: string[];
   /** HOME_MARKETS id for blackouts / local channels; defaults to Utah. */
   homeMarket?: string;
+  /** `sportsing daemon` settings. */
+  daemon?: { mode?: string };
 }
 
 /** Default overlay panel visibility — nothing on by default, so a fresh stream
@@ -276,6 +279,19 @@ export async function getHomeMarket(): Promise<string> {
 export async function setHomeMarket(market: string): Promise<void> {
   const cfg = await readConfig();
   cfg.homeMarket = market;
+  await writeConfig(cfg);
+}
+
+// ── Daemon ───────────────────────────────────────────────────────────────────
+
+/** What the daemon does when a favorite's game starts (`open` by default). */
+export async function getDaemonMode(): Promise<DaemonMode> {
+  return daemonModeOf((await readConfig()).daemon?.mode);
+}
+
+export async function setDaemonMode(mode: DaemonMode): Promise<void> {
+  const cfg = await readConfig();
+  cfg.daemon = { ...(cfg.daemon ?? {}), mode };
   await writeConfig(cfg);
 }
 
