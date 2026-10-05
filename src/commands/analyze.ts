@@ -36,7 +36,7 @@ export async function analyze(args: string[]) {
   }
 
   process.stderr.write(c.dim("Posted to the ask bus — waiting for your Claude agent to answer…\n"));
-  process.stderr.write(c.dim("(keep one serving:  /loop sportsing serve)\n"));
+  process.stderr.write(c.dim("(keep one serving:  /loop sportsing fifa serve)\n"));
   const id = await postQuestion({
     source: "analyze",
     question: prompt,
@@ -47,7 +47,7 @@ export async function analyze(args: string[]) {
   const analysis = await waitForAnswer(id, 180_000);
   if (analysis === null) {
     console.error(c.yellow("No Claude agent answered within 3 minutes."));
-    console.error(c.dim("Start a serving agent in another Claude session, then retry:  /loop sportsing serve"));
+    console.error(c.dim("Start a serving agent in another Claude session, then retry:  /loop sportsing fifa serve"));
     console.error(c.dim("Or run with --prompt to get the prompt and analyze elsewhere."));
     process.exitCode = 1;
     return;

@@ -26,7 +26,7 @@ export async function ask(args: string[]): Promise<void> {
 // self-contained PROMPT (not data): it blocks for the next pending question and
 // emits instructions telling the reading agent to answer it and run the exact
 // `ask --reply` command. Designed to be dropped into a Claude session as
-// `/loop sportsing serve` — each tick serves one question; the model IS the
+// `/loop sportsing fifa serve` — each tick serves one question; the model IS the
 // answerer, so no `claude -p` is ever spawned.
 export async function serve(args: string[]): Promise<void> {
   const waitSec = numFlag(args, "--wait") ?? 60;

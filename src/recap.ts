@@ -90,7 +90,7 @@ export async function requestRecap(
     return {
       ok: false,
       reason: "no-agent",
-      message: "No Claude agent is serving — start one in another session:  /loop sportsing serve",
+      message: "No Claude agent is serving — start one in another session:  /loop sportsing fifa serve",
     };
   }
   const id = await postQuestion({
@@ -105,7 +105,7 @@ export async function requestRecap(
     return {
       ok: false,
       reason: "timeout",
-      message: "No Claude agent answered in time — keep one serving:  /loop sportsing serve",
+      message: "No Claude agent answered in time — keep one serving:  /loop sportsing fifa serve",
     };
   }
   return { ok: true, recap };

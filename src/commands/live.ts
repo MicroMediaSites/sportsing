@@ -27,7 +27,7 @@ export async function live(args: string[] = []) {
     await getMatches({ status: "IN_PLAY" }, 0);
   } catch (e) {
     if (e instanceof NoKeyError) {
-      console.error(c.yellow("Live scores need an API key. Run `sportsing setup` first."));
+      console.error(c.yellow("Live scores need an API key. Run `sportsing fifa setup` first."));
       return;
     }
     throw e;

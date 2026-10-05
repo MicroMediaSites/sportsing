@@ -139,7 +139,7 @@ export function finishedNewestFirst(games: Game[]): Game[] {
 // ── Data access ──────────────────────────────────────────────────────────────
 
 /** Every game for one team across preseason, regular season, and postseason. */
-async function teamSeason(cfg: LeagueConfig, teamId: string): Promise<Game[]> {
+export async function teamSeason(cfg: LeagueConfig, teamId: string): Promise<Game[]> {
   const { preseason, regular, postseason } = SEASON_TYPES;
   const lists = await Promise.all([preseason, regular, postseason].map((st) => getTeamGames(cfg.league, teamId, st)));
   return mergeGames(lists);
@@ -148,7 +148,7 @@ async function teamSeason(cfg: LeagueConfig, teamId: string): Promise<Game[]> {
 /** League-wide games on each local day in [from, from + days). ESPN groups
  *  scoreboards by US-Eastern day, so the days either side are fetched too and
  *  every game is re-bucketed by its local start date. */
-async function gamesOnDays(cfg: LeagueConfig, from: Date, days: number): Promise<Game[]> {
+export async function gamesOnDays(cfg: LeagueConfig, from: Date, days: number): Promise<Game[]> {
   const fetchDays = Array.from({ length: days + 2 }, (_, i) => addDays(from, i - 1));
   const lists = await Promise.all(fetchDays.map((d) => getScoreboardGames(cfg.league, espnDate(d))));
   const wanted = new Set(Array.from({ length: days }, (_, i) => ymd(addDays(from, i))));
@@ -186,7 +186,7 @@ async function scopeOf(cfg: LeagueConfig, args: string[]): Promise<Scope> {
 }
 
 /** Resolve favorite names to team ids; unresolvable ones are warned about and skipped. */
-function favoriteIds(cfg: LeagueConfig, teams: EspnTeam[], favs: string[]): Set<string> {
+export function favoriteIds(cfg: LeagueConfig, teams: EspnTeam[], favs: string[]): Set<string> {
   const ids = new Set<string>();
   for (const f of favs) {
     const t = resolveTeam(teams, f, cfg.aliases);
@@ -244,7 +244,7 @@ function printGames(cfg: LeagueConfig, games: Game[], watch: WatchContext | null
 
 // ── Commands ─────────────────────────────────────────────────────────────────
 
-function parseOffset(args: string[]): number {
+export function parseOffset(args: string[]): number {
   if (args.includes("--tomorrow")) return 1;
   if (args.includes("--yesterday")) return -1;
   const v = getFlag(args, "--offset");
@@ -614,6 +614,11 @@ const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<vo
 };
 
 const ALIASES: Record<string, string> = { t: "today", n: "next", st: "standings" };
+
+/** True if `sportsing <league> <cmd>` is a command (or alias). */
+export function leagueHasCommand(cmd: string): boolean {
+  return Object.hasOwn(COMMANDS, cmd) || Object.hasOwn(ALIASES, cmd);
+}
 
 function help(cfg: LeagueConfig): void {
   const b = c.bold;
