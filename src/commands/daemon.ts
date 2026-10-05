@@ -11,6 +11,7 @@
 import { spawn } from "child_process";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
 import { homedir } from "os";
+import { dirname } from "path";
 import { c } from "../ansi.ts";
 import { notify } from "../notify.ts";
 import { getDaemonMode, setDaemonMode } from "../config.ts";
@@ -87,7 +88,7 @@ export function install(args: string[], launchd: Launchd): void {
   // Idempotent: unload a previous copy, rewrite the plist, load it fresh.
   if (launchd.print(DAEMON_LABEL).loaded) launchd.bootout(DAEMON_LABEL);
   mkdirSync(LOG_DIR, { recursive: true });
-  mkdirSync(PLIST_PATH.slice(0, PLIST_PATH.lastIndexOf("/")), { recursive: true });
+  mkdirSync(dirname(PLIST_PATH), { recursive: true });
   writeFileSync(PLIST_PATH, made.plist);
   try {
     launchd.bootstrap(PLIST_PATH);

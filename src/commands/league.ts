@@ -690,12 +690,14 @@ export async function leagueDaemonGames(cfg: LeagueConfig): Promise<DaemonGame[]
   const ids = favoriteIds(cfg, await getTeams(cfg.league), favs);
   if (ids.size === 0) return null;
   const [all, watch, fallback] = await Promise.all([liveGames(cfg), watchContext(cfg), watchFallback(cfg)]);
-  const games = all.filter((g) => gameHasTeam(g, ids));
+  const nearby = all.filter((g) => gameHasTeam(g, ids));
   const now = Date.now();
-  if (!games.some((g) => g.state === "pre" && Date.parse(g.date) >= now)) {
-    const later = firstUpcoming(await scopedSeasons(cfg, ids), now);
-    if (later && !games.some((g) => g.id === later.id)) games.push(later);
+  let later: Game | null = null;
+  if (!nearby.some((g) => g.state === "pre" && Date.parse(g.date) >= now)) {
+    later = firstUpcoming(await scopedSeasons(cfg, ids), now);
+    if (later && nearby.some((g) => g.id === later!.id)) later = null;
   }
+  const games = later ? [...nearby, later] : nearby;
   return games.map((g) => leagueDaemonGame(cfg.sport, cfg.icon, g, ids, leagueRoute(g, watch, fallback)));
 }
 

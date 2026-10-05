@@ -156,7 +156,9 @@ export async function fifaAlerter(): Promise<Alerter | null> {
 }
 
 /** FIFA's favorite matches today for `sportsing daemon`; null with no FIFA
- *  favorites. Opens like `fifa watch <fav> --wait` (the configured provider). */
+ *  favorites. Always routed "open" via the configured provider, exactly like
+ *  `fifa watch <fav> --wait` — FIFA has no subscriptions/watchability resolver
+ *  (that's NBA/NHL only), so there's no over-the-air or unwatchable branch. */
 export async function fifaDaemonGames(): Promise<DaemonGame[] | null> {
   const favorites = await getFavorites("fifa");
   if (favorites.length === 0) return null;

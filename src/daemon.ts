@@ -81,7 +81,8 @@ export function leagueDaemonGame(
   favIds: ReadonlySet<string>,
   route: Route,
 ): DaemonGame {
-  const team = [g.away, g.home].find((t) => favIds.has(t.id))?.id ?? g.home.id;
+  // Either favorite's id finds the same game; prefer home, as `watch` does.
+  const team = [g.home, g.away].find((t) => favIds.has(t.id))?.id ?? g.home.id;
   return {
     key: `${sport}:${g.id}`,
     sport,
@@ -300,7 +301,7 @@ export function footerLine(s: DaemonStatus, now: number): string {
     case "down":
       return "daemon: down — installed but not running (sportsing daemon status)";
     case "starting":
-      return "daemon: starting";
+      return "daemon: starting — sportsing daemon status";
     case "stuck": {
       const age = s.heartbeatAgeMs === null ? "no poll yet" : `last poll ${fmtDuration(s.heartbeatAgeMs)} ago`;
       return `daemon: stuck — ${age} (sportsing daemon logs)`;
