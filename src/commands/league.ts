@@ -12,6 +12,7 @@ import { getFavorites, getStreamProvider } from "../config.ts";
 import { getScoreboardGames, getStandings, getTeamGames, getTeams, SEASON_TYPES, type EspnTeam, type League } from "../espn.ts";
 import { fmtDate, fmtDayHeader, gameLine, relativeTime, type PeriodNaming } from "../format.ts";
 import type { Game } from "../game.ts";
+import { PLAYOFF_FORMATS, renderSeasonSummary, summarizeSeason } from "../season.ts";
 import { STANDINGS_LAYOUTS, groupMatches, loadStandingsView, renderStandingsTable, type StandingsLevel } from "../standings.ts";
 import { launchStream, pickProvider } from "../stream.ts";
 import { EXAMPLE_TEAM, addDays, getFlag, localDateOf, mineFavorites, noFavoritesHint, ymd } from "./_lib.ts";
@@ -340,6 +341,43 @@ async function standings(cfg: LeagueConfig, args: string[]): Promise<void> {
   for (const g of groups) console.log("\n" + renderStandingsTable(g, layout, ids));
 }
 
+/** `season [team]` — each favorite's (or the named team's) season at a glance:
+ *  record, splits, conference/division position, playoff race. Before the
+ *  regular season, last season's final standing, labelled as such. */
+async function season(cfg: LeagueConfig, args: string[]): Promise<void> {
+  const layout = STANDINGS_LAYOUTS[cfg.league];
+  const format = PLAYOFF_FORMATS[cfg.league];
+  if (!layout || !format) throw new Error(`No season view for ${cfg.label}.`);
+  const input = args.join(" ").trim();
+  const teams = await getTeams(cfg.league);
+  let ids: Set<string>;
+  if (input) {
+    ids = new Set([(resolveTeam(teams, input, cfg.aliases) ?? unknownTeam(cfg, input)).id]);
+  } else {
+    const favs = await getFavorites(cfg.sport);
+    if (favs.length === 0) return noFavoritesHint(cfg.sport);
+    ids = favoriteIds(cfg, teams, favs);
+  }
+
+  const view = await loadStandingsView((q) => getStandings(cfg.league, q), "division");
+  if (view.kind === "not-started") {
+    title(cfg, `Season${view.upcoming ? ` ${view.upcoming}` : ""}`);
+    console.log(c.dim("\nThe regular season hasn't started yet, and ESPN has no earlier standings to show."));
+    return;
+  }
+  const { standings: data } = view;
+  title(cfg, `Season ${data.seasonName}${view.kind === "last-season" ? " (final)" : ""}`);
+  if (view.kind === "last-season") {
+    const upcoming = view.upcoming ? `The ${view.upcoming} regular season` : "The regular season";
+    console.log(c.yellow(`${upcoming} hasn't started — showing last season's final standing.`));
+  }
+  for (const id of ids) {
+    const summary = summarizeSeason(data.groups, id, layout, format);
+    const name = teams.find((t) => t.id === id)?.name ?? id;
+    console.log("\n" + (summary ? renderSeasonSummary(summary) : c.dim(`${name}: not in the ${data.seasonName} standings.`)));
+  }
+}
+
 /** `fav [add|rm|list] [team]` — `add` resolves the team against the league's
  *  /teams list and stores its ESPN abbreviation; list/rm are the shared fav. */
 async function leagueFav(cfg: LeagueConfig, args: string[]): Promise<void> {
@@ -476,6 +514,7 @@ const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<vo
   schedule,
   results,
   standings,
+  season,
   fav: leagueFav,
   watch,
 };
@@ -497,6 +536,7 @@ ${b("COMMANDS")}
   ${c.green("schedule")}           A team's whole season, by day ${c.dim(`(league-wide: next ${WINDOW_DAYS} days)`)}
   ${c.green("results")}            Finished games, newest first ${c.dim(`(league-wide: last ${WINDOW_DAYS} days)`)}
   ${c.green("standings")}          Regular-season standings, favorites ★ ${c.dim("(--conference X, --division X)")}
+  ${c.green("season")} ${c.dim("[team]")}      Favorites' season: record, splits, playoff race
   ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
 ${cfg.watchProvider ? `  ${c.green("watch")}  ${c.dim("[team]")}      Open the stream ${c.dim("(--wait, --provider, --url, --smoke)")}\n` : ""}
 ${b("FILTER")}
