@@ -45,7 +45,7 @@ const ROUTES: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   watch,
   highlights,
   live,
-  fav,
+  fav: (args) => fav(args, "fifa"),
   me,
   setup,
 };

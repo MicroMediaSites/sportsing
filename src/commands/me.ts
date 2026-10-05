@@ -8,7 +8,7 @@ import type { Match, StandingsTable } from "../types.ts";
 // `sportsing fifa me` — a personalized dashboard for your favorite teams:
 // last result, next match + countdown, and current group position.
 export async function me(_args: string[]): Promise<void> {
-  const favorites = await getFavorites();
+  const favorites = await getFavorites("fifa");
   if (favorites.length === 0) return noFavoritesHint();
 
   const matches = await withFallback(

@@ -77,7 +77,7 @@ export function getFlag(args: string[], flag: string): string | null {
  */
 export async function applyMine(matches: Match[], args: string[]): Promise<Match[] | "no-favorites"> {
   if (!args.includes("--mine")) return matches;
-  const favs = (await getFavorites()).map((f) => f.toLowerCase());
+  const favs = (await getFavorites("fifa")).map((f) => f.toLowerCase());
   if (favs.length === 0) return "no-favorites";
   return matches.filter((m) => favs.some((n) => matchHasTeam(m, n)));
 }
