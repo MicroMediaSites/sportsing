@@ -3,6 +3,7 @@ import { c } from "./ansi.ts";
 import { ApiError } from "./api.ts";
 import { fifa } from "./sports/fifa.ts";
 import { nba } from "./sports/nba.ts";
+import { subscriptions } from "./commands/subscriptions.ts";
 
 const VERSION = "0.1.0";
 
@@ -23,6 +24,9 @@ ${b("USAGE")}
 ${b("SPORTS")}
   ${c.green("fifa")}               FIFA World Cup 2026 ${c.dim("— sportsing fifa help")}
   ${c.green("nba")}                NBA, preseason through playoffs ${c.dim("— sportsing nba help")}
+
+${b("SETTINGS")}
+  ${c.green("subscriptions")}      What you can watch with + home market ${c.dim("— sportsing subscriptions")}
 
 ${b("NOTE")}
   During the World Cup, the ${b("fifa")} prefix is optional —
@@ -49,6 +53,12 @@ async function dispatch(): Promise<void> {
   const sport = SPORTS[first];
   if (sport) {
     await sport(rest);
+    return;
+  }
+
+  // Cross-sport settings (not tied to any one sport's namespace).
+  if (first === "subscriptions" || first === "subs") {
+    await subscriptions(rest);
     return;
   }
 

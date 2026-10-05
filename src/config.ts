@@ -1,6 +1,7 @@
 import { homedir } from "os";
 import { join } from "path";
 import { mkdir, chmod } from "fs/promises";
+import { SUBSCRIPTIONS, HOME_MARKETS, DEFAULT_HOME_MARKET, isSubscription, type Subscription } from "./watchability.ts";
 
 const CONFIG_DIR = join(homedir(), ".config", "sportsing");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
@@ -22,6 +23,10 @@ interface Config {
   streamDelay?: Record<string, number>;
   /** Overlay panel choices (the gear/settings) — per provider → { panel: on }. */
   overlayPanels?: Record<string, Record<string, boolean>>;
+  /** What the user can watch with (see SUBSCRIPTIONS in watchability.ts). */
+  subscriptions?: string[];
+  /** HOME_MARKETS id for blackouts / local channels; defaults to Utah. */
+  homeMarket?: string;
 }
 
 /** Default overlay panel visibility — nothing on by default, so a fresh stream
@@ -203,6 +208,57 @@ export async function removeFavorite(sport: string, team: string): Promise<{ rem
   cfg.favorites = entries;
   await writeConfig(cfg);
   return { removed, favorites: favoritesFor(entries, sport) };
+}
+
+// ── Subscriptions + home market ──────────────────────────────────────────────
+// Pure helpers over raw input / stored values (unit-tested without touching
+// disk); the async get/set pair below is the IO edge.
+
+/** Parse user input (space- and/or comma-separated ids, any case) into
+ *  subscriptions in canonical order, deduped, plus anything unrecognized. */
+export function parseSubscriptions(input: string[]): { subscriptions: Subscription[]; invalid: string[] } {
+  const tokens = input.flatMap((a) => a.split(",")).map((t) => t.trim().toLowerCase()).filter(Boolean);
+  const invalid = [...new Set(tokens.filter((t) => !isSubscription(t)))];
+  const subscriptions = SUBSCRIPTIONS.filter((s) => tokens.includes(s));
+  return { subscriptions, invalid };
+}
+
+/** Stored subscriptions, dropping anything no longer recognized. */
+export function subscriptionsOf(stored: unknown): Subscription[] {
+  if (!Array.isArray(stored)) return [];
+  return parseSubscriptions(stored.filter((s): s is string => typeof s === "string")).subscriptions;
+}
+
+/** Normalize a home-market id; null if it isn't a known market. */
+export function parseHomeMarket(input: string): string | null {
+  const id = input.trim().toLowerCase();
+  return Object.hasOwn(HOME_MARKETS, id) ? id : null;
+}
+
+/** Stored home market, falling back to the default for unset/unknown values. */
+export function homeMarketOf(stored: unknown): string {
+  return (typeof stored === "string" && parseHomeMarket(stored)) || DEFAULT_HOME_MARKET;
+}
+
+export async function getSubscriptions(): Promise<Subscription[]> {
+  return subscriptionsOf((await readConfig()).subscriptions);
+}
+
+export async function setSubscriptions(subscriptions: Subscription[]): Promise<void> {
+  const cfg = await readConfig();
+  cfg.subscriptions = [...subscriptions];
+  await writeConfig(cfg);
+}
+
+export async function getHomeMarket(): Promise<string> {
+  return homeMarketOf((await readConfig()).homeMarket);
+}
+
+/** `market` must be a known HOME_MARKETS id (see parseHomeMarket). */
+export async function setHomeMarket(market: string): Promise<void> {
+  const cfg = await readConfig();
+  cfg.homeMarket = market;
+  await writeConfig(cfg);
 }
 
 export { CONFIG_FILE };
