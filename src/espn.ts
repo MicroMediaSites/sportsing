@@ -260,6 +260,146 @@ export function toGame(e: any, requested?: SeasonType): Game {
   };
 }
 
+// --- ESPN game summary (NBA/NHL box score + play-by-play) ---
+
+/** One play from a summary's play-by-play, in feed (chronological) order. */
+export interface EspnPlay {
+  period: number;
+  /** ESPN's period label, e.g. "4th Quarter", "2nd", "OT". */
+  periodLabel: string;
+  /** Clock as displayed (time remaining in the period), e.g. "4:21". */
+  clock: string;
+  /** e.g. "Jump Shot", "Goal", "Tripping", "End Period". */
+  type: string;
+  text: string;
+  /** ESPN team id of the acting team; "" for neutral plays (period ends). */
+  teamId: string;
+  homeScore: number;
+  awayScore: number;
+  scoring: boolean;
+  /** Penalty minutes, when the play is a (hockey) penalty. */
+  penaltyMinutes?: number;
+  /** Hockey manpower situation, e.g. "Power Play", "Even Strength". */
+  strength?: string;
+}
+
+export interface EspnSummarySide {
+  /** ESPN team id — unique only within a league. */
+  id: string;
+  abbreviation: string;
+  name: string;
+  score: string;
+  /** Points/goals per period, in order. */
+  linescores: string[];
+  /** Overall record as displayed, e.g. "1-0", "2-1-0, 4 PTS"; "" if absent. */
+  record: string;
+  /** Team box-score stats: the sport's own stat set, as ESPN names them. */
+  stats: { name: string; label: string; value: string }[];
+  /** Top player per leader category, e.g. { category: "Points", athlete: "Lauri Markkanen", value: "17" }. */
+  leaders: { category: string; athlete: string; value: string }[];
+  /** Goaltending lines (hockey); empty for sports without goalies. */
+  goalies: { athlete: string; saves: string; shotsAgainst: string; savePct: string }[];
+}
+
+/** A game's summary: status, both sides' box score, and the play-by-play. */
+export interface EspnGameSummary {
+  state: "pre" | "in" | "post";
+  /** Status text, e.g. "Final", "Final/OT", "4:21 - 3rd". */
+  detail: string;
+  period: number;
+  home: EspnSummarySide;
+  away: EspnSummarySide;
+  plays: EspnPlay[];
+}
+
+function summarySide(raw: any, comp: any, side: "home" | "away"): EspnSummarySide {
+  const entry = (comp?.competitors ?? []).find((x: any) => x?.homeAway === side) ?? {};
+  const id = String(entry.team?.id ?? entry.id ?? "");
+  const byId = (list: any[]) => (list ?? []).find((x: any) => String(x?.team?.id ?? "") === id);
+  const box = byId(raw?.boxscore?.teams);
+  const leaderBlock = byId(raw?.leaders);
+  const goalieGroup = (byId(raw?.boxscore?.players)?.statistics ?? []).find((g: any) => g?.name === "goalies");
+  const labels: string[] = goalieGroup?.labels ?? [];
+  const col = (stats: unknown[], label: string) => {
+    const i = labels.indexOf(label);
+    return i >= 0 && stats[i] != null ? String(stats[i]) : "";
+  };
+  const records: any[] = Array.isArray(entry.record) ? entry.record : [];
+  const total = records.find((r) => r?.type === "total") ?? records[0];
+  return {
+    id,
+    abbreviation: entry.team?.abbreviation ?? "",
+    name: entry.team?.displayName ?? entry.team?.name ?? "?",
+    score: scoreOf(entry.score),
+    linescores: (entry.linescores ?? []).map((l: any) => String(l?.displayValue ?? l?.value ?? "")),
+    record: String(total?.displayValue ?? total?.summary ?? ""),
+    stats: (box?.statistics ?? []).map((s: any) => ({
+      name: String(s?.name ?? ""),
+      label: String(s?.label ?? s?.name ?? ""),
+      value: String(s?.displayValue ?? s?.value ?? ""),
+    })),
+    leaders: (leaderBlock?.leaders ?? []).flatMap((cat: any) => {
+      const top = cat?.leaders?.[0];
+      if (!top?.athlete?.displayName) return [];
+      return [{ category: String(cat.displayName ?? cat.name ?? ""), athlete: String(top.athlete.displayName), value: String(top.displayValue ?? "") }];
+    }),
+    goalies: (goalieGroup?.athletes ?? [])
+      .filter((a: any) => Array.isArray(a?.stats) && a.stats.length > 0)
+      .map((a: any) => ({
+        athlete: String(a.athlete?.displayName ?? "?"),
+        saves: col(a.stats, "SV"),
+        shotsAgainst: col(a.stats, "SA"),
+        savePct: col(a.stats, "SV%"),
+      })),
+  };
+}
+
+function playOf(p: any): EspnPlay {
+  const pm = Number(p?.type?.penaltyMinutes);
+  return {
+    period: Number(p?.period?.number) || 0,
+    periodLabel: String(p?.period?.displayValue ?? ""),
+    clock: String(p?.clock?.displayValue ?? ""),
+    type: String(p?.type?.text ?? ""),
+    text: String(p?.text ?? ""),
+    teamId: String(p?.team?.id ?? ""),
+    homeScore: Number(p?.homeScore) || 0,
+    awayScore: Number(p?.awayScore) || 0,
+    scoring: p?.scoringPlay === true,
+    ...(Number.isFinite(pm) && pm > 0 ? { penaltyMinutes: pm } : {}),
+    ...(p?.strength?.text ? { strength: String(p.strength.text) } : {}),
+  };
+}
+
+/** A `summary?event=` response → EspnGameSummary, or null if it has no
+ *  competition header. Teams are paired by ESPN id within the game. Exported for tests. */
+export function parseGameSummary(raw: any): EspnGameSummary | null {
+  const comp = raw?.header?.competitions?.[0];
+  if (!comp) return null;
+  const status = comp.status ?? {};
+  const state = status.type?.state === "in" || status.type?.state === "post" ? status.type.state : "pre";
+  return {
+    state,
+    detail: String(status.type?.shortDetail ?? status.type?.detail ?? ""),
+    period: Number(status.period) || 0,
+    home: summarySide(raw, comp, "home"),
+    away: summarySide(raw, comp, "away"),
+    plays: (Array.isArray(raw?.plays) ? raw.plays : []).map(playOf),
+  };
+}
+
+/** Box score + play-by-play for one game in `league`. Short default TTL: it
+ *  backs both finished-game analysis and the live catch-up. */
+export async function getGameSummary(league: League, eventId: string, ttlMs = 30_000): Promise<EspnGameSummary | null> {
+  const raw = await fetchEspn(
+    espnUrl(league, `summary?event=${encodeURIComponent(eventId)}`),
+    espnCacheKey(league, "game", eventId),
+    ttlMs,
+    "summary",
+  );
+  return parseGameSummary(raw);
+}
+
 /** Scoreboard events for a date or `YYYYMMDD-YYYYMMDD` range in `league`. */
 export async function getScoreboard(dates: string, ttlMs = 60_000, league: League = FIFA): Promise<EspnEvent[]> {
   const raw = await fetchEspn(
