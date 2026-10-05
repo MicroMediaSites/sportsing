@@ -1,7 +1,7 @@
 import { test, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { toGame, SEASON_TYPES } from "./espn.ts";
+import { toGame, getScoreboardGames, LEAGUES, SEASON_TYPES } from "./espn.ts";
 
 // Real ESPN responses captured 2026-10-04 (trimmed of logos/leaders/links),
 // under fixtures/espn/. Pure parsing only — no network, no config.
@@ -122,4 +122,8 @@ test("a malformed event degrades to placeholders instead of throwing", () => {
   expect(g.state).toBe("pre");
   expect(g.home).toEqual({ id: "", name: "TBD", abbreviation: "", score: "" });
   expect(g.broadcasts).toEqual([]);
+});
+
+test("getScoreboardGames rejects date ranges before any request", async () => {
+  await expect(getScoreboardGames(LEAGUES.nba, "20261004-20261005")).rejects.toThrow("YYYYMMDD");
 });

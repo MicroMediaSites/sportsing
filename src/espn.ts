@@ -221,12 +221,12 @@ function broadcastsOf(comp: any): Broadcast[] {
 }
 
 function competitorOf(comp: any, side: "home" | "away"): GameCompetitor {
-  const c = (comp?.competitors ?? []).find((x: any) => x?.homeAway === side);
+  const entry = (comp?.competitors ?? []).find((x: any) => x?.homeAway === side);
   return {
-    id: String(c?.team?.id ?? c?.id ?? ""),
-    name: c?.team?.displayName ?? c?.team?.name ?? "TBD",
-    abbreviation: c?.team?.abbreviation ?? "",
-    score: scoreOf(c?.score),
+    id: String(entry?.team?.id ?? entry?.id ?? ""),
+    name: entry?.team?.displayName ?? entry?.team?.name ?? "TBD",
+    abbreviation: entry?.team?.abbreviation ?? "",
+    score: scoreOf(entry?.score),
   };
 }
 
@@ -307,6 +307,7 @@ export async function getTeamGames(
  *  entry as getScoreboard. Single dates only — ESPN's `dates=A-B` ranges are
  *  unreliable for NBA/NHL. */
 export async function getScoreboardGames(league: League, date: string, ttlMs = 60_000): Promise<Game[]> {
+  if (!/^\d{8}$/.test(date)) throw new Error(`getScoreboardGames expects one YYYYMMDD date, got "${date}".`);
   const raw = await fetchEspn(
     espnUrl(league, `scoreboard?dates=${encodeURIComponent(date)}`),
     espnCacheKey(league, "sb", date),
