@@ -71,7 +71,16 @@ export const PROVIDERS: Record<string, Provider> = {
       // Jazz local (and national NBA) games on Fubo — the league page, same /p/
       // section scheme as the World Cup hub.
       nba: "https://www.fubo.tv/p/nba",
+      // National NHL games on networks Fubo carries (ESPN, ABC, NHL Network) the
+      // watchability resolver routes to Fubo.
+      nhl: "https://www.fubo.tv/p/nhl",
     },
+  },
+  // Out-of-market NBA games — the provider key matches the `nba-league-pass`
+  // subscription id the watchability resolver routes to.
+  "nba-league-pass": {
+    label: "NBA League Pass",
+    hubs: { nba: "https://www.nba.com/watch/league-pass-stream" },
   },
 };
 

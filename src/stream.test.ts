@@ -17,8 +17,15 @@ test("pickProvider: FIFA keeps both World Cup providers", () => {
 });
 
 test("pickProvider: a provider with no hub for the sport is refused, naming the ones that have one", () => {
-  expect(pickProvider("peacock", "nba")).toEqual({ ok: false, error: "Peacock has no nba hub. Known for nba: fubo." });
-  expect(pickProvider("fubo", "nhl")).toEqual({ ok: false, error: "Fubo has no nhl hub. Known for nhl: none." });
+  expect(pickProvider("peacock", "nba")).toEqual({
+    ok: false,
+    error: "Peacock has no nba hub. Known for nba: fubo, nba-league-pass.",
+  });
+  expect(pickProvider("peacock", "nhl")).toEqual({ ok: false, error: "Peacock has no nhl hub. Known for nhl: fubo." });
+  expect(pickProvider("nba-league-pass", "nhl")).toEqual({
+    ok: false,
+    error: "NBA League Pass has no nhl hub. Known for nhl: fubo.",
+  });
 });
 
 test("waitPollMs: 60s normally, 30s inside 15 min, 15s inside 5 min and once past start", () => {
