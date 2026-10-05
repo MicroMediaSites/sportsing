@@ -70,19 +70,35 @@ export function getFlag(args: string[], flag: string): string | null {
 }
 
 /**
- * If `--mine` is present in args, narrow `matches` to games involving a favorite
- * team. Returns the literal `"no-favorites"` when `--mine` was asked for but no
- * favorites are set, so the caller can show a helpful hint. Without `--mine`,
- * returns the list unchanged.
+ * The favorites `--mine` should filter by for `sport`: null when `--mine` is
+ * absent, the literal `"no-favorites"` when it was asked for but that sport has
+ * none set (so the caller can show a hint), else that sport's favorite names.
  */
-export async function applyMine(matches: Match[], args: string[]): Promise<Match[] | "no-favorites"> {
-  if (!args.includes("--mine")) return matches;
-  const favs = (await getFavorites("fifa")).map((f) => f.toLowerCase());
-  if (favs.length === 0) return "no-favorites";
-  return matches.filter((m) => favs.some((n) => matchHasTeam(m, n)));
+export async function mineFavorites(args: string[], sport: string): Promise<string[] | null | "no-favorites"> {
+  if (!args.includes("--mine")) return null;
+  const favs = await getFavorites(sport);
+  return favs.length === 0 ? "no-favorites" : favs;
 }
 
-/** Shared message for `--mine` with no favorites configured. */
-export function noFavoritesHint(): void {
-  console.log(c.dim("No favorite teams yet — add one with ") + c.bold("sportsing fifa fav add USA"));
+/**
+ * If `--mine` is present in args, narrow football-data `matches` (the FIFA
+ * shape) to games involving a FIFA favorite. Returns `"no-favorites"` when
+ * `--mine` was asked for but none are set. Without `--mine`, returns the list
+ * unchanged. ESPN-league commands filter `Game`s by team id instead (league.ts).
+ */
+export async function applyMine(matches: Match[], args: string[]): Promise<Match[] | "no-favorites"> {
+  const favs = await mineFavorites(args, "fifa");
+  if (favs === null) return matches;
+  if (favs === "no-favorites") return favs;
+  const needles = favs.map((f) => f.toLowerCase());
+  return matches.filter((m) => needles.some((n) => matchHasTeam(m, n)));
+}
+
+/** Example team for "add a favorite" hints, per sport. */
+export const EXAMPLE_TEAM: Record<string, string> = { fifa: "USA", nba: "UTAH", nhl: "UTAH" };
+
+/** Shared message for `--mine` with no favorites configured for `sport`. */
+export function noFavoritesHint(sport = "fifa"): void {
+  const example = EXAMPLE_TEAM[sport] ?? "<team>";
+  console.log(c.dim("No favorite teams yet — add one with ") + c.bold(`sportsing ${sport} fav add ${example}`));
 }

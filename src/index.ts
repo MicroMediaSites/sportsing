@@ -2,6 +2,7 @@
 import { c } from "./ansi.ts";
 import { ApiError } from "./api.ts";
 import { fifa } from "./sports/fifa.ts";
+import { nba } from "./sports/nba.ts";
 
 const VERSION = "0.1.0";
 
@@ -9,6 +10,7 @@ const VERSION = "0.1.0";
 // dispatcher `(args: string[]) => unknown` and registering it here.
 const SPORTS: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   fifa,
+  nba,
 };
 
 function help() {
@@ -20,6 +22,7 @@ ${b("USAGE")}
 
 ${b("SPORTS")}
   ${c.green("fifa")}               FIFA World Cup 2026 ${c.dim("— sportsing fifa help")}
+  ${c.green("nba")}                NBA, preseason through playoffs ${c.dim("— sportsing nba help")}
 
 ${b("NOTE")}
   During the World Cup, the ${b("fifa")} prefix is optional —
@@ -28,6 +31,7 @@ ${b("NOTE")}
 ${b("EXAMPLES")}
   sportsing fifa today
   sportsing fifa next --team USA
+  sportsing nba schedule --team UTAH
   sportsing today              ${c.dim("(= sportsing fifa today)")}
 `);
 }

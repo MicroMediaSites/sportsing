@@ -1,5 +1,6 @@
 import { c } from "../ansi.ts";
 import { getFavorites, addFavorite, removeFavorite } from "../config.ts";
+import { EXAMPLE_TEAM } from "./_lib.ts";
 
 // `sportsing <sport> fav [add|rm|list] [team]` — manage a sport's favorite teams.
 // Favorites are scoped per sport (stored `<sport>:<team>`), so `nba:UTAH` and
@@ -32,9 +33,6 @@ export async function fav(args: string[], sport: string): Promise<void> {
 
   usage(sport, "fav <add|rm|list> [team]");
 }
-
-/** Example team for the empty-list hint, per sport. */
-const EXAMPLE_TEAM: Record<string, string> = { fifa: "USA", nba: "UTAH", nhl: "UTAH" };
 
 function printList(favorites: string[], sport: string): void {
   if (favorites.length === 0) {
