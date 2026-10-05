@@ -4,19 +4,23 @@
 // spoiler-delay slider, and a stats window that appears once a panel is on.
 // It follows the game you open: the page title's English team names
 // (league-detect.ts) pick the game off ESPN's scoreboard, and its box score
-// fills the panels (league-panels.ts). Panel choices persist per provider and
-// sport (`overlayPanels["fubo:nba"]`); the delay is per provider, shared with
-// the FIFA overlay — it's the stream's latency.
+// fills the panels (league-panels.ts). "Get caught up" recaps the game up to
+// the delayed stream's moment through the serve bus (league-ai.ts). Panel
+// choices persist per provider and sport (`overlayPanels["fubo:nba"]`); the
+// delay is per provider, shared with the FIFA overlay — it's the stream's latency.
 
 import { c } from "./ansi.ts";
-import { getLiveGame, getTeams, type EspnTeam } from "./espn.ts";
+import { getGameSummary, getTeams, type EspnGameSummary, type EspnTeam } from "./espn.ts";
 import { getOverlayPanels, getStreamDelay, setOverlayPanel, setStreamDelay } from "./config.ts";
 import { attachToPage, freePort, type CdpSession } from "./cdp.ts";
 import { spawnStreamWindow, type StreamWindow } from "./stream.ts";
 import type { Game } from "./game.ts";
 import type { LeagueConfig } from "./commands/league.ts";
 import { gameBetween, teamsFromTitle } from "./league-detect.ts";
-import { LEAGUE_PANELS, panelDefaults, type LeaguePanels, type PanelRow } from "./league-panels.ts";
+import { LEAGUE_PANELS, SPECIAL_PANELS, panelDefaults, type LeaguePanels, type PanelRow } from "./league-panels.ts";
+import { catchupInput, sportAiFor } from "./league-ai.ts";
+import { requestRecap } from "./recap.ts";
+import { isServing } from "./ask-bus.ts";
 import {
   JS_CALL,
   JS_CB,
@@ -45,8 +49,9 @@ export interface LeagueSnapshot {
 
 /**
  * The page-side script for a league's overlay. `window.__sb.update(d)` takes
- * `{ panels, delay, game?: LeagueSnapshot }` — with no game yet, an enabled
- * stats window says to open one. Rows render away-left, home-right.
+ * `{ panels, delay, serving, game?: LeagueSnapshot }` — with no game yet, an
+ * enabled stats window says to open one. Rows render away-left, home-right.
+ * `window.__sb.catchupResult(text)` fills the "Get caught up" output.
  */
 export function leagueBootstrap(spec: LeaguePanels, icon: string): string {
   return [
@@ -68,10 +73,15 @@ export function leagueBootstrap(spec: LeaguePanels, icon: string): string {
     "  stats.style.cssText='" + STATS_CSS + "';stats.style.width='300px';",
     "  stats.innerHTML='"
     + "<div id=\"sb-stats-head\" style=\"display:flex;align-items:center;justify-content:space-between;padding:7px 11px;cursor:move;color:#8b949e;font-size:11px;border-bottom:1px solid #21262d\"><span>" + icon + " live</span><span id=\"sb-fresh\"></span></div>"
-    + "<div id=\"sb-body\" style=\"padding:9px 13px 11px\"></div>';",
+    + "<div style=\"padding:9px 13px 11px\"><div id=\"sb-body\"></div>"
+    // "Get caught up" sits outside sb-body (re-rendered every tick) so its output persists.
+    + "<div id=\"sb-pl-catchup\" style=\"display:none\"><button id=\"sb-catchup\" style=\"margin-top:10px;width:100%;padding:6px;background:#6e40c9;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px\">Get caught up</button><div id=\"sb-catchup-status\" style=\"font-size:10px;margin-top:6px\"></div><div id=\"sb-catchup-out\" style=\"margin-top:8px;color:#c9d1d9;font-size:12px;white-space:pre-wrap\"></div></div>"
+    + "</div>';",
     "  document.body.appendChild(stats);",
     ...JS_SHELL_WIRE,
+    "  document.getElementById('sb-catchup').addEventListener('click',function(){document.getElementById('sb-catchup-out').textContent='Catching you up\u2026';call({fn:'catchup'});});",
     "}",
+    "var SPECIAL=" + JSON.stringify(SPECIAL_PANELS) + ";",
     "function anyPanel(P){for(var i=0;i<PANELS.length;i++)if(P[PANELS[i][0]])return true;return false;}",
     "var DIM='<div style=\"color:#8b949e;font-size:11px\">';",
     "window.__sb={",
@@ -80,16 +90,31 @@ export function leagueBootstrap(spec: LeaguePanels, icon: string): string {
     "    show('sb-stats',anyPanel(P));var g=d.game,h='';",
     "    if(!g){h=DIM+'Open a game \\u2014 the overlay follows it.</div>';}else{",
     "      if(P.score)h+='<div style=\"display:flex;align-items:baseline;gap:8px\"><b style=\"flex:1\">'+esc(g.away+' '+g.awayScore+' @ '+g.home+' '+g.homeScore)+'</b><span style=\"color:#58a6ff;font-size:11px\">'+esc(g.detail)+'</span></div>';",
-    "      for(var i=0;i<PANELS.length;i++){var k=PANELS[i][0];if(k==='score'||!P[k])continue;var rs=(g.rows&&g.rows[k])||[];",
+    "      for(var i=0;i<PANELS.length;i++){var k=PANELS[i][0];if(SPECIAL.indexOf(k)>=0||!P[k])continue;var rs=(g.rows&&g.rows[k])||[];",
     "        h+='<div style=\"margin-top:8px\">'+DIM+esc(PANELS[i][1])+' \\u00b7 '+esc(g.away)+' / '+esc(g.home)+'</div>';",
     "        if(!rs.length)h+=DIM+'no stats yet</div>';for(var j=0;j<rs.length;j++)h+=row(esc(rs[j].label),rs[j].away,rs[j].home);h+='</div>';}",
     "    }",
     "    var b=document.getElementById('sb-body');if(b)b.innerHTML=h;",
+    "    show('sb-pl-catchup',!!P.catchup);var cst=document.getElementById('sb-catchup-status');if(P.catchup&&cst){if(d.serving){cst.textContent='\u25cf Claude agent connected';cst.style.color='#3fb950';}else{cst.textContent='\u25cb No agent \u2014 run  /loop sportsing serve  to enable recaps';cst.style.color='#d29922';}}",
     "    var fr=document.getElementById('sb-fresh');if(fr)fr.textContent=g&&g.at?'\\u27f3 '+g.at:'';}",
+    "  ,catchupResult:function(t){mk();var o=document.getElementById('sb-catchup-out');if(o)o.textContent=t||'(no response)';}",
     "};",
     "mk();",
     "})();",
   ].join("\n");
+}
+
+/** A summary → what the page renders (abbreviations, score, status, panel rows). */
+export function snapshotOf(spec: LeaguePanels, s: EspnGameSummary): LeagueSnapshot {
+  return {
+    away: s.away.abbreviation || "?",
+    home: s.home.abbreviation || "?",
+    awayScore: s.away.score || "0",
+    homeScore: s.home.score || "0",
+    detail: s.detail,
+    rows: spec.rows(s),
+    at: new Date().toLocaleTimeString(),
+  };
 }
 
 type OverlayLeague = Pick<LeagueConfig, "sport" | "league" | "label" | "icon" | "aliases">;
@@ -157,15 +182,29 @@ export async function runLeagueOverlay(
   let panels = await getOverlayPanels(panelsKey, panelDefaults(spec));
   let delaySec = (await getStreamDelay(opts.provider.key)) ?? 0;
   let current = opts.game;
-  let buffer: { t: number; data: LeagueSnapshot }[] = [];
+  // Each snapshot keeps its summary so "Get caught up" can recap up to the
+  // delayed stream's moment — never past it.
+  let buffer: { t: number; data: { snap: LeagueSnapshot; summary: EspnGameSummary } }[] = [];
   let teams: EspnTeam[] = [];
   let lastTitle = "";
   let ticks = 0;
   let running = false;
+  let serving = false; // whether a Claude agent is answering the serve bus
+  const ai = sportAiFor(cfg.league);
 
   const push = (data: unknown) =>
     session?.send("Runtime.evaluate", { expression: "window.__sb&&window.__sb.update(" + JSON.stringify(data) + ")" }).catch(() => {});
-  const render = () => push({ panels, delay: delaySec, game: snapshotAtDelay(buffer, delaySec, Date.now()) });
+  const render = () => push({ panels, delay: delaySec, serving, game: snapshotAtDelay(buffer, delaySec, Date.now())?.snap ?? null });
+
+  // "Get caught up": recap the delayed summary in the sport's terms via the serve
+  // bus; requestRecap handles the nothing-yet / no-agent / timeout cases.
+  const runCatchup = async (): Promise<string> => {
+    const at = snapshotAtDelay(buffer, delaySec, Date.now());
+    if (!at || !current) return "Open a game first — nothing to catch up on yet.";
+    if (!ai) return `No recap voice for ${cfg.label}.`;
+    const res = await requestRecap(catchupInput(ai, current, at.summary), { maxChars: 600 });
+    return res.ok ? res.recap : res.message;
+  };
 
   const readTitle = async (): Promise<string> => {
     try {
@@ -198,22 +237,12 @@ export async function runLeagueOverlay(
     running = true;
     try {
       await follow();
+      if (ticks % 5 === 0) serving = await isServing().catch(() => false);
       if (current && ticks % 5 === 0) {
         try {
-          const lg = await getLiveGame(cfg.league, current.id);
-          if (lg) {
-            buffer.push({
-              t: Date.now(),
-              data: {
-                away: lg.away.abbreviation,
-                home: lg.home.abbreviation,
-                awayScore: lg.away.score,
-                homeScore: lg.home.score,
-                detail: lg.detail,
-                rows: spec.rows(lg),
-                at: new Date().toLocaleTimeString(),
-              },
-            });
+          const summary = await getGameSummary(cfg.league, current.id, 5_000);
+          if (summary) {
+            buffer.push({ t: Date.now(), data: { snap: snapshotOf(spec, summary), summary } });
             buffer = buffer.filter((b) => Date.now() - b.t <= 330_000); // keep > 5 min so a max delay has data
           }
         } catch {
@@ -240,6 +269,9 @@ export async function runLeagueOverlay(
           panels = { ...panels, [msg.key]: !!msg.on };
           await setOverlayPanel(panelsKey, msg.key, !!msg.on);
           render();
+        } else if (msg.fn === "catchup") {
+          const text = await runCatchup();
+          session?.send("Runtime.evaluate", { expression: "window.__sb&&window.__sb.catchupResult(" + JSON.stringify(text) + ")" }).catch(() => {});
         }
       } catch {
         /* malformed */
@@ -281,16 +313,24 @@ export async function smokeLeagueOverlay(
   const { win, session } = opened;
   try {
     if (!session) throw new Error("CDP attach failed");
-    const empty = { abbreviation: "AWY", score: "0", id: "", stats: {}, leaders: {}, goalies: [], timeoutsUsed: 0, periodFouls: 0 };
-    const lg = { state: "pre" as const, detail: "smoke", period: 1, away: empty, home: { ...empty, abbreviation: "HOM" } };
-    const game: LeagueSnapshot = { away: "AWY", home: "HOM", awayScore: "0", homeScore: "0", detail: "smoke", rows: spec.rows(lg), at: "" };
+    const side = { id: "", name: "", score: "0", linescores: [], record: "", stats: [], leaders: [], goalies: [] };
+    const empty: EspnGameSummary = {
+      state: "pre",
+      detail: "smoke",
+      period: 1,
+      away: { ...side, abbreviation: "AWY" },
+      home: { ...side, abbreviation: "HOM" },
+      plays: [],
+    };
+    const game = snapshotOf(spec, empty);
     const all = Object.fromEntries(spec.panels.map(([k]) => [k, true]));
-    const titles = spec.panels.filter(([k]) => k !== "score").map(([, label]) => label);
+    // Stat panels render a titled section; "Get caught up" its button.
+    const titles = spec.panels.filter(([k]) => !SPECIAL_PANELS.includes(k)).map(([, label]) => label).concat(["Get caught up"]);
     const check =
       "(function(){window.__sb.update(" + JSON.stringify({ panels: all, delay: 0, game }) + ");" +
       "var s=document.getElementById('sb-stats'),b=document.getElementById('sb-body');" +
       "if(!document.getElementById('sb-gear')||!s||s.style.display==='none'||!b)return false;" +
-      "var t=b.textContent;return " + JSON.stringify(titles) + ".every(function(x){return t.indexOf(x)>=0;})&&t.indexOf('AWY 0 @ HOM 0')>=0;})()";
+      "var t=s.textContent;return " + JSON.stringify(titles) + ".every(function(x){return t.indexOf(x)>=0;})&&t.indexOf('AWY 0 @ HOM 0')>=0;})()";
     // The window is still navigating (redirect view → provider), which re-injects
     // the overlay on the new document — so retry until the panels render there.
     let ok = false;

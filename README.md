@@ -109,7 +109,8 @@ overlay (same gear / settings / spoiler-delay as the FIFA one) that follows the
 game you open, recognized from the page title's English team names. NBA panels:
 score & clock, FG% / 3P%, leaders (PTS / REB / AST), fouls, timeouts. On an NHL
 game page (`sportsing nhl watch --provider fubo --overlay`): score & clock,
-shots on goal, power plays, faceoff %, goalie saves. Panel choices are saved per
+shots on goal, power plays, faceoff %, goalie saves. Both have **Get caught up**
+(a recap up to your delayed stream's moment, via `/loop sportsing serve`). Panel choices are saved per
 provider and sport (`overlayPanels["fubo:nba"]`). `--overlay --smoke` checks the
 overlay renders, then tears the window down.
 
