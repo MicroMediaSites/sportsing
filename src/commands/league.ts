@@ -30,6 +30,10 @@ import { EXAMPLE_TEAM, addDays, getFlag, localDateOf, mineFavorites, noFavorites
 import { fav } from "./fav.ts";
 import { fmtEta, parseSize, positionalTerms, smokeWatch, waitPollMs } from "./watch.ts";
 import { leagueBracket } from "./league-bracket.ts";
+import { LIVE_REFRESH_MS, raise, type Alert, type Alerter } from "../alerts.ts";
+import { selfInvocation } from "../click-to-watch.ts";
+import { isGameSport } from "../game-events.ts";
+import { leagueFeed } from "../league-alerts.ts";
 
 export interface LeagueConfig {
   /** CLI namespace and favorites key, e.g. "nba" (`sportsing nba …`, `nba:UTAH`). */
@@ -136,6 +140,18 @@ export function finishedNewestFirst(games: Game[]): Game[] {
   return games.filter((g) => g.state === "post").sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
 }
 
+/** What the live board shows: games in play (whatever day they started),
+ *  and today's not-yet-started and finished games, each ascending. */
+export function liveBoard(games: Game[], today: string): { live: Game[]; upcoming: Game[]; done: Game[] } {
+  const sorted = mergeGames([games]);
+  const isToday = (g: Game) => localDateOf(g.date) === today;
+  return {
+    live: sorted.filter((g) => g.state === "in"),
+    upcoming: sorted.filter((g) => g.state === "pre" && isToday(g)),
+    done: sorted.filter((g) => g.state === "post" && isToday(g)),
+  };
+}
+
 // ── Data access ──────────────────────────────────────────────────────────────
 
 /** Every game for one team across preseason, regular season, and postseason. */
@@ -153,6 +169,18 @@ export async function gamesOnDays(cfg: LeagueConfig, from: Date, days: number): 
   const lists = await Promise.all(fetchDays.map((d) => getScoreboardGames(cfg.league, espnDate(d))));
   const wanted = new Set(Array.from({ length: days }, (_, i) => ymd(addDays(from, i))));
   return mergeGames(lists).filter((g) => wanted.has(localDateOf(g.date)));
+}
+
+/** How fresh live polls are: below LIVE_REFRESH_MS so every refresh refetches. */
+const LIVE_TTL_MS = 20_000;
+
+/** Games for the live board and alerts: the scoreboards for local yesterday,
+ *  today, and tomorrow (ESPN groups by US-Eastern day), unfiltered — a game
+ *  that runs past midnight stays in view until it goes final. */
+async function liveGames(cfg: LeagueConfig): Promise<Game[]> {
+  const now = new Date();
+  const lists = await Promise.all([-1, 0, 1].map((i) => getScoreboardGames(cfg.league, espnDate(addDays(now, i)), LIVE_TTL_MS)));
+  return mergeGames(lists);
 }
 
 /** Throws a user-facing error for unknown team input. */
@@ -213,6 +241,12 @@ async function watchContext(cfg: LeagueConfig): Promise<WatchContext | null> {
   if (!isWatchSport(cfg.sport)) return null;
   const [subscriptions, homeMarket] = await Promise.all([getSubscriptions(), getHomeMarket()]);
   return subscriptions.length ? { sport: cfg.sport, subscriptions, homeMarket } : null;
+}
+
+/** The provider `watch` opens when the resolver can't decide (or isn't set
+ *  up): the configured one for the sport, else the league default. */
+async function watchFallback(cfg: LeagueConfig): Promise<string | null> {
+  return (await getStreamProvider(cfg.sport)) ?? cfg.watchProvider ?? null;
 }
 
 /** Game lines, with an aligned WATCH column when `watch` is given. */
@@ -541,7 +575,7 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
     console.warn(c.yellow(`Ignoring --size "${sizeFlag}" — expected WxH, e.g. 660x500. Opening at the default size.`));
   }
 
-  const fallback = (await getStreamProvider(cfg.sport)) ?? cfg.watchProvider ?? null;
+  const fallback = await watchFallback(cfg);
   const routing = providerFlag || url ? null : await watchContext(cfg);
 
   // Routing decides per game, so it needs the game before anything opens.
@@ -601,6 +635,99 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
   await launchStream(url ?? pick.hub, pick.label, { windowSize, icon: cfg.icon });
 }
 
+/** Favorite-team alert feed for the league (see league-alerts.ts), with the
+ *  favorites' names; null when the league has no (resolvable) favorites. */
+async function alertFeed(cfg: LeagueConfig): Promise<{ teams: string[]; feed: (games: Game[]) => Alert[] } | null> {
+  const sport = cfg.sport;
+  if (!isGameSport(sport)) throw new Error(`No live alert rules for ${cfg.label}.`);
+  const favs = await getFavorites(sport);
+  if (favs.length === 0) return null;
+  const teams = await getTeams(cfg.league);
+  const favIds = favoriteIds(cfg, teams, favs);
+  if (favIds.size === 0) return null;
+  const [watch, fallback] = await Promise.all([watchContext(cfg), watchFallback(cfg)]);
+  return {
+    teams: teams.filter((t) => favIds.has(t.id)).map((t) => t.name),
+    feed: leagueFeed({ league: { sport, icon: cfg.icon, periods: cfg.periods }, favIds, watch, fallback, exe: selfInvocation() }),
+  };
+}
+
+/** The league's alerter for bare `sportsing live --notify`; null with no favorites. */
+export async function leagueAlerter(cfg: LeagueConfig): Promise<Alerter | null> {
+  const alerts = await alertFeed(cfg);
+  if (!alerts) return null;
+  return { label: cfg.label, teams: alerts.teams, poll: async () => alerts.feed(await liveGames(cfg)) };
+}
+
+/** Full-screen live board: in play, later today, finished today. */
+function renderLiveBoard(cfg: LeagueConfig, games: Game[]): void {
+  const { live, upcoming, done } = liveBoard(games, ymd(new Date()));
+  const line = (g: Game) => "  " + gameLine(g, cfg.periods);
+  process.stdout.write("\x1b[2J\x1b[H"); // clear + home
+  console.log(c.bold(c.cyan(`${cfg.icon} ${cfg.label} — LIVE`)) + c.dim(`   ${new Date().toLocaleTimeString()}`));
+  console.log(c.dim(`Refreshing every ${LIVE_REFRESH_MS / 1000}s · Ctrl-C to quit\n`));
+  if (live.length) {
+    console.log(c.bold(c.green("● LIVE NOW")));
+    for (const g of live) console.log(line(g));
+    console.log();
+  } else {
+    console.log(c.dim("No games in play right now.\n"));
+  }
+  if (upcoming.length) {
+    console.log(c.bold("Later today"));
+    for (const g of upcoming.slice(0, 8)) console.log(line(g));
+    if (upcoming.length > 8) console.log(c.dim(`  … and ${upcoming.length - 8} more`));
+    console.log();
+  }
+  if (done.length) {
+    console.log(c.bold(c.dim("Finished today")));
+    for (const g of done) console.log(line(g));
+  }
+}
+
+/**
+ * `live [--notify [--quiet]]` — auto-refreshing live board. `--notify` raises
+ * OS notifications for favorites' games (game-events.ts rules: NHL puck drop,
+ * goals, period ends, OT/shootout, final; NBA tip-off, lead changes, close
+ * late, final); start alerts are click-to-watch. `--quiet` drops the board so
+ * it can run backgrounded as a pure alerter.
+ */
+async function live(cfg: LeagueConfig, args: string[]): Promise<void> {
+  const wantNotify = args.includes("--notify");
+  const wantQuiet = args.includes("--quiet");
+  if (wantQuiet && !wantNotify) {
+    console.error(c.yellow("--quiet only makes sense with --notify (it hides the live view)."));
+    console.error(c.dim(`Try: sportsing ${cfg.sport} live --notify --quiet &`));
+    return;
+  }
+
+  const alerts = wantNotify ? await alertFeed(cfg) : null;
+  // Everything below goes to stderr so --quiet keeps stdout clean for backgrounding.
+  if (wantNotify && !alerts) {
+    console.error(c.yellow(`--notify is on but you have no ${cfg.label} favorite teams — you won't get alerts.`));
+    console.error(c.dim("Add one with ") + c.bold(`sportsing ${cfg.sport} fav add ${EXAMPLE_TEAM[cfg.sport] ?? "<team>"}`) + c.dim(" to get alerts."));
+    console.error("");
+  }
+  if (wantQuiet) {
+    const who = alerts ? alerts.teams.join(", ") : "no favorites set";
+    console.error(c.dim(`${cfg.label} favorite-team alerts running (${who}) — Ctrl-C to stop.`));
+  }
+
+  const tick = async () => {
+    const games = await liveGames(cfg);
+    if (!wantQuiet) renderLiveBoard(cfg, games);
+    // The first tick only sets the baseline: a game already under way raises no start alert.
+    if (alerts) for (const a of alerts.feed(games)) raise(a);
+  };
+  await tick();
+  const interval = setInterval(() => tick().catch((e) => console.error(c.red(String(e)))), LIVE_REFRESH_MS);
+  process.on("SIGINT", () => {
+    clearInterval(interval);
+    process.stdout.write("\n");
+    process.exit(0);
+  });
+}
+
 const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<void>> = {
   today,
   next,
@@ -611,6 +738,7 @@ const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<vo
   bracket: (cfg, args) => leagueBracket(cfg, args, favoriteIds),
   fav: leagueFav,
   watch,
+  live,
 };
 
 const ALIASES: Record<string, string> = { t: "today", n: "next", st: "standings" };
@@ -639,6 +767,7 @@ ${b("COMMANDS")}
   ${c.green("bracket")}            Playoff bracket ${c.dim("(projected before the postseason; --season YYYY for a past one)")}
   ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
   ${c.green("watch")}  ${c.dim("[team]")}      Open the stream where you can watch it ${c.dim("(--wait, --provider, --url, --smoke)")}
+  ${c.green("live")}               Auto-refreshing live board ${c.dim("(--notify: favorites' alerts; --quiet: alerts only)")}
 
 ${b("FILTER")}
   ${c.dim("--team X")} on today/next/schedule/results picks one team (abbreviation or name).

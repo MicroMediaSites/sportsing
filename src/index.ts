@@ -22,6 +22,7 @@ function help() {
 ${b("USAGE")}
   sportsing <sport> <command> [options]
   sportsing <today|next|me>          ${c.dim("your favorite teams, every sport")}
+  sportsing live --notify [--quiet]  ${c.dim("alerts for your teams, every sport")}
 
 ${b("SPORTS")}
   ${c.green("fifa")}               FIFA World Cup 2026 ${c.dim("— sportsing fifa help")}
@@ -32,6 +33,7 @@ ${b("YOUR TEAMS")} ${c.dim("(favorites across every sport, each row tagged with 
   ${c.green("today")}              Your teams' games today ${c.dim("(--tomorrow, --yesterday, --offset N)")}
   ${c.green("next")}               Each team's next game + countdown
   ${c.green("me")}                 Dashboard: last result + next game per team
+  ${c.green("live --notify")}      OS alerts for every sport with a favorite ${c.dim("(--quiet: no log; run with &)")}
   ${c.dim("Add favorites per sport: sportsing nba fav add UTAH")}
 
 ${b("SETTINGS")}
@@ -68,7 +70,7 @@ async function dispatch(): Promise<void> {
     return;
   }
 
-  // Bare `today`/`next`/`me` run across every sport; anything else gets a hint.
+  // Bare `today`/`next`/`me`/`live` run across every sport; anything else gets a hint.
   await bare(first, rest);
 }
 

@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { kickoffWatchCommand } from "./live.ts";
+import { fifaFeed, kickoffWatchCommand } from "./live.ts";
 import type { MatchEvent } from "../events.ts";
 import type { Match, MatchStatus } from "../types.ts";
 
@@ -21,7 +21,7 @@ function ev(kind: MatchEvent["kind"], matchId: number): MatchEvent {
   return { kind, matchId, fixture: "USA vs England", home: "USA", away: "ENG", score: { home: 0, away: 0 } };
 }
 
-const EXE = "/usr/local/bin/sportsing";
+const EXE = ["/usr/local/bin/sportsing"];
 
 test("kickoff for a fav match → `<exe> fifa watch <fav>`, targeting the favourite team", () => {
   const matches = [mk(1, "IN_PLAY", "USA", "England")];
@@ -54,4 +54,21 @@ test("team and exe with an apostrophe are POSIX-escaped (no shell injection)", (
   const matches = [mk(1, "IN_PLAY", "Côte d'Ivoire", "Brazil")];
   const cmd = kickoffWatchCommand(ev("kickoff", 1), matches, ["Côte d'Ivoire"], EXE);
   expect(cmd).toBe(`'/usr/local/bin/sportsing' fifa watch 'Côte d'\\''Ivoire'`);
+});
+
+test("fifaFeed: baseline first, then a click-to-watch kickoff and a goal with sound — each once", () => {
+  const feed = fifaFeed(["USA"], EXE);
+  const at = (status: MatchStatus, home = 0) => {
+    const m = mk(1, status, "USA", "England");
+    m.score.fullTime.home = home;
+    return [m];
+  };
+  expect(feed(at("TIMED"))).toEqual([]);
+  const [kickoff] = feed(at("IN_PLAY"));
+  expect(kickoff!.title).toBe("⚽ Kickoff");
+  expect(kickoff!.options.onClick).toStartWith("osascript ");
+  expect(kickoff!.options.onClick).toContain("fifa watch");
+  const [goal] = feed(at("IN_PLAY", 1));
+  expect(goal!.options).toEqual({ group: "sportsing-1", sound: true, onClick: undefined });
+  expect(feed(at("IN_PLAY", 1))).toEqual([]);
 });

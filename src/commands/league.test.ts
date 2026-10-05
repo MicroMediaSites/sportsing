@@ -11,6 +11,8 @@ import {
   finishedNewestFirst,
   watchTarget,
   easternScoreboardDate,
+  liveBoard,
+  leagueHasCommand,
 } from "./league.ts";
 import { NBA } from "../sports/nba.ts";
 import { toGame, SEASON_TYPES, type EspnTeam } from "../espn.ts";
@@ -171,4 +173,26 @@ test("easternScoreboardDate: ESPN's US-Eastern day, not UTC", () => {
 
 test("NBA watches on Fubo by default", () => {
   expect(NBA.watchProvider).toBe("fubo");
+});
+
+test("liveBoard: everything in play, plus today's upcoming and finished, ascending", () => {
+  const local = (d: number, h: number) => new Date(2026, 9, d, h).toISOString(); // local wall-clock time
+  const board = liveBoard(
+    [
+      game({ id: "late", date: local(4, 21), state: "pre" }),
+      game({ id: "early", date: local(4, 18), state: "pre" }),
+      game({ id: "overnight", date: local(3, 22), state: "in" }), // started yesterday, still live
+      game({ id: "done", date: local(4, 12), state: "post" }),
+      game({ id: "yesterday", date: local(3, 19), state: "post" }),
+      game({ id: "tomorrow", date: local(5, 19), state: "pre" }),
+    ],
+    "2026-10-04",
+  );
+  expect(board.live.map((g) => g.id)).toEqual(["overnight"]);
+  expect(board.upcoming.map((g) => g.id)).toEqual(["early", "late"]);
+  expect(board.done.map((g) => g.id)).toEqual(["done"]);
+});
+
+test("live is a league command", () => {
+  expect(leagueHasCommand("live")).toBe(true);
 });

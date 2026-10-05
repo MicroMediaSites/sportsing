@@ -1,5 +1,6 @@
 // Bare `sportsing today | next | me` — your favorite teams' games across every
-// registered sport, each row tagged with its sport. Any other bare command is
+// registered sport, each row tagged with its sport — and bare
+// `sportsing live --notify`, one alerter polling every sport with a favorite. Any other bare command is
 // per-sport: it gets a hint naming the sports that have it, never a silent
 // fallback to one sport.
 //
@@ -8,6 +9,7 @@
 // as soon as it's routable.
 
 import { c } from "../ansi.ts";
+import { LIVE_REFRESH_MS, pollAlerters, raise, type Alerter } from "../alerts.ts";
 import { getMatches } from "../api.ts";
 import { getFavorites } from "../config.ts";
 import { getTeams } from "../espn.ts";
@@ -17,11 +19,13 @@ import { fifa, fifaHasCommand } from "../sports/fifa.ts";
 import { NBA, nba } from "../sports/nba.ts";
 import { NHL, nhl } from "../sports/nhl.ts";
 import type { Match } from "../types.ts";
+import { fifaAlerter } from "./live.ts";
 import { EXAMPLE_TEAM, addDays, localDateOf, matchHasTeam, withFallback, ymd } from "./_lib.ts";
 import {
   favoriteIds,
   gameHasTeam,
   gamesOnDays,
+  leagueAlerter,
   leagueHasCommand,
   parseOffset,
   teamSeason,
@@ -57,6 +61,8 @@ export interface Sport {
   favoritesOn: (day: Date) => Promise<Row[] | null>;
   /** Each favorite team's schedule; null when the sport has no favorites. */
   favoriteTeams: () => Promise<TeamRows[] | null>;
+  /** Favorite-team live alerter; null when the sport has no favorites. */
+  alerter: () => Promise<Alerter | null>;
 }
 
 // ── FIFA (football-data `Match`) ─────────────────────────────────────────────
@@ -82,6 +88,7 @@ const FIFA: Sport = {
   icon: "⚽",
   run: fifa,
   has: fifaHasCommand,
+  alerter: fifaAlerter,
   async favoritesOn(day) {
     const favs = await getFavorites("fifa");
     if (favs.length === 0) return null;
@@ -124,6 +131,7 @@ function league(cfg: LeagueConfig, run: Sport["run"]): Sport {
     icon: cfg.icon,
     run,
     has: leagueHasCommand,
+    alerter: () => leagueAlerter(cfg),
     async favoritesOn(day) {
       const favs = await favoriteTeamsOf();
       if (!favs) return null;
@@ -289,9 +297,53 @@ export async function me(sports: Sport[]): Promise<void> {
   }
 }
 
+/** Startup line for bare `live`, e.g. "NBA: Utah Jazz · NHL: Utah Mammoth". */
+export function alertersSummary(alerters: Pick<Alerter, "label" | "teams">[]): string {
+  return alerters.map((a) => `${a.label}: ${a.teams.join(", ")}`).join(" · ");
+}
+
+/**
+ * `live --notify [--quiet]` — favorite-team alerts for every sport with a
+ * favorite, from one process. A sport that can't start (e.g. FIFA without an
+ * API key) or whose poll fails is reported and the rest carry on. There's no
+ * cross-sport board: without --quiet each alert is also logged to stdout.
+ */
+export async function live(sports: Sport[], args: string[]): Promise<void> {
+  const unknown = args.filter((a) => a !== "--notify" && a !== "--quiet");
+  if (!args.includes("--notify") || unknown.length > 0) {
+    console.error(c.red("Bare `live` is the cross-sport alerter: sportsing live --notify [--quiet]"));
+    console.error(c.dim("For a live board add a sport: " + sports.filter((s) => s.has("live")).map((s) => `sportsing ${s.key} live`).join(" · ")));
+    process.exitCode = 1;
+    return;
+  }
+  const quiet = args.includes("--quiet");
+  const loaded = await perSport(sports, (s) => s.alerter());
+  if (!loaded) return;
+  const alerters = loaded.map(({ data }) => data);
+  console.error(c.dim(`Favorite-team alerts running (${alertersSummary(alerters)}) — Ctrl-C to stop.`));
+
+  const tick = async () => {
+    const alerts = await pollAlerters(alerters, (a, e) =>
+      console.error(c.yellow(`${a.label} alerts: ${e instanceof Error ? e.message : String(e)}`)),
+    );
+    for (const a of alerts) {
+      raise(a);
+      if (!quiet) console.log(`${c.dim(new Date().toLocaleTimeString())}  ${c.bold(a.title)}  ${a.body}`);
+    }
+  };
+  // The first poll only sets each sport's baseline.
+  await tick();
+  const interval = setInterval(() => void tick(), LIVE_REFRESH_MS);
+  process.on("SIGINT", () => {
+    clearInterval(interval);
+    process.exit(0);
+  });
+}
+
 /** Dispatch a bare `sportsing <cmd> …` (no sport prefix). */
 export async function bare(cmd: string, args: string[]): Promise<void> {
   if (cmd === "today" || cmd === "t") return today(SPORTS, args);
+  if (cmd === "live") return live(SPORTS, args);
   const run = cmd === "next" || cmd === "n" ? next : cmd === "me" ? me : null;
   if (run && args.length === 0) return run(SPORTS);
   // Options on `next`/`me` (e.g. `--team`) are per-sport: say so rather than ignore them.
