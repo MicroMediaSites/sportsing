@@ -8,6 +8,7 @@ import {
   normalizeEvent,
   parseTeams,
   parseStandings,
+  parseStandingsResponse,
   LEAGUES,
   FIFA,
 } from "./espn.ts";
@@ -175,6 +176,7 @@ test("parseStandings / looksOffStandings", () => {
     {
       name: "Western Conference",
       abbreviation: "West",
+      parent: null,
       entries: [{ teamId: "129764", team: "Utah Mammoth", abbreviation: "UTA", stats: { points: "6", gamesPlayed: "4" } }],
     },
   ]);
@@ -184,4 +186,35 @@ test("parseStandings / looksOffStandings", () => {
   // The site/v2 stub (`fullViewLink` only) is drift for our purposes.
   expect(looksOffStandings({ fullViewLink: {} })).toBe(true);
   expect(looksOffStandings({ children: [{ standings: {} }] })).toBe(true);
+});
+
+// `level=3`: conferences nest division tables (observed NHL 2026-10-04).
+const divisionsRaw = {
+  season: { year: 2027, displayName: "2026-27" },
+  children: [
+    {
+      name: "Western Conference",
+      abbreviation: "West",
+      children: [
+        { name: "Central Division", abbreviation: "CEN", standings: { entries: [] } },
+        { name: "Pacific Division", abbreviation: "PAC", standings: { entries: standingsRaw.children[0]!.standings.entries } },
+      ],
+    },
+  ],
+};
+
+test("parseStandings flattens nested division tables with their conference", () => {
+  const west = { name: "Western Conference", abbreviation: "West" };
+  expect(parseStandings(divisionsRaw).map((g) => [g.name, g.parent, g.entries.length])).toEqual([
+    ["Central Division", west, 0],
+    ["Pacific Division", west, 1],
+  ]);
+  expect(looksOffStandings(divisionsRaw)).toBe(false);
+  expect(looksOffStandings({ children: [{ name: "West", children: [] }] })).toBe(true);
+  expect(looksOffStandings({ children: [{ name: "West", children: [{ standings: {} }] }] })).toBe(true);
+});
+
+test("parseStandingsResponse carries season metadata", () => {
+  expect(parseStandingsResponse(divisionsRaw)).toMatchObject({ season: 2027, seasonName: "2026-27" });
+  expect(parseStandingsResponse(standingsRaw)).toMatchObject({ season: null, seasonName: "" });
 });
