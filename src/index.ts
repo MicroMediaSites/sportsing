@@ -26,7 +26,7 @@ ${b("SPORTS")}
   ${c.green("nba")}                NBA, preseason through playoffs ${c.dim("— sportsing nba help")}
 
 ${b("SETTINGS")}
-  ${c.green("subscriptions")}      What you can watch with + home market ${c.dim("— sportsing subscriptions")}
+  ${c.green("subscriptions")}      What you can watch with + home market ${c.dim("— alias: subs")}
 
 ${b("NOTE")}
   During the World Cup, the ${b("fifa")} prefix is optional —

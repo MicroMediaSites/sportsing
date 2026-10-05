@@ -116,7 +116,8 @@ export function resolveWatch(
   homeMarket: string,
   sport: WatchSport,
 ): Watchability {
-  const market = HOME_MARKETS[homeMarket];
+  // hasOwn: a bare lookup would accept prototype keys like "constructor".
+  const market = Object.hasOwn(HOME_MARKETS, homeMarket) ? HOME_MARKETS[homeMarket] : undefined;
   if (!market) return unknown(`unknown home market "${homeMarket}"`);
 
   const has = new Set(subscriptions);
@@ -173,7 +174,8 @@ export function resolveWatch(
   // Nothing reachable: either a home-market team's local feed isn't listed
   // (can't rule it out) or the game only airs on other markets' regional TV.
   if (localTeam) return unknown(`no ${market.name} broadcast listed for ${localTeam.name}`);
-  return no(`only on out-of-market regional TV (${names(game.broadcasts)})`);
+  if (listed.length === 0) return no("only on NBA League Pass — no subscription");
+  return no(`only on out-of-market regional TV (${names(listed)})`);
 }
 
 const names = (bs: Broadcast[]) => [...new Set(bs.map((b) => b.name))].join(" / ");

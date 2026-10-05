@@ -12,6 +12,7 @@ const NUGGETS = team("7", "Denver Nuggets", "DEN");
 const CELTICS = team("2", "Boston Celtics", "BOS");
 const LAKERS = team("13", "Los Angeles Lakers", "LAL");
 const MAMMOTH = team("129764", "Utah Mammoth", "UTA");
+// Real ESPN ids — the Rangers share id 13 with the Lakers: ids are per league.
 const RANGERS = team("13", "New York Rangers", "NYR");
 
 function game(away: GameCompetitor, home: GameCompetitor, broadcasts: Broadcast[]): Game {
@@ -121,6 +122,11 @@ describe("unknown broadcasters never resolve to a false yes", () => {
     expect(resolveWatch(g, ALL, "atlantis", "nhl").watchable).toBe("unknown");
   });
 
+  test("prototype keys are not home markets", () => {
+    const g = game(MAMMOTH, RANGERS, [{ name: "Utah 16", market: "away" }]);
+    expect(resolveWatch(g, ALL, "constructor", "nhl").watchable).toBe("unknown");
+  });
+
   test("a known route still wins over an unrecognized extra row", () => {
     const g = game(MAMMOTH, RANGERS, [{ name: "Utah 16", market: "away" }, { name: "Mystery", market: "national" }]);
     expect(resolveWatch(g, ["local-ota"], "utah", "nhl").via).toBe("Utah 16");
@@ -138,6 +144,14 @@ describe("routing details", () => {
     expect(resolveWatch(g, ["nba-league-pass"], "utah", "nba")).toMatchObject({
       watchable: false,
       note: "Prime Video exclusive — no subscription",
+    });
+  });
+
+  test("League Pass row alone, without League Pass → no, named plainly", () => {
+    const g = game(CELTICS, LAKERS, [{ name: "NBA League Pass", market: "away" }]);
+    expect(resolveWatch(g, ["fubo"], "utah", "nba")).toMatchObject({
+      watchable: false,
+      note: "only on NBA League Pass — no subscription",
     });
   });
 
