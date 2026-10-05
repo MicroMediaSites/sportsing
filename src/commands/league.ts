@@ -8,13 +8,24 @@
 // (`--team`, favorites) is resolved to a team via the league's /teams list.
 
 import { c } from "../ansi.ts";
-import { getFavorites, getStreamProvider } from "../config.ts";
+import { getFavorites, getHomeMarket, getStreamProvider, getSubscriptions } from "../config.ts";
 import { getScoreboardGames, getStandings, getTeamGames, getTeams, SEASON_TYPES, type EspnTeam, type League } from "../espn.ts";
 import { fmtDate, fmtDayHeader, gameLine, relativeTime, type PeriodNaming } from "../format.ts";
 import type { Game } from "../game.ts";
 import { PLAYOFF_FORMATS, renderSeasonSummary, summarizeSeason } from "../season.ts";
 import { STANDINGS_LAYOUTS, groupMatches, loadStandingsView, renderStandingsTable, type StandingsLevel } from "../standings.ts";
 import { launchStream, pickProvider } from "../stream.ts";
+import {
+  SUBSCRIPTIONS_HINT,
+  isWatchSport,
+  planWatch,
+  watchCell,
+  watchHeading,
+  watchOf,
+  watchSummary,
+  withWatchColumn,
+  type WatchContext,
+} from "../watch-route.ts";
 import { EXAMPLE_TEAM, addDays, getFlag, localDateOf, mineFavorites, noFavoritesHint, ymd } from "./_lib.ts";
 import { fav } from "./fav.ts";
 import { fmtEta, parseSize, positionalTerms, smokeWatch, waitPollMs } from "./watch.ts";
@@ -196,17 +207,39 @@ function title(cfg: LeagueConfig, text: string): void {
   console.log(c.bold(c.cyan(`${cfg.icon} ${cfg.label} — ${text}`)));
 }
 
-/** Print games under local-day headers, in the given order. */
-function printByDay(cfg: LeagueConfig, games: Game[]): void {
+/** Subscriptions + home market for the WATCH column / `watch` routing; null
+ *  when none are configured (nothing to resolve against). */
+async function watchContext(cfg: LeagueConfig): Promise<WatchContext | null> {
+  if (!isWatchSport(cfg.sport)) return null;
+  const [subscriptions, homeMarket] = await Promise.all([getSubscriptions(), getHomeMarket()]);
+  return subscriptions.length ? { sport: cfg.sport, subscriptions, homeMarket } : null;
+}
+
+/** Game lines, with an aligned WATCH column when `watch` is given. */
+function gameLines(cfg: LeagueConfig, games: Game[], watch: WatchContext | null): { lines: string[]; column: number | null } {
+  const lines = games.map((g) => "  " + gameLine(g, cfg.periods));
+  if (!watch) return { lines, column: null };
+  return withWatchColumn(lines, games.map((g) => watchCell(g, watch)));
+}
+
+/** Print games (in the given order), under local-day headers when `byDay`.
+ *  With a WatchContext the WATCH column is added; without one (no
+ *  subscriptions set), a hint on how to get it — unless `watch` is "off". */
+function printGames(cfg: LeagueConfig, games: Game[], watch: WatchContext | null | "off", byDay: boolean): void {
+  const { lines, column } = gameLines(cfg, games, watch === "off" ? null : watch);
+  const heading = (text: string) => (column === null ? text : watchHeading(text, column));
+  if (!byDay) console.log(column === null ? "" : "\n" + heading(""));
   let currentDay = "";
-  for (const g of games) {
+  games.forEach((g, i) => {
     const day = localDateOf(g.date);
-    if (day !== currentDay) {
+    if (byDay && day !== currentDay) {
+      const header = c.bold(fmtDayHeader(g.date));
+      console.log("\n" + (currentDay === "" ? heading(header) : header)); // column heading once, on the first day
       currentDay = day;
-      console.log("\n" + c.bold(fmtDayHeader(g.date)));
     }
-    console.log("  " + gameLine(g, cfg.periods));
-  }
+    console.log(lines[i]);
+  });
+  if (watch === null) console.log("\n" + c.dim(SUBSCRIPTIONS_HINT));
 }
 
 // ── Commands ─────────────────────────────────────────────────────────────────
@@ -225,7 +258,7 @@ async function today(cfg: LeagueConfig, args: string[]): Promise<void> {
   const scope = await scopeOf(cfg, args);
   if (scope.kind === "no-favorites") return noFavoritesHint(cfg.sport);
 
-  let games = await gamesOnDays(cfg, day, 1);
+  let [games, watch] = await Promise.all([gamesOnDays(cfg, day, 1), watchContext(cfg)]);
   if (scope.kind === "teams") games = games.filter((g) => gameHasTeam(g, scope.ids));
 
   const label = offset === 0 ? "Today" : offset === 1 ? "Tomorrow" : offset === -1 ? "Yesterday" : ymd(day);
@@ -234,8 +267,7 @@ async function today(cfg: LeagueConfig, args: string[]): Promise<void> {
     console.log(c.dim("\nNo games scheduled."));
     return;
   }
-  console.log();
-  for (const g of games) console.log("  " + gameLine(g, cfg.periods));
+  printGames(cfg, games, watch, false);
 }
 
 /** `next [--team X] [--mine]` — the next game to start, with a countdown. */
@@ -259,10 +291,12 @@ async function next(cfg: LeagueConfig, args: string[]): Promise<void> {
     console.log(c.dim(`No upcoming ${cfg.label} games${scope.kind === "teams" ? ` for ${scope.label}` : ""}${within}.`));
     return;
   }
+  const watch = await watchContext(cfg);
   title(cfg, "Next Game");
-  console.log("\n  " + gameLine(g, cfg.periods));
+  printGames(cfg, [g], watch ?? "off", false);
   console.log(c.dim("  " + g.name));
   console.log(`  ${c.bold(fmtDate(g.date))}  ${c.green("— starts " + relativeTime(g.date))}`);
+  console.log(watch ? `  📺 ${watchSummary(watchOf(g, watch))}` : c.dim("  " + SUBSCRIPTIONS_HINT));
 }
 
 /** `schedule [--team X | --mine]` — a team's (or your favorites') whole season,
@@ -271,15 +305,17 @@ async function schedule(cfg: LeagueConfig, args: string[]): Promise<void> {
   const scope = await scopeOf(cfg, args);
   if (scope.kind === "no-favorites") return noFavoritesHint(cfg.sport);
 
-  const games =
-    scope.kind === "teams" ? await scopedSeasons(cfg, scope.ids) : await gamesOnDays(cfg, new Date(), WINDOW_DAYS);
+  const [games, watch] = await Promise.all([
+    scope.kind === "teams" ? scopedSeasons(cfg, scope.ids) : gamesOnDays(cfg, new Date(), WINDOW_DAYS),
+    watchContext(cfg),
+  ]);
   const what = scope.kind === "teams" ? scope.label : `next ${WINDOW_DAYS} days`;
   title(cfg, `Schedule — ${what} (${games.length})`);
   if (games.length === 0) {
     console.log(c.dim("\nNo games to show."));
     return;
   }
-  printByDay(cfg, games);
+  printGames(cfg, games, watch, true);
 }
 
 /** `results [--team X | --mine]` — finished games, newest first; league-wide,
@@ -299,7 +335,7 @@ async function results(cfg: LeagueConfig, args: string[]): Promise<void> {
     console.log(c.dim("\nNo finished games yet."));
     return;
   }
-  printByDay(cfg, games);
+  printGames(cfg, games, "off", true);
 }
 
 /** `standings [--conference X | --division X]` — regular-season standings,
@@ -451,12 +487,50 @@ async function waitForLeagueLive(cfg: LeagueConfig, ids: Set<string>, who: strin
 }
 
 /**
+ * Print what `watch` will do with `g` and return the provider key to open — or
+ * null when there's nothing to open: an over-the-air-only game (prints the
+ * channel; exit 0), or one that can't be watched / placed (says why; exit 1).
+ */
+function routeWatch(g: Game, ctx: WatchContext, fallback: string | null): string | null {
+  const plan = planWatch(watchOf(g, ctx), fallback);
+  if (plan.kind === "open") {
+    console.log(c.dim(`📺 ${plan.note}`));
+    return plan.provider;
+  }
+  if (plan.kind === "tune") {
+    console.log(c.green(`📺 ${plan.message}`) + c.dim(" (nothing to open; tune in)"));
+  } else {
+    console.error(c.yellow(`✗ ${plan.message}`) + c.dim(" (not opening a window)"));
+    process.exitCode = 1;
+  }
+  return null;
+}
+
+/** pickProvider, reporting a bad key (exit 1) instead of returning it. */
+function pickOrReport(key: string, sport: string): { key: string; label: string; hub: string } | null {
+  const pick = pickProvider(key, sport);
+  if (pick.ok) return pick;
+  console.error(c.red(pick.error));
+  process.exitCode = 1;
+  return null;
+}
+
+/**
  * `watch [team] [--wait] [--provider X] [--url L] [--size WxH] [--smoke]` —
- * open the sport's hub on the streaming provider (config `streamProviders`,
- * else the league default) in that provider's persistent Chrome profile, so an
- * existing login is reused. No team = your favorites. `--wait` blocks until the
- * next game is live, then opens it. `--smoke` opens the window, confirms it
- * came up over CDP, and tears it down (bounded; for scripts and agents).
+ * open the game's stream in that provider's persistent Chrome profile, so an
+ * existing login is reused. No team = your favorites.
+ *
+ * With subscriptions configured (`sportsing subscriptions`), the watchability
+ * resolver picks per game: Fubo or League Pass opens; an over-the-air-only game
+ * prints its channel and exits 0; an unwatchable one says why and opens
+ * nothing. A game it can't place falls back to the configured provider
+ * (`streamProviders`, else the league default). `--provider` / `--url` skip
+ * the resolver and open exactly what was asked; so does having no
+ * subscriptions set.
+ *
+ * `--wait` blocks until the next game is live, then opens it. `--smoke` opens
+ * the window, confirms it came up over CDP, and tears it down (bounded; for
+ * scripts and agents).
  */
 async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
   const url = getFlag(args, "--url");
@@ -467,21 +541,33 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
     console.warn(c.yellow(`Ignoring --size "${sizeFlag}" — expected WxH, e.g. 660x500. Opening at the default size.`));
   }
 
-  const key = providerFlag ?? (await getStreamProvider(cfg.sport)) ?? cfg.watchProvider;
+  const fallback = (await getStreamProvider(cfg.sport)) ?? cfg.watchProvider ?? null;
+  const routing = providerFlag || url ? null : await watchContext(cfg);
+
+  // Routing decides per game, so it needs the game before anything opens.
+  let scope: Awaited<ReturnType<typeof watchScope>> | undefined;
+  let routed: Game | null = null;
+  let key = providerFlag ?? fallback;
+  if (routing) {
+    scope = await watchScope(cfg, args);
+    routed = scope && watchTarget(await scopedSeasons(cfg, scope.ids), Date.now());
+    if (routed) {
+      console.log(describeWatchGame(routed));
+      key = routeWatch(routed, routing, fallback);
+      if (!key) return;
+    }
+  }
+
   if (!key) {
     console.error(c.red(`No streaming provider for ${cfg.label}. Pass --provider, or set streamProviders.${cfg.sport} in the config.`));
+    if (!routing) console.error(c.dim(SUBSCRIPTIONS_HINT));
     process.exitCode = 1;
     return;
   }
-  const pick = pickProvider(key, cfg.sport);
-  if (!pick.ok) {
-    console.error(c.red(pick.error));
-    process.exitCode = 1;
-    return;
-  }
-  const target = url ?? pick.hub;
+  let pick = pickOrReport(key, cfg.sport);
+  if (!pick) return;
 
-  if (args.includes("--smoke")) return smokeWatch(target, pick.label, windowSize);
+  if (args.includes("--smoke")) return smokeWatch(url ?? pick.hub, pick.label, windowSize);
   // watch blocks until the window is closed; with no TTY nothing ever closes it.
   if (process.stdin.isTTY !== true) {
     console.error(c.yellow("`watch` is interactive — it opens a stream window and blocks until you close it."));
@@ -490,7 +576,7 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
     return;
   }
 
-  const scope = await watchScope(cfg, args);
+  if (scope === undefined) scope = await watchScope(cfg, args);
   if (!scope) {
     console.error(c.red(`Usage: sportsing ${cfg.sport} watch <team> [--wait] [--provider ${pick.key}] [--url <link>] [--smoke]`));
     console.error(c.dim(`Or add a favorite (sportsing ${cfg.sport} fav add ${EXAMPLE_TEAM[cfg.sport] ?? "<team>"}) and omit the team.`));
@@ -499,14 +585,20 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
   }
 
   if (args.includes("--wait")) {
-    await waitForLeagueLive(cfg, scope.ids, scope.label);
-  } else {
+    const live = await waitForLeagueLive(cfg, scope.ids, scope.label);
+    // A different game than the one routed above (or none was): route this one.
+    if (routing && live.id !== routed?.id) {
+      const liveKey = routeWatch(live, routing, fallback);
+      if (!liveKey) return;
+      if (liveKey !== pick.key && !(pick = pickOrReport(liveKey, cfg.sport))) return;
+    }
+  } else if (!routed) {
     const g = watchTarget(await scopedSeasons(cfg, scope.ids), Date.now());
     console.log(g ? describeWatchGame(g) : c.dim(`No upcoming ${cfg.label} games for ${scope.label}.`));
   }
   // No per-game deep link (yet): open the hub and pick the game's tile.
   if (!url) console.log(c.dim(`Opening ${pick.label}'s ${cfg.label} hub — pick the game there (use --url for a direct link).`));
-  await launchStream(target, pick.label, { windowSize, icon: cfg.icon });
+  await launchStream(url ?? pick.hub, pick.label, { windowSize, icon: cfg.icon });
 }
 
 const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<void>> = {
@@ -541,7 +633,8 @@ ${b("COMMANDS")}
   ${c.green("season")} ${c.dim("[team]")}      Favorites' season: record, splits, playoff race
   ${c.green("bracket")}            Playoff bracket ${c.dim("(projected before the postseason; --season YYYY for a past one)")}
   ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
-${cfg.watchProvider ? `  ${c.green("watch")}  ${c.dim("[team]")}      Open the stream ${c.dim("(--wait, --provider, --url, --smoke)")}\n` : ""}
+  ${c.green("watch")}  ${c.dim("[team]")}      Open the stream where you can watch it ${c.dim("(--wait, --provider, --url, --smoke)")}
+
 ${b("FILTER")}
   ${c.dim("--team X")} on today/next/schedule/results picks one team (abbreviation or name).
   ${c.dim("--mine")} on today/next/schedule/results limits output to your ${cfg.label} favorites.
@@ -549,6 +642,7 @@ ${b("FILTER")}
 
 ${b("TAGS")}
   ${c.yellow("PRE")} preseason · ${c.magenta("POST")} postseason. Times are local.
+  WATCH: the service or channel · ${c.red("✗")} can't watch · ${c.dim("?")} unknown ${c.dim("(from `sportsing subscriptions`)")}
 
 ${b("DATA")}
   ESPN's free (unofficial) API — no key needed.
