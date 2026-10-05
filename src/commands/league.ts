@@ -9,7 +9,7 @@
 
 import { c } from "../ansi.ts";
 import { getFavorites, getHomeMarket, getStreamProvider, getSubscriptions } from "../config.ts";
-import { getScoreboardGames, getStandings, getTeamGames, getTeams, SEASON_TYPES, type EspnTeam, type League } from "../espn.ts";
+import { getGameSummary, getScoreboardGames, getStandings, getTeamGames, getTeams, SEASON_TYPES, type EspnTeam, type League } from "../espn.ts";
 import { fmtDate, fmtDayHeader, gameLine, relativeTime, type PeriodNaming } from "../format.ts";
 import type { Game } from "../game.ts";
 import { PLAYOFF_FORMATS, renderSeasonSummary, summarizeSeason } from "../season.ts";
@@ -28,6 +28,7 @@ import {
 } from "../watch-route.ts";
 import { EXAMPLE_TEAM, addDays, getFlag, localDateOf, mineFavorites, noFavoritesHint, ymd } from "./_lib.ts";
 import { fav } from "./fav.ts";
+import { leagueAnalyze, leaguePredict, leagueRecap, type LeagueGames } from "./league-ai.ts";
 import { fmtEta, parseSize, positionalTerms, smokeWatch, waitPollMs } from "./watch.ts";
 import { leagueBracket } from "./league-bracket.ts";
 import { LIVE_REFRESH_MS, raise, type Alert, type Alerter } from "../alerts.ts";
@@ -728,6 +729,15 @@ async function live(cfg: LeagueConfig, args: string[]): Promise<void> {
   });
 }
 
+/** The league's data as the AI commands (league-ai.ts) consume it. */
+function leagueGames(cfg: LeagueConfig): LeagueGames {
+  return {
+    team: async (input) => resolveTeam(await getTeams(cfg.league), input, cfg.aliases),
+    season: (teamId) => teamSeason(cfg, teamId),
+    summary: (gameId) => getGameSummary(cfg.league, gameId),
+  };
+}
+
 const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<void>> = {
   today,
   next,
@@ -739,6 +749,9 @@ const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<vo
   fav: leagueFav,
   watch,
   live,
+  analyze: (cfg, args) => leagueAnalyze(cfg, leagueGames(cfg), args),
+  predict: (cfg, args) => leaguePredict(cfg, leagueGames(cfg), args),
+  recap: (cfg, args) => leagueRecap(cfg, leagueGames(cfg), args),
 };
 
 const ALIASES: Record<string, string> = { t: "today", n: "next", st: "standings" };
@@ -766,6 +779,9 @@ ${b("COMMANDS")}
   ${c.green("season")} ${c.dim("[team]")}      Favorites' season: record, splits, playoff race
   ${c.green("bracket")}            Playoff bracket ${c.dim("(projected before the postseason; --season YYYY for a past one)")}
   ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
+  ${c.green("analyze")} ${c.dim("<team> [team]")}  AI read of the live or latest game ${c.dim("(--prompt)")}
+  ${c.green("predict")} ${c.dim("<team> [team]")}  AI prediction for the next game ${c.dim("(--prompt)")}
+  ${c.green("recap")}   ${c.dim("<team> [team]")}  AI "here's what you missed" ${c.dim("(--prompt)")}
   ${c.green("watch")}  ${c.dim("[team]")}      Open the stream where you can watch it ${c.dim("(--wait, --provider, --url, --smoke)")}
   ${c.green("live")}               Auto-refreshing live board ${c.dim("(--notify: favorites' alerts; --quiet: alerts only)")}
 
@@ -779,7 +795,9 @@ ${b("TAGS")}
   WATCH: the service or channel · ${c.red("✗")} can't watch · ${c.dim("?")} unknown ${c.dim("(from `sportsing subscriptions`)")}
 
 ${b("DATA")}
-  ESPN's free (unofficial) API — no key needed.
+  ESPN's free (unofficial) API — no key needed. AI commands are answered by a
+  Claude agent you keep serving (${c.dim("/loop sportsing fifa serve")} — one loop answers
+  every sport); --prompt prints the prompt instead.
 
 ${b("EXAMPLES")}
   sportsing ${s} today
@@ -787,6 +805,7 @@ ${b("EXAMPLES")}
   sportsing ${s} schedule --team ${ex}
   sportsing ${s} results --mine
   sportsing ${s} standings --conference West
+  sportsing ${s} recap ${ex} --prompt
 `);
 }
 
