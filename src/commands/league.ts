@@ -10,7 +10,7 @@
 import { c } from "../ansi.ts";
 import { getFavorites, getStreamProvider } from "../config.ts";
 import { getScoreboardGames, getStandings, getTeamGames, getTeams, SEASON_TYPES, type EspnTeam, type League } from "../espn.ts";
-import { fmtDate, fmtDayHeader, gameLine, relativeTime } from "../format.ts";
+import { fmtDate, fmtDayHeader, gameLine, relativeTime, type PeriodNaming } from "../format.ts";
 import type { Game } from "../game.ts";
 import { STANDINGS_LAYOUTS, groupMatches, loadStandingsView, renderStandingsTable, type StandingsLevel } from "../standings.ts";
 import { launchStream, pickProvider } from "../stream.ts";
@@ -33,6 +33,9 @@ export interface LeagueConfig {
   /** Default streaming provider key (see PROVIDERS in stream.ts) for
    *  `<sport> watch` when config sets none; absent = no default. */
   watchProvider?: string;
+  /** League-specific period names for live/final status (hockey: 1st/2nd/3rd/
+   *  OT/SO). Omitted → the source's status text is shown as-is. */
+  periods?: PeriodNaming;
 }
 
 /** How far `schedule` looks ahead / `results` looks back league-wide, and how
@@ -192,7 +195,7 @@ function title(cfg: LeagueConfig, text: string): void {
 }
 
 /** Print games under local-day headers, in the given order. */
-function printByDay(games: Game[]): void {
+function printByDay(cfg: LeagueConfig, games: Game[]): void {
   let currentDay = "";
   for (const g of games) {
     const day = localDateOf(g.date);
@@ -200,7 +203,7 @@ function printByDay(games: Game[]): void {
       currentDay = day;
       console.log("\n" + c.bold(fmtDayHeader(g.date)));
     }
-    console.log("  " + gameLine(g));
+    console.log("  " + gameLine(g, cfg.periods));
   }
 }
 
@@ -230,7 +233,7 @@ async function today(cfg: LeagueConfig, args: string[]): Promise<void> {
     return;
   }
   console.log();
-  for (const g of games) console.log("  " + gameLine(g));
+  for (const g of games) console.log("  " + gameLine(g, cfg.periods));
 }
 
 /** `next [--team X] [--mine]` — the next game to start, with a countdown. */
@@ -255,7 +258,7 @@ async function next(cfg: LeagueConfig, args: string[]): Promise<void> {
     return;
   }
   title(cfg, "Next Game");
-  console.log("\n  " + gameLine(g));
+  console.log("\n  " + gameLine(g, cfg.periods));
   console.log(c.dim("  " + g.name));
   console.log(`  ${c.bold(fmtDate(g.date))}  ${c.green("— starts " + relativeTime(g.date))}`);
 }
@@ -274,7 +277,7 @@ async function schedule(cfg: LeagueConfig, args: string[]): Promise<void> {
     console.log(c.dim("\nNo games to show."));
     return;
   }
-  printByDay(games);
+  printByDay(cfg, games);
 }
 
 /** `results [--team X | --mine]` — finished games, newest first; league-wide,
@@ -294,7 +297,7 @@ async function results(cfg: LeagueConfig, args: string[]): Promise<void> {
     console.log(c.dim("\nNo finished games yet."));
     return;
   }
-  printByDay(games);
+  printByDay(cfg, games);
 }
 
 /** `standings [--conference X | --division X]` — regular-season standings,

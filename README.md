@@ -76,6 +76,17 @@ through playoffs. Times are local; preseason games are tagged `PRE`, postseason
 team for `today` / `next` / `schedule` / `results`; `--mine` limits them to your
 NBA favorites. NBA favorites are separate from FIFA ones.
 
+## NHL
+
+`sportsing nhl <command>` — the same commands as `nba`, for the NHL (ESPN, no
+key), preseason through playoffs, tagged `PRE` / `POST` the same way. Live and
+final status uses hockey periods: `12:34 - 2nd`, `End of 3rd`, `OT`, `SO`,
+`Final/OT`, `Final/SO`.
+
+`--team X` takes an abbreviation or name — `UTAH`, `UTA`, `Mammoth`, and
+NHL.com codes like `TBL` / `LAK` all work. NHL favorites (`fav add UTAH`) are
+separate from NBA and FIFA ones, so the Jazz and the Mammoth can both be `UTAH`.
+
 ## Watch
 
 `sportsing fifa watch [team] [team]` opens the broadcast in your own browser
