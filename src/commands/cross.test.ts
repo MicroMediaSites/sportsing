@@ -44,8 +44,10 @@ afterEach(() => {
 test("the registry is fifa, nba, nhl — each routable and with its own command table", () => {
   expect(SPORTS.map((s) => s.key)).toEqual(["fifa", "nba", "nhl"]);
   expect(SPORTS.every((s) => s.has("today") && s.has("fav"))).toBe(true);
-  expect(SPORTS.find((s) => s.key === "fifa")!.has("bracket")).toBe(true);
-  expect(SPORTS.find((s) => s.key === "nba")!.has("bracket")).toBe(false);
+  const has = (cmd: string) => SPORTS.filter((s) => s.has(cmd)).map((s) => s.key);
+  expect(has("bracket")).toEqual(["fifa", "nba", "nhl"]);
+  expect(has("season")).toEqual(["nba", "nhl"]); // ESPN leagues only
+  expect(has("scorers")).toEqual(["fifa"]);
   expect(SPORTS.some((s) => s.has("toString"))).toBe(false);
 });
 
@@ -131,6 +133,14 @@ test("a sport that fails is reported, the rest still print, exit code is non-zer
   expect(err).toEqual(["Couldn't load NHL: ESPN down"]);
   expect(out[0]).toContain("Tomorrow");
   expect(out).toContain("  * NBA   game jazz");
+  expect(process.exitCode).toBe(1);
+});
+
+test("when every sport fails, only the errors print — no misleading empty result", async () => {
+  const down = async () => Promise.reject(new Error("offline"));
+  const { out, err } = await capture(() => today([sport("nba", { favoritesOn: down }), sport("nhl", { favoritesOn: down })], []));
+  expect(err).toEqual(["Couldn't load NBA: offline", "Couldn't load NHL: offline"]);
+  expect(out).toEqual([]);
   expect(process.exitCode).toBe(1);
 });
 

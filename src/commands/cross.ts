@@ -207,8 +207,9 @@ export function noFavoritesHint(sports: Pick<Sport, "key">[]): string[] {
 /**
  * Run `load` for every sport. A sport that fails is reported and skipped (and
  * the exit code set) so the others still print; sports with no favorites
- * (null) are dropped. Null — after printing the add-a-favorite hint — when no
- * sport has favorites at all.
+ * (null) are dropped. Null when there's nothing to show: no sport has
+ * favorites (the add-a-favorite hint is printed), or every sport with
+ * favorites failed.
  */
 async function perSport<T>(sports: Sport[], load: (s: Sport) => Promise<T | null>): Promise<{ sport: Sport; data: T }[] | null> {
   const settled = await Promise.allSettled(sports.map(load));
@@ -224,11 +225,10 @@ async function perSport<T>(sports: Sport[], load: (s: Sport) => Promise<T | null
       out.push({ sport, data: r.value });
     }
   });
-  if (out.length === 0 && !failed) {
-    for (const l of noFavoritesHint(sports)) console.log(l);
-    return null;
-  }
-  return out;
+  if (out.length > 0) return out;
+  // Nothing to show: every sport failed (errors already printed) or none has favorites.
+  if (!failed) for (const l of noFavoritesHint(sports)) console.log(l);
+  return null;
 }
 
 /** `today [--tomorrow|--yesterday|--offset N]` — your teams' games on one local day. */
