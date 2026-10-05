@@ -11,6 +11,7 @@
 
 import { cached, ApiError } from "./api.ts";
 import { c } from "./ansi.ts";
+import type { Broadcast, BroadcastMarket, Game, GameCompetitor, SeasonPhase } from "./game.ts";
 
 /** ESPN league paths this client speaks. A closed set — the path is
  *  interpolated into request URLs and cache filenames, so no free text. */
@@ -171,6 +172,90 @@ export function normalizeEvent(e: any): EspnEvent {
   };
 }
 
+// --- ESPN event → sport-neutral Game (NBA/NHL) ---
+
+/** ESPN season-type number → phase. 5 is the NBA play-in, which leads into
+ *  (and is shown with) the playoffs. 4 (off-season) and anything unknown → null. */
+function seasonPhaseOf(n: unknown): SeasonPhase | null {
+  switch (Number(n)) {
+    case 1:
+      return "preseason";
+    case 2:
+      return "regular";
+    case 3:
+    case 5:
+      return "postseason";
+    default:
+      return null;
+  }
+}
+
+const MARKETS: Record<string, BroadcastMarket> = { national: "national", home: "home", away: "away" };
+
+/**
+ * A competition's broadcasts. ESPN uses two shapes: team schedules (and the
+ * scoreboard's `geoBroadcasts`) list `{ market: { type: "Away" }, media:
+ * { shortName: "Utah 16" } }`; the scoreboard's `broadcasts` is the condensed
+ * `{ market: "national", names: ["NBA TV"] }`. Prefer the detailed form. Rows
+ * with an unknown market are dropped rather than guessed — mislabeling a
+ * regional feed as national would wrongly claim it's watchable anywhere.
+ */
+function broadcastsOf(comp: any): Broadcast[] {
+  const detailed: any[] = Array.isArray(comp?.geoBroadcasts) && comp.geoBroadcasts.length
+    ? comp.geoBroadcasts
+    : (comp?.broadcasts ?? []).filter((b: any) => b && typeof b.market === "object");
+  const rows: { market: unknown; name: unknown }[] = detailed.length
+    ? detailed.map((b: any) => ({ market: b?.market?.type, name: b?.media?.shortName ?? b?.media?.name }))
+    : (comp?.broadcasts ?? []).flatMap((b: any) =>
+        (Array.isArray(b?.names) ? b.names : []).map((name: unknown) => ({ market: b?.market, name })),
+      );
+  const out: Broadcast[] = [];
+  for (const r of rows) {
+    const market = MARKETS[String(r.market ?? "").toLowerCase()];
+    const name = typeof r.name === "string" ? r.name.trim() : "";
+    if (!market || !name) continue;
+    if (out.some((b) => b.name === name && b.market === market)) continue;
+    out.push({ name, market });
+  }
+  return out;
+}
+
+function competitorOf(comp: any, side: "home" | "away"): GameCompetitor {
+  const c = (comp?.competitors ?? []).find((x: any) => x?.homeAway === side);
+  return {
+    id: String(c?.team?.id ?? c?.id ?? ""),
+    name: c?.team?.displayName ?? c?.team?.name ?? "TBD",
+    abbreviation: c?.team?.abbreviation ?? "",
+    score: scoreOf(c?.score),
+  };
+}
+
+/**
+ * One ESPN scoreboard or team-schedule event → `Game`. Season type comes from
+ * the event (`seasonType.type` on schedules, `season.type` on scoreboards),
+ * falling back to `requested` (the `seasontype=` the schedule was fetched
+ * with), then "regular". Exported for tests.
+ */
+export function toGame(e: any, requested?: SeasonType): Game {
+  const comp = e?.competitions?.[0] ?? {};
+  const status = comp.status ?? e?.status ?? {};
+  const state: Game["state"] = status.type?.state === "in" || status.type?.state === "post" ? status.type.state : "pre";
+  return {
+    id: String(e?.id ?? ""),
+    date: e?.date ?? comp.date ?? "",
+    name: e?.name ?? e?.shortName ?? "",
+    state,
+    detail: status.type?.shortDetail ?? status.type?.detail ?? "",
+    period: Number(status.period) || 0,
+    clock: state === "in" ? String(status.displayClock ?? "") : "",
+    seasonType:
+      seasonPhaseOf(e?.seasonType?.type) ?? seasonPhaseOf(e?.season?.type) ?? seasonPhaseOf(requested) ?? "regular",
+    home: competitorOf(comp, "home"),
+    away: competitorOf(comp, "away"),
+    broadcasts: broadcastsOf(comp),
+  };
+}
+
 /** Scoreboard events for a date or `YYYYMMDD-YYYYMMDD` range in `league`. */
 export async function getScoreboard(dates: string, ttlMs = 60_000, league: League = FIFA): Promise<EspnEvent[]> {
   const raw = await fetchEspn(
@@ -193,6 +278,11 @@ export async function getTeamSchedule(
   seasonType: SeasonType,
   ttlMs = 5 * 60_000,
 ): Promise<EspnEvent[]> {
+  return (await rawTeamSchedule(league, team, seasonType, ttlMs)).map(normalizeEvent);
+}
+
+/** Raw schedule events (drift-checked) — shared by getTeamSchedule/getTeamGames. */
+async function rawTeamSchedule(league: League, team: string | number, seasonType: SeasonType, ttlMs: number): Promise<any[]> {
   const raw = await fetchEspn(
     espnUrl(league, `teams/${encodeURIComponent(String(team))}/schedule?seasontype=${seasonType}`),
     espnCacheKey(league, `sched${seasonType}`, team),
@@ -200,7 +290,31 @@ export async function getTeamSchedule(
     "team schedule",
   );
   if (looksOff(raw)) warnDriftOnce();
-  return (raw?.events ?? []).map(normalizeEvent);
+  return raw?.events ?? [];
+}
+
+/** One team's schedule for a season type as sport-neutral `Game`s. */
+export async function getTeamGames(
+  league: League,
+  team: string | number,
+  seasonType: SeasonType,
+  ttlMs = 5 * 60_000,
+): Promise<Game[]> {
+  return (await rawTeamSchedule(league, team, seasonType, ttlMs)).map((e) => toGame(e, seasonType));
+}
+
+/** A single day's scoreboard (`YYYYMMDD`) in `league` as `Game`s. Same cache
+ *  entry as getScoreboard. Single dates only — ESPN's `dates=A-B` ranges are
+ *  unreliable for NBA/NHL. */
+export async function getScoreboardGames(league: League, date: string, ttlMs = 60_000): Promise<Game[]> {
+  const raw = await fetchEspn(
+    espnUrl(league, `scoreboard?dates=${encodeURIComponent(date)}`),
+    espnCacheKey(league, "sb", date),
+    ttlMs,
+    "scoreboard",
+  );
+  if (looksOff(raw)) warnDriftOnce();
+  return (raw?.events ?? []).map((e: any) => toGame(e));
 }
 
 export interface EspnTeam {
