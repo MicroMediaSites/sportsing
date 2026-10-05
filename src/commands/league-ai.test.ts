@@ -96,7 +96,7 @@ describe("commands (--prompt)", () => {
 
   test("analyze with no box score yet: a note, no prompt", async () => {
     await leagueAnalyze(NBA, fakeGames(null), ["jazz", "--prompt"]);
-    expect(out.join("\n")).toContain("No box score for Utah Jazz at Denver Nuggets yet");
+    expect(out.join("\n")).toContain("No team stats for Utah Jazz at Denver Nuggets yet");
   });
 
   test("predict: the next Jazz game, both teams' form", async () => {

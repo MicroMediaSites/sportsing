@@ -102,12 +102,12 @@ const who = (teams: EspnTeam[]) => teams.map((t) => t.name).join(" vs ");
 /** Post a prompt to the ask bus and print the answer (or the no-agent hint). */
 async function ask(source: AskSource, prompt: string, context: string, hint: string, heading: string): Promise<void> {
   process.stderr.write(c.dim("Posted to the ask bus — waiting for your Claude agent to answer…\n"));
-  process.stderr.write(c.dim("(keep one serving:  /loop sportsing fifa serve)\n"));
+  process.stderr.write(c.dim("(keep one serving:  /loop sportsing fifa serve — it answers every sport)\n"));
   const id = await postQuestion({ source, question: prompt, context, hint, maxChars: null });
   const answer = await waitForAnswer(id, ANSWER_TIMEOUT_MS);
   if (answer === null) {
     console.error(c.yellow("No Claude agent answered within 3 minutes."));
-    console.error(c.dim("Start a serving agent in another Claude session, then retry:  /loop sportsing fifa serve"));
+    console.error(c.dim("Start a serving agent in another Claude session, then retry:  /loop sportsing fifa serve  (it answers every sport)"));
     console.error(c.dim("Or run with --prompt to get the prompt and use it elsewhere."));
     process.exitCode = 1;
     return;
@@ -128,8 +128,8 @@ export async function leagueAnalyze(cfg: LeagueConfig, games: LeagueGames, args:
     return;
   }
   const summary = await games.summary(g.id);
-  if (!summary || summary.home.stats.length === 0) {
-    console.log(c.dim(`No box score for ${g.name} yet — nothing to analyze.`));
+  if (!summary || summary.home.stats.length === 0 || summary.away.stats.length === 0) {
+    console.log(c.dim(`No team stats for ${g.name} yet — nothing to analyze.`));
     return;
   }
   const prompt = buildAnalyzePrompt(s.ai, g, summary);

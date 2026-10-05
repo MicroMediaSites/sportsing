@@ -796,7 +796,8 @@ ${b("TAGS")}
 
 ${b("DATA")}
   ESPN's free (unofficial) API — no key needed. AI commands are answered by a
-  Claude agent you keep serving (${c.dim("/loop sportsing fifa serve")}); --prompt prints the prompt instead.
+  Claude agent you keep serving (${c.dim("/loop sportsing fifa serve")} — one loop answers
+  every sport); --prompt prints the prompt instead.
 
 ${b("EXAMPLES")}
   sportsing ${s} today

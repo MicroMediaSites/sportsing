@@ -92,6 +92,9 @@ through playoffs. Times are local; preseason games are tagged `PRE`, postseason
 | `fav [add\|rm\|list]` | Manage NBA favorites (`fav add UTAH`, `fav add Jazz`) |
 | `watch [team] [--wait] [--provider X] [--url L] [--smoke]` | Open the game where you can watch it — see **Where to watch** below |
 | `live [--notify [--quiet]]` | Auto-refreshing live board; `--notify` alerts for favorites — see **Live fav-alerts** below |
+| `analyze <team> [team]` | AI read of the live or latest game: shooting, boards, turnovers, leaders (answered by `serve`; `--prompt` prints it) |
+| `predict <team> [team]` | AI prediction for the next game from both teams' recent form |
+| `recap <team> [team]` | AI "here's what you missed": lead changes, runs, close-late baskets, quarter scores |
 
 `--team X` (abbreviation or name; NBA.com codes like `UTA` work too) picks one
 team for `today` / `next` / `schedule` / `results`; `--mine` limits them to your
@@ -112,7 +115,9 @@ final status uses hockey periods: `12:34 - 2nd`, `End of 3rd`, `OT`, `SO`,
 NHL.com codes like `TBL` / `LAK` all work. NHL favorites (`fav add UTAH`) are
 separate from NBA and FIFA ones, so the Jazz and the Mammoth can both be `UTAH`.
 
-`standings`, `season`, `bracket`, and `watch` work exactly as for the NBA. There's
+`standings`, `season`, `bracket`, `watch`, and `analyze` / `predict` / `recap`
+work exactly as for the NBA — the AI prompts speak hockey (goaltending, special
+teams, every goal and penalty). There's
 no default NHL streaming provider: `nhl watch` follows **Where to watch** — an
 over-the-air game prints its channel (e.g. Utah 16) and opens nothing.
 
@@ -298,7 +303,8 @@ prints this recipe; `sportsing fifa` and the watch nag point at it.
 ### Low-level primitive — `serve`
 
 `sportsing fifa serve` is the bare answerer loop (it powers `analyze` / `predict`
-too). `agent-setup` supersedes the old manual two-step for the agent-driven flow,
+/ `recap` too — for every sport: the bus is shared, so one `fifa serve` answers
+NBA and NHL questions as well). `agent-setup` supersedes the old manual two-step for the agent-driven flow,
 but `serve` remains the primitive if you want to compose it yourself:
 
 ```sh
