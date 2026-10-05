@@ -12,6 +12,8 @@ export const NBA: LeagueConfig = {
   icon: "🏀",
   // NBA.com-style codes where ESPN's differ (ESPN: GS, NO, NY, SA, UTAH, WSH).
   aliases: { GSW: "GS", NOP: "NO", NYK: "NY", SAS: "SA", UTA: "UTAH", WAS: "WSH" },
+  // Jazz local broadcasts (and the national NBA games) stream on Fubo.
+  watchProvider: "fubo",
 };
 
 /** Dispatch a `sportsing nba <command>` invocation. Args are everything after `nba`. */

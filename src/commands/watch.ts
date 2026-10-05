@@ -1,7 +1,7 @@
 import { c } from "../ansi.ts";
 import { findCurrentMatch, resolveWatchTarget, type EspnEvent } from "../espn.ts";
 import { getStreamProvider } from "../config.ts";
-import { PROVIDERS, launchStream, spawnStreamWindow } from "../stream.ts";
+import { launchStream, pickProvider, spawnStreamWindow } from "../stream.ts";
 import { runOverlayStream, type WatchLang } from "../overlay.ts";
 import { freePort, attachToPage } from "../cdp.ts";
 import { writeWatchPidfile } from "../liveness.ts";
@@ -47,13 +47,13 @@ export async function watch(args: string[]) {
   const terms = positionalTerms(args);
 
   // Default to Fubo (English/Fox). Peacock is Spanish-only (Telemundo).
-  const key = (providerFlag ?? (await getStreamProvider()) ?? "fubo").toLowerCase();
-  const provider = PROVIDERS[key];
-  if (!provider) {
-    console.error(c.red(`Unknown provider "${key}". Known: ${Object.keys(PROVIDERS).join(", ")}.`));
+  const pick = pickProvider(providerFlag ?? (await getStreamProvider("fifa")) ?? "fubo", "fifa");
+  if (!pick.ok) {
+    console.error(c.red(pick.error));
     process.exitCode = 1;
     return;
   }
+  const provider = pick;
 
   // `watch` opens a window and BLOCKS until you close it (or Ctrl-C). With no
   // controlling TTY — an agent/build smoke-test, `< /dev/null` — nothing ever
@@ -167,15 +167,23 @@ async function waitForLive(terms: string[]): Promise<EspnEvent> {
       const ms = Date.parse(target.date) - Date.now();
       const eta = ms > 0 ? `kicks off in ${fmtEta(ms)}` : "at/just past kickoff — waiting for it to flip live";
       console.log(c.dim(`  ${eta}.`));
-      if (ms <= 5 * 60_000) pollMs = 15_000; // tighten near kickoff (and once past it)
-      else if (ms <= 15 * 60_000) pollMs = 30_000;
+      pollMs = waitPollMs(ms);
     }
     await new Promise((r) => setTimeout(r, pollMs));
   }
 }
 
+/** How long `watch --wait` sleeps between polls, given the ms until the target
+ *  starts: 60s normally, tightening to 30s inside 15 minutes and 15s inside 5
+ *  (and once past the start, while waiting for the game to flip live). */
+export function waitPollMs(msToStart: number): number {
+  if (msToStart <= 5 * 60_000) return 15_000;
+  if (msToStart <= 15 * 60_000) return 30_000;
+  return 60_000;
+}
+
 /** Coarse human ETA: "1h 4m", "12m 30s", or "45s". */
-function fmtEta(ms: number): string {
+export function fmtEta(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
@@ -189,7 +197,7 @@ function fmtEta(ms: number): string {
  * then tears it down and exits. Bounded (CDP attach has its own timeout) and
  * leaves no survivors — win.close() reaps the ui-leaf/Chrome tree.
  */
-async function smokeWatch(url: string, label: string, windowSize: { width: number; height: number } | undefined): Promise<void> {
+export async function smokeWatch(url: string, label: string, windowSize: { width: number; height: number } | undefined): Promise<void> {
   const port = await freePort();
   const win = await spawnStreamWindow(url, label, { debugPort: port, windowSize });
   if (!win) {
@@ -209,13 +217,13 @@ async function smokeWatch(url: string, label: string, windowSize: { width: numbe
 }
 
 /** Parse a `WxH` size string into a window size, or undefined if absent/invalid. */
-function parseSize(s: string | null): { width: number; height: number } | undefined {
+export function parseSize(s: string | null): { width: number; height: number } | undefined {
   const m = s?.match(/^(\d+)x(\d+)$/);
   return m ? { width: Number(m[1]), height: Number(m[2]) } : undefined;
 }
 
 /** Positional args, dropping flags and the values consumed by --url / --provider / --size. */
-function positionalTerms(args: string[]): string[] {
+export function positionalTerms(args: string[]): string[] {
   const out: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
