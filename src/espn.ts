@@ -1,18 +1,66 @@
-// ESPN's free, no-key JSON API — the stats source for the live 2026 World Cup.
-// Used by stats / predict. Returns per-team match statistics (possession,
-// shots, passes, cards…), rosters, and key events for `soccer/fifa.world`.
+// ESPN's free, no-key JSON API. Originally the stats source for the live 2026
+// World Cup (`soccer/fifa.world`, used by stats / predict / the overlay); now
+// league-parametrized so NBA and NHL reuse the same client. Returns
+// scoreboards, team schedules, team lists, standings, per-team match
+// statistics, and key events.
 //
 // Undocumented/unofficial: the shapes here are observed, not contracted, and
 // could change. All ESPN-specific parsing is contained in this module so a
-// break is a one-file fix. Reuses api.ts's disk cache.
+// break is a one-file fix. Reuses api.ts's disk cache; every cache key carries
+// the league so leagues never collide.
 
 import { cached, ApiError } from "./api.ts";
 import { c } from "./ansi.ts";
 
-const BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world";
+/** ESPN league paths this client speaks. A closed set — the path is
+ *  interpolated into request URLs and cache filenames, so no free text. */
+export const LEAGUES = {
+  fifa: "soccer/fifa.world",
+  nba: "basketball/nba",
+  nhl: "hockey/nhl",
+} as const;
+export type League = (typeof LEAGUES)[keyof typeof LEAGUES];
+
+/** The default league — every pre-existing (World Cup) call site uses it. */
+export const FIFA: League = LEAGUES.fifa;
+
+/** ESPN season types for team schedules (`seasontype=`). */
+export const SEASON_TYPES = { preseason: 1, regular: 2, postseason: 3 } as const;
+export type SeasonType = (typeof SEASON_TYPES)[keyof typeof SEASON_TYPES];
+
+const SITE = "https://site.api.espn.com/apis/site/v2/sports";
+// Standings live on a different path: `site/v2/.../standings` only returns a
+// `fullViewLink` stub; the real tables are under `apis/v2`.
+const STANDINGS_BASE = "https://site.api.espn.com/apis/v2/sports";
+
+/** Full URL for a `site/v2` endpoint under `league`, e.g. `scoreboard?dates=…`. */
+export function espnUrl(league: League, path: string): string {
+  return `${SITE}/${league}/${path}`;
+}
+
+/** Disk-cache key for an ESPN response: always includes the league, and is
+ *  filename-safe (ids come from user terms / API data, never trusted as paths). */
+export function espnCacheKey(league: League, kind: string, id: string | number = ""): string {
+  const safe = (s: string) => s.replace(/[^A-Za-z0-9_-]/g, "_");
+  return ["espn", safe(league), kind, safe(String(id))].filter(Boolean).join("_");
+}
+
+// ESPN's edge (Akamai) 403s Bun's default `Bun/x.y.z` User-Agent (observed
+// 2026-10-04 — every ESPN call failed). Any other UA is served, so name ourselves.
+const HEADERS = { "User-Agent": "sportsing" };
+
+/** GET + JSON through the disk cache; non-2xx becomes an ApiError. */
+function fetchEspn<T = any>(url: string, key: string, ttlMs: number, what: string): Promise<T> {
+  return cached<T>(key, ttlMs, async () => {
+    const res = await fetch(url, { headers: HEADERS });
+    if (!res.ok) throw new ApiError(res.status, `ESPN ${what} request failed (HTTP ${res.status}).`);
+    return res.json() as Promise<T>;
+  });
+}
 
 /**
- * Detect a *structurally* wrong scoreboard response. ESPN is unofficial and
+ * Detect a *structurally* wrong scoreboard (or team-schedule — same `events`
+ * shape) response, for any league. ESPN is unofficial and
  * returns HTTP 200 even when its JSON shape drifts, so the parser's `?? ""`
  * fallbacks would silently degrade to blank stats — indistinguishable from
  * "no data yet". This keys on shape, NOT emptiness: a date with no matches
@@ -46,6 +94,29 @@ function warnDriftOnce(): void {
   console.error(c.yellow("⚠ ESPN data looks off — its format may have changed; it's an unofficial API."));
 }
 
+/** Teams-list drift: `sports[0].leagues[0].teams` must be an array whose
+ *  entries carry a `team` with an id and abbreviation. */
+export function looksOffTeams(raw: any): boolean {
+  const teams = raw?.sports?.[0]?.leagues?.[0]?.teams;
+  if (!Array.isArray(teams)) return true;
+  return teams.some((t: any) => !t?.team?.id || !t?.team?.abbreviation);
+}
+
+/** Standings drift: either a `children` array of groups (conferences / WC
+ *  groups) or a top-level `standings`, each with an `entries` array whose rows
+ *  name a team. An empty table (offseason) is fine — shape, not emptiness. */
+export function looksOffStandings(raw: any): boolean {
+  if (!raw || typeof raw !== "object") return true;
+  const groups = Array.isArray(raw.children) ? raw.children : raw.standings ? [raw] : null;
+  if (!groups) return true;
+  for (const g of groups) {
+    const entries = g?.standings?.entries;
+    if (!Array.isArray(entries)) return true;
+    if (!entries.every((e: any) => e?.team?.abbreviation && Array.isArray(e?.stats))) return true;
+  }
+  return false;
+}
+
 /** WC2026 scoreboard search window (YYYYMMDD) — opening day → final. */
 export const TOURNAMENT_START = "20260611";
 export const TOURNAMENT_END = "20260719";
@@ -74,7 +145,16 @@ export interface EspnTeamStats {
   stats: { name: string; label: string; value: string }[];
 }
 
-function normalizeEvent(e: any): EspnEvent {
+/** ESPN scores arrive as a string on scoreboards but as `{ value, displayValue }`
+ *  on team schedules (and `null` before tip-off) — flatten to a string. */
+function scoreOf(raw: any): string {
+  if (raw == null) return "";
+  if (typeof raw === "object") return String(raw.displayValue ?? raw.value ?? "");
+  return String(raw);
+}
+
+/** One scoreboard / schedule event → EspnEvent. Exported for tests. */
+export function normalizeEvent(e: any): EspnEvent {
   const comp = e.competitions?.[0] ?? {};
   return {
     id: String(e.id),
@@ -86,20 +166,117 @@ function normalizeEvent(e: any): EspnEvent {
       homeAway: c.homeAway,
       name: c.team?.displayName ?? c.team?.name ?? "?",
       abbreviation: c.team?.abbreviation ?? "",
-      score: c.score ?? "",
+      score: scoreOf(c.score),
     })),
   };
 }
 
-/** Scoreboard events for a date or `YYYYMMDD-YYYYMMDD` range. */
-export async function getScoreboard(dates: string, ttlMs = 60_000): Promise<EspnEvent[]> {
-  const raw = await cached<any>(`espn_sb_${dates}`, ttlMs, async () => {
-    const res = await fetch(`${BASE}/scoreboard?dates=${dates}`);
-    if (!res.ok) throw new ApiError(res.status, `ESPN scoreboard request failed (HTTP ${res.status}).`);
-    return res.json();
-  });
+/** Scoreboard events for a date or `YYYYMMDD-YYYYMMDD` range in `league`. */
+export async function getScoreboard(dates: string, ttlMs = 60_000, league: League = FIFA): Promise<EspnEvent[]> {
+  const raw = await fetchEspn(
+    espnUrl(league, `scoreboard?dates=${encodeURIComponent(dates)}`),
+    espnCacheKey(league, "sb", dates),
+    ttlMs,
+    "scoreboard",
+  );
   if (looksOff(raw)) warnDriftOnce();
-  return (raw.events ?? []).map(normalizeEvent);
+  return (raw?.events ?? []).map(normalizeEvent);
+}
+
+/** One team's schedule for a season type (1 = preseason, 2 = regular,
+ *  3 = postseason) in `league`. `team` is an ESPN team id or abbreviation
+ *  (e.g. Jazz `26`, Mammoth `129764`). ESPN returns `events: []` for a season
+ *  type with nothing scheduled yet (e.g. postseason in October). */
+export async function getTeamSchedule(
+  league: League,
+  team: string | number,
+  seasonType: SeasonType,
+  ttlMs = 5 * 60_000,
+): Promise<EspnEvent[]> {
+  const raw = await fetchEspn(
+    espnUrl(league, `teams/${encodeURIComponent(String(team))}/schedule?seasontype=${seasonType}`),
+    espnCacheKey(league, `sched${seasonType}`, team),
+    ttlMs,
+    "team schedule",
+  );
+  if (looksOff(raw)) warnDriftOnce();
+  return (raw?.events ?? []).map(normalizeEvent);
+}
+
+export interface EspnTeam {
+  id: string;
+  abbreviation: string;
+  /** Full name, e.g. "Utah Jazz". */
+  name: string;
+  /** Nickname, e.g. "Jazz". */
+  shortName: string;
+  location: string;
+}
+
+/** Parse a `/teams` response. Exported for tests. */
+export function parseTeams(raw: any): EspnTeam[] {
+  const teams = raw?.sports?.[0]?.leagues?.[0]?.teams ?? [];
+  return (Array.isArray(teams) ? teams : []).map((t: any) => ({
+    id: String(t?.team?.id ?? ""),
+    abbreviation: t?.team?.abbreviation ?? "",
+    name: t?.team?.displayName ?? t?.team?.name ?? "?",
+    shortName: t?.team?.shortDisplayName ?? t?.team?.name ?? "",
+    location: t?.team?.location ?? "",
+  }));
+}
+
+/** Every team in `league`. Long TTL — rosters of franchises barely change. */
+export async function getTeams(league: League, ttlMs = 24 * 60 * 60_000): Promise<EspnTeam[]> {
+  const raw = await fetchEspn(espnUrl(league, "teams"), espnCacheKey(league, "teams"), ttlMs, "teams");
+  if (looksOffTeams(raw)) warnDriftOnce();
+  return parseTeams(raw);
+}
+
+export interface EspnStandingsEntry {
+  teamId: string;
+  team: string;
+  abbreviation: string;
+  /** Stat name → display value (e.g. wins, losses, points, playoffSeed). */
+  stats: Record<string, string>;
+}
+
+export interface EspnStandingsGroup {
+  /** e.g. "Western Conference", "Group A". */
+  name: string;
+  abbreviation: string;
+  entries: EspnStandingsEntry[];
+}
+
+/** Parse a standings response (conference/group children, or a single
+ *  top-level table). Exported for tests. */
+export function parseStandings(raw: any): EspnStandingsGroup[] {
+  const groups: any[] = Array.isArray(raw?.children) ? raw.children : raw?.standings ? [raw] : [];
+  return groups.map((g: any) => ({
+    name: g?.name ?? "",
+    abbreviation: g?.abbreviation ?? "",
+    entries: (g?.standings?.entries ?? []).map((e: any) => ({
+      teamId: String(e?.team?.id ?? ""),
+      team: e?.team?.displayName ?? e?.team?.name ?? "?",
+      abbreviation: e?.team?.abbreviation ?? "",
+      stats: Object.fromEntries(
+        (e?.stats ?? [])
+          .filter((s: any) => s?.name)
+          .map((s: any) => [s.name, String(s.displayValue ?? s.value ?? "")]),
+      ),
+    })),
+  }));
+}
+
+/** Current standings for `league`, grouped (NBA/NHL conferences, WC groups). */
+export async function getStandings(league: League, ttlMs = 10 * 60_000): Promise<EspnStandingsGroup[]> {
+  const raw = await fetchEspn(
+    `${STANDINGS_BASE}/${league}/standings`,
+    espnCacheKey(league, "standings"),
+    ttlMs,
+    "standings",
+  );
+  if (looksOffStandings(raw)) warnDriftOnce();
+  return parseStandings(raw);
 }
 
 /** Every tournament event — played and upcoming (opening day → final). The full
@@ -138,14 +315,16 @@ export interface H2HGame {
 export async function getHeadToHead(
   eventId: string,
   ttlMs = 60 * 60_000,
+  league: League = FIFA,
 ): Promise<{ team: string; games: H2HGame[] }> {
   // Separate cache key from getMatchStats (which also hits /summary on a short
   // TTL) — a shared key would let the shorter TTL win and refetch H2H needlessly.
-  const raw = await cached<any>(`espn_h2h_${eventId}`, ttlMs, async () => {
-    const res = await fetch(`${BASE}/summary?event=${eventId}`);
-    if (!res.ok) throw new ApiError(res.status, `ESPN summary request failed (HTTP ${res.status}).`);
-    return res.json();
-  });
+  const raw = await fetchEspn(
+    espnUrl(league, `summary?event=${encodeURIComponent(eventId)}`),
+    espnCacheKey(league, "h2h", eventId),
+    ttlMs,
+    "summary",
+  );
   const block = (raw.headToHeadGames ?? [])[0];
   if (!block) return { team: "", games: [] };
   const games: H2HGame[] = (block.events ?? []).map((e: any) => {
@@ -183,12 +362,13 @@ function mlToProb(ml: number): number {
 
 /** Fresh live state for one match in a single call: clock + score (summary
  *  header) and stats (boxscore). Short TTL — this drives the live overlay. */
-export async function getLiveMatch(eventId: string, ttlMs = 5_000): Promise<LiveMatch | null> {
-  const raw = await cached<any>(`espn_live_${eventId}`, ttlMs, async () => {
-    const res = await fetch(`${BASE}/summary?event=${eventId}`);
-    if (!res.ok) throw new ApiError(res.status, `ESPN summary request failed (HTTP ${res.status}).`);
-    return res.json();
-  });
+export async function getLiveMatch(eventId: string, ttlMs = 5_000, league: League = FIFA): Promise<LiveMatch | null> {
+  const raw = await fetchEspn(
+    espnUrl(league, `summary?event=${encodeURIComponent(eventId)}`),
+    espnCacheKey(league, "live", eventId),
+    ttlMs,
+    "summary",
+  );
   const comp = raw.header?.competitions?.[0];
   if (!comp) return null;
   const hc = (comp.competitors ?? []).find((c: any) => c.homeAway === "home");
@@ -288,12 +468,13 @@ export async function resolveWatchTarget(terms: string[], ttlMs = 15_000): Promi
 }
 
 /** Per-team statistics for one event (from the summary boxscore). */
-export async function getMatchStats(eventId: string, ttlMs = 60_000): Promise<EspnTeamStats[]> {
-  const raw = await cached<any>(`espn_sum_${eventId}`, ttlMs, async () => {
-    const res = await fetch(`${BASE}/summary?event=${eventId}`);
-    if (!res.ok) throw new ApiError(res.status, `ESPN summary request failed (HTTP ${res.status}).`);
-    return res.json();
-  });
+export async function getMatchStats(eventId: string, ttlMs = 60_000, league: League = FIFA): Promise<EspnTeamStats[]> {
+  const raw = await fetchEspn(
+    espnUrl(league, `summary?event=${encodeURIComponent(eventId)}`),
+    espnCacheKey(league, "sum", eventId),
+    ttlMs,
+    "summary",
+  );
   const teams = raw.boxscore?.teams ?? [];
   return teams.map((t: any) => ({
     team: t.team?.displayName ?? t.team?.name ?? "?",
