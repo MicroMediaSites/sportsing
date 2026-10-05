@@ -13,6 +13,8 @@ const LEGACY_CONFIG_FILE = join(homedir(), ".config", "sportsball", "config.json
 
 interface Config {
   apiKey?: string;
+  /** Sport-scoped favorites, `<sport>:<team>` (e.g. `nba:UTAH`, `fifa:USA`).
+   *  Legacy unprefixed entries (pre-NBA/NHL) read as `fifa:<team>`. */
   favorites?: string[];
   /** Preferred streaming provider for `fifa watch` (peacock | fubo). */
   streamProvider?: string;
@@ -111,34 +113,96 @@ export async function setOverlayPanel(provider: string, key: string, on: boolean
   await writeConfig(cfg);
 }
 
-/** Favorite teams, in the order they were added (as the user typed them). */
-export async function getFavorites(): Promise<string[]> {
-  const cfg = await readConfig();
-  return cfg.favorites ?? [];
+// ── Favorites ────────────────────────────────────────────────────────────────
+// Stored as `<sport>:<team>` because team abbreviations collide across sports
+// (the Jazz and the Mammoth are both ESPN `UTAH`). Entries written before
+// sports were scoped are bare team names and are read as `fifa:<team>`; the
+// next write rewrites them in prefixed form.
+
+/** The sport a legacy (unprefixed) favorite belongs to. */
+export const LEGACY_FAVORITE_SPORT = "fifa";
+
+/** A stored favorite entry, split into its sport and team. */
+export interface Favorite {
+  sport: string;
+  team: string;
 }
 
-/** Add a favorite team. No-op (added=false) if an equal name already exists. */
-export async function addFavorite(team: string): Promise<{ added: boolean; favorites: string[] }> {
+/** Sport prefixes are short lowercase ids (`fifa`, `nba`, `nhl`). */
+const PREFIXED = /^([a-z][a-z0-9]*):(.+)$/;
+
+/** Parse a stored entry; unprefixed (legacy) entries are FIFA teams. */
+export function parseFavorite(entry: string): Favorite {
+  const m = PREFIXED.exec(entry.trim());
+  if (m) return { sport: m[1]!, team: m[2]!.trim() };
+  return { sport: LEGACY_FAVORITE_SPORT, team: entry.trim() };
+}
+
+/** Serialize a favorite to its stored `<sport>:<team>` form. */
+export function formatFavorite(f: Favorite): string {
+  return `${f.sport}:${f.team}`;
+}
+
+const normSport = (sport: string) => sport.trim().toLowerCase();
+const sameTeam = (a: string, b: string) => a.toLowerCase() === b.trim().toLowerCase();
+
+// Pure helpers over the stored entry list (unit-tested without touching disk).
+
+/** A sport's team names from stored entries, in insertion order. */
+export function favoritesFor(entries: string[], sport: string): string[] {
+  const s = normSport(sport);
+  return entries
+    .filter((e) => e.trim())
+    .map(parseFavorite)
+    .filter((f) => f.sport === s)
+    .map((f) => f.team);
+}
+
+/** Stored entries with `team` added for `sport` (unless an equal name exists in
+ *  that sport, case-insensitive). Output is fully prefixed — legacy migrates. */
+export function withFavorite(entries: string[], sport: string, team: string): { added: boolean; entries: string[] } {
+  const s = normSport(sport);
   const name = team.trim();
-  const cfg = await readConfig();
-  const favorites = cfg.favorites ?? [];
-  const exists = favorites.some((f) => f.toLowerCase() === name.toLowerCase());
-  if (!exists) favorites.push(name);
-  cfg.favorites = favorites;
-  await writeConfig(cfg);
-  return { added: !exists, favorites };
+  const all = entries.filter((e) => e.trim()).map(parseFavorite);
+  const exists = all.some((f) => f.sport === s && sameTeam(f.team, name));
+  if (!exists) all.push({ sport: s, team: name });
+  return { added: !exists, entries: all.map(formatFavorite) };
 }
 
-/** Remove a favorite team (case-insensitive). removed=false if it wasn't there. */
-export async function removeFavorite(team: string): Promise<{ removed: boolean; favorites: string[] }> {
+/** Stored entries with `sport`'s `team` removed (case-insensitive); other
+ *  sports are untouched. Output is fully prefixed — legacy migrates. */
+export function withoutFavorite(entries: string[], sport: string, team: string): { removed: boolean; entries: string[] } {
+  const s = normSport(sport);
+  const all = entries.filter((e) => e.trim()).map(parseFavorite);
+  const i = all.findIndex((f) => f.sport === s && sameTeam(f.team, team));
+  if (i >= 0) all.splice(i, 1);
+  return { removed: i >= 0, entries: all.map(formatFavorite) };
+}
+
+/** A sport's favorite team names, in the order they were added (as typed). */
+export async function getFavorites(sport: string): Promise<string[]> {
   const cfg = await readConfig();
-  const favorites = cfg.favorites ?? [];
-  const i = favorites.findIndex((f) => f.toLowerCase() === team.trim().toLowerCase());
-  const removed = i >= 0;
-  if (removed) favorites.splice(i, 1);
-  cfg.favorites = favorites;
+  return favoritesFor(cfg.favorites ?? [], sport);
+}
+
+/** Add a favorite team for a sport. No-op (added=false) if that sport already
+ *  has an equal name. Returns that sport's favorites. */
+export async function addFavorite(sport: string, team: string): Promise<{ added: boolean; favorites: string[] }> {
+  const cfg = await readConfig();
+  const { added, entries } = withFavorite(cfg.favorites ?? [], sport, team);
+  cfg.favorites = entries;
   await writeConfig(cfg);
-  return { removed, favorites };
+  return { added, favorites: favoritesFor(entries, sport) };
+}
+
+/** Remove a sport's favorite team (case-insensitive). removed=false if it
+ *  wasn't there. Returns that sport's favorites. */
+export async function removeFavorite(sport: string, team: string): Promise<{ removed: boolean; favorites: string[] }> {
+  const cfg = await readConfig();
+  const { removed, entries } = withoutFavorite(cfg.favorites ?? [], sport, team);
+  cfg.favorites = entries;
+  await writeConfig(cfg);
+  return { removed, favorites: favoritesFor(entries, sport) };
 }
 
 export { CONFIG_FILE };

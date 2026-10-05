@@ -35,7 +35,7 @@ export async function live(args: string[] = []) {
 
   let favorites: string[] = [];
   if (wantNotify) {
-    favorites = await getFavorites();
+    favorites = await getFavorites("fifa");
     if (favorites.length === 0) {
       // --notify with no favourites would silently never alert; say so once.
       // All on stderr so --quiet keeps stdout clean for backgrounding.
