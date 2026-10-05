@@ -19,6 +19,7 @@ function sport(key: string, over: Partial<Sport> = {}): Sport {
     favoritesOn: async () => null,
     favoriteTeams: async () => null,
     alerter: async () => null,
+    daemonGames: async () => null,
     ...over,
   };
 }

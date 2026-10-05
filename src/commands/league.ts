@@ -36,6 +36,7 @@ import { LIVE_REFRESH_MS, raise, type Alert, type Alerter } from "../alerts.ts";
 import { selfInvocation } from "../click-to-watch.ts";
 import { isGameSport } from "../game-events.ts";
 import { leagueFeed } from "../league-alerts.ts";
+import { leagueDaemonGame, leagueRoute, type DaemonGame } from "../daemon.ts";
 
 export interface LeagueConfig {
   /** CLI namespace and favorites key, e.g. "nba" (`sportsing nba …`, `nba:UTAH`). */
@@ -552,7 +553,7 @@ function pickOrReport(key: string, sport: string): { key: string; label: string;
 }
 
 /**
- * `watch [team] [--wait] [--overlay] [--provider X] [--url L] [--size WxH] [--smoke]` —
+ * `watch [team] [--wait] [--overlay] [--provider X] [--url L] [--size WxH] [--smoke] [--supervised]` —
  * open the game's stream in that provider's persistent Chrome profile, so an
  * existing login is reused. No team = your favorites.
  *
@@ -566,7 +567,8 @@ function pickOrReport(key: string, sport: string): { key: string; label: string;
  *
  * `--wait` blocks until the next game is live, then opens it. `--smoke` opens
  * the window, confirms it came up over CDP, and tears it down (bounded; for
- * scripts and agents).
+ * scripts and agents). `--supervised` lets it run with no TTY on purpose (the
+ * daemon opens a game this way; the window's close ends it).
  * `--overlay` adds the live-stats overlay, which follows the game you open.
  */
 async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
@@ -609,8 +611,10 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
     const target = url ?? pick.hub;
     return overlay ? smokeLeagueOverlay(cfg, target, pick.label, windowSize) : smokeWatch(target, pick.label, windowSize);
   }
-  // watch blocks until the window is closed; with no TTY nothing ever closes it.
-  if (process.stdin.isTTY !== true) {
+  // watch blocks until the window is closed; with no TTY nothing ever closes it
+  // — unless `--supervised`: the daemon deliberately runs it detached, with no
+  // TTY, to open a game window that the user closes.
+  if (process.stdin.isTTY !== true && !args.includes("--supervised")) {
     console.error(c.yellow("`watch` is interactive — it opens a stream window and blocks until you close it."));
     console.error(c.dim(`Run it in a terminal, or use \`sportsing ${cfg.sport} watch --smoke\` to just confirm the window opens.`));
     process.exitCode = 1;
@@ -619,7 +623,7 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
 
   if (scope === undefined) scope = await watchScope(cfg, args);
   if (!scope) {
-    console.error(c.red(`Usage: sportsing ${cfg.sport} watch <team> [--wait] [--overlay] [--provider ${pick.key}] [--url <link>] [--smoke]`));
+    console.error(c.red(`Usage: sportsing ${cfg.sport} watch <team> [--wait] [--overlay] [--provider ${pick.key}] [--url <link>] [--smoke] [--supervised]`));
     console.error(c.dim(`Or add a favorite (sportsing ${cfg.sport} fav add ${EXAMPLE_TEAM[cfg.sport] ?? "<team>"}) and omit the team.`));
     process.exitCode = 1;
     return;
@@ -671,6 +675,28 @@ export async function leagueAlerter(cfg: LeagueConfig): Promise<Alerter | null> 
   const alerts = await alertFeed(cfg);
   if (!alerts) return null;
   return { label: cfg.label, teams: alerts.teams, poll: async () => alerts.feed(await liveGames(cfg)) };
+}
+
+/**
+ * The league's favorite games for `sportsing daemon`: live and nearby ones
+ * from the scoreboards (local yesterday → tomorrow), each routed the way
+ * `watch` would. When none of those is upcoming, the favorites' next scheduled
+ * game is added from their season schedules (5-min cache) so status can say
+ * what it's waiting for. Null with no (resolvable) favorites.
+ */
+export async function leagueDaemonGames(cfg: LeagueConfig): Promise<DaemonGame[] | null> {
+  const favs = await getFavorites(cfg.sport);
+  if (favs.length === 0) return null;
+  const ids = favoriteIds(cfg, await getTeams(cfg.league), favs);
+  if (ids.size === 0) return null;
+  const [all, watch, fallback] = await Promise.all([liveGames(cfg), watchContext(cfg), watchFallback(cfg)]);
+  const games = all.filter((g) => gameHasTeam(g, ids));
+  const now = Date.now();
+  if (!games.some((g) => g.state === "pre" && Date.parse(g.date) >= now)) {
+    const later = firstUpcoming(await scopedSeasons(cfg, ids), now);
+    if (later && !games.some((g) => g.id === later.id)) games.push(later);
+  }
+  return games.map((g) => leagueDaemonGame(cfg.sport, cfg.icon, g, ids, leagueRoute(g, watch, fallback)));
 }
 
 /** Full-screen live board: in play, later today, finished today. */

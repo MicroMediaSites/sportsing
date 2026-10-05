@@ -2,11 +2,13 @@ import { c } from "../ansi.ts";
 import { getMatches, NoKeyError } from "../api.ts";
 import { matchLine, fmtTimeOnly, stageLabel } from "../format.ts";
 import { ymd, addDays, localDateOf, sortByDate } from "./_lib.ts";
-import { getApiKey, getFavorites } from "../config.ts";
+import { getApiKey, getFavorites, getStreamProvider } from "../config.ts";
+import type { DaemonGame } from "../daemon.ts";
+
 import { diffEvents, type MatchEvent } from "../events.ts";
 import { LIVE_REFRESH_MS, raise, type Alert, type Alerter } from "../alerts.ts";
 import { inTerminal, selfInvocation, watchCommand } from "../click-to-watch.ts";
-import { matchHasTeam } from "../match-util.ts";
+import { matchHasTeam, matchState } from "../match-util.ts";
 import type { Match } from "../types.ts";
 
 export async function live(args: string[] = []) {
@@ -151,6 +153,32 @@ export async function fifaAlerter(): Promise<Alerter | null> {
   if (!(await getApiKey())) throw new Error("FIFA alerts need an API key — run `sportsing fifa setup`.");
   const feed = fifaFeed(favorites, selfInvocation());
   return { label: "FIFA", teams: favorites, poll: async () => feed(await matchesToday()) };
+}
+
+/** FIFA's favorite matches today for `sportsing daemon`; null with no FIFA
+ *  favorites. Opens like `fifa watch <fav> --wait` (the configured provider). */
+export async function fifaDaemonGames(): Promise<DaemonGame[] | null> {
+  const favorites = await getFavorites("fifa");
+  if (favorites.length === 0) return null;
+  if (!(await getApiKey())) throw new Error("needs an API key — run `sportsing fifa setup`");
+  const provider = (await getStreamProvider("fifa")) ?? "fubo";
+  return (await matchesToday()).flatMap((m): DaemonGame[] => {
+    const fav = favorites.find((f) => matchHasTeam(m, f.trim().toLowerCase()))?.trim();
+    if (!fav) return [];
+    return [
+      {
+        key: `fifa:${m.id}`,
+        sport: "fifa",
+        icon: "⚽",
+        fixture: `${m.homeTeam.tla ?? m.homeTeam.name} v ${m.awayTeam.tla ?? m.awayTeam.name}`,
+        start: m.utcDate,
+        state: matchState(m),
+        openArgs: ["fifa", "watch", fav, "--wait", "--supervised"],
+        clickArgs: ["fifa", "watch", fav],
+        route: { kind: "open", note: provider },
+      },
+    ];
+  });
 }
 
 /**

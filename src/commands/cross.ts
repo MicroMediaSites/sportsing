@@ -19,13 +19,17 @@ import { fifa, fifaHasCommand } from "../sports/fifa.ts";
 import { NBA, nba } from "../sports/nba.ts";
 import { NHL, nhl } from "../sports/nhl.ts";
 import type { Match } from "../types.ts";
-import { fifaAlerter } from "./live.ts";
+import { matchState } from "../match-util.ts";
+import { fifaAlerter, fifaDaemonGames } from "./live.ts";
+import type { DaemonGame } from "../daemon.ts";
+import { daemonFooter } from "../daemon-io.ts";
 import { EXAMPLE_TEAM, addDays, localDateOf, matchHasTeam, withFallback, ymd } from "./_lib.ts";
 import {
   favoriteIds,
   gameHasTeam,
   gamesOnDays,
   leagueAlerter,
+  leagueDaemonGames,
   leagueHasCommand,
   parseOffset,
   teamSeason,
@@ -63,16 +67,13 @@ export interface Sport {
   favoriteTeams: () => Promise<TeamRows[] | null>;
   /** Favorite-team live alerter; null when the sport has no favorites. */
   alerter: () => Promise<Alerter | null>;
+  /** Favorite games for `sportsing daemon`; null when the sport has no favorites. */
+  daemonGames: () => Promise<DaemonGame[] | null>;
 }
 
 // ── FIFA (football-data `Match`) ─────────────────────────────────────────────
 
-/** A football-data match status as a sport-neutral game state. */
-export function matchState(m: Pick<Match, "status">): GameState {
-  if (m.status === "IN_PLAY" || m.status === "PAUSED") return "in";
-  if (m.status === "FINISHED" || m.status === "AWARDED") return "post";
-  return "pre";
-}
+export { matchState };
 
 const matchRow = (m: Match): Row => ({ id: String(m.id), start: m.utcDate, state: matchState(m), line: matchLine(m) });
 
@@ -89,6 +90,7 @@ const FIFA: Sport = {
   run: fifa,
   has: fifaHasCommand,
   alerter: fifaAlerter,
+  daemonGames: fifaDaemonGames,
   async favoritesOn(day) {
     const favs = await getFavorites("fifa");
     if (favs.length === 0) return null;
@@ -132,6 +134,7 @@ function league(cfg: LeagueConfig, run: Sport["run"]): Sport {
     run,
     has: leagueHasCommand,
     alerter: () => leagueAlerter(cfg),
+    daemonGames: () => leagueDaemonGames(cfg),
     async favoritesOn(day) {
       const favs = await favoriteTeamsOf();
       if (!favs) return null;
@@ -240,7 +243,15 @@ async function perSport<T>(sports: Sport[], load: (s: Sport) => Promise<T | null
 }
 
 /** `today [--tomorrow|--yesterday|--offset N]` — your teams' games on one local day. */
-export async function today(sports: Sport[], args: string[]): Promise<void> {
+/** Supplies the one-line daemon footer under today / next / me (null = none). */
+export type Footer = () => string | null;
+
+function printFooter(footer?: Footer): void {
+  const line = footer?.();
+  if (line) console.log("\n" + c.dim(line));
+}
+
+export async function today(sports: Sport[], args: string[], footer?: Footer): Promise<void> {
   const offset = parseOffset(args);
   const day = addDays(new Date(), offset);
   const loaded = await perSport(sports, (s) => s.favoritesOn(day));
@@ -251,16 +262,16 @@ export async function today(sports: Sport[], args: string[]): Promise<void> {
 
   const label = offset === 0 ? "Today" : offset === 1 ? "Tomorrow" : offset === -1 ? "Yesterday" : ymd(day);
   console.log(c.bold(c.cyan(`★ Your teams — ${label} (${ymd(day)})`)));
-  if (rows.length === 0) {
-    console.log(c.dim("\nNo games for your teams."));
-    return;
+  if (rows.length === 0) console.log(c.dim("\nNo games for your teams."));
+  else {
+    console.log();
+    for (const { sport, row } of rows) console.log("  " + tagged(sport, row.line));
   }
-  console.log();
-  for (const { sport, row } of rows) console.log("  " + tagged(sport, row.line));
+  printFooter(footer);
 }
 
 /** `next` — each favorite team's next game, soonest first, with countdowns. */
-export async function next(sports: Sport[]): Promise<void> {
+export async function next(sports: Sport[], footer?: Footer): Promise<void> {
   const loaded = await perSport(sports, (s) => s.favoriteTeams());
   if (!loaded) return;
   const now = Date.now();
@@ -269,18 +280,16 @@ export async function next(sports: Sport[]): Promise<void> {
     .sort((a, b) => byStart(a.row, b.row));
 
   console.log(c.bold(c.cyan("★ Your teams — Next up")));
-  if (rows.length === 0) {
-    console.log(c.dim("\nNo upcoming games for your teams."));
-    return;
-  }
+  if (rows.length === 0) console.log(c.dim("\nNo upcoming games for your teams."));
   for (const { sport, row } of rows) {
     console.log("\n  " + tagged(sport, row.line));
     console.log(`  ${c.bold(fmtDate(row.start))}  ${c.green("— starts " + relativeTime(row.start))}`);
   }
+  printFooter(footer);
 }
 
 /** `me` — every favorite team, every sport: last result and next game. */
-export async function me(sports: Sport[]): Promise<void> {
+export async function me(sports: Sport[], footer?: Footer): Promise<void> {
   const loaded = await perSport(sports, (s) => s.favoriteTeams());
   if (!loaded) return;
   const now = Date.now();
@@ -295,6 +304,7 @@ export async function me(sports: Sport[]): Promise<void> {
       if (!last && !next) console.log(c.dim("  no games found"));
     }
   }
+  printFooter(footer);
 }
 
 /** Startup line for bare `live`, e.g. "NBA: Utah Jazz · NHL: Utah Mammoth". */
@@ -342,10 +352,10 @@ export async function live(sports: Sport[], args: string[]): Promise<void> {
 
 /** Dispatch a bare `sportsing <cmd> …` (no sport prefix). */
 export async function bare(cmd: string, args: string[]): Promise<void> {
-  if (cmd === "today" || cmd === "t") return today(SPORTS, args);
+  if (cmd === "today" || cmd === "t") return today(SPORTS, args, daemonFooter);
   if (cmd === "live") return live(SPORTS, args);
   const run = cmd === "next" || cmd === "n" ? next : cmd === "me" ? me : null;
-  if (run && args.length === 0) return run(SPORTS);
+  if (run && args.length === 0) return run(SPORTS, daemonFooter);
   // Options on `next`/`me` (e.g. `--team`) are per-sport: say so rather than ignore them.
   const [first, ...rest] = bareHint(cmd, args, SPORTS, run !== null);
   console.error(c.red(first!));

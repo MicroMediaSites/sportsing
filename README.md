@@ -97,7 +97,7 @@ through playoffs. Times are local; preseason games are tagged `PRE`, postseason
 | `season [team]` | Your favorites' season: record, home/away splits, playoff race |
 | `bracket [--season YYYY]` | Playoff bracket (projected before the postseason) |
 | `fav [add\|rm\|list]` | Manage NBA favorites (`fav add UTAH`, `fav add Jazz`) |
-| `watch [team] [--wait] [--provider X] [--url L] [--smoke]` | Open the game where you can watch it — see **Where to watch** below |
+| `watch [team] [--wait] [--provider X] [--url L] [--smoke] [--supervised]` | Open the game where you can watch it — see **Where to watch** below |
 | `live [--notify [--quiet]]` | Auto-refreshing live board; `--notify` alerts for favorites — see **Live fav-alerts** below |
 | `analyze <team> [team]` | AI read of the live or latest game: shooting, boards, turnovers, leaders (answered by `serve`; `--prompt` prints it) |
 | `predict <team> [team]` | AI prediction for the next game from both teams' recent form |
@@ -174,13 +174,55 @@ sportsing next       # each favorite's next game + countdown, soonest first
 sportsing me         # last result + next game per favorite team
 ```
 
-Bare `live --notify` alerts across every sport too (see **Live fav-alerts**).
+Bare `live --notify` alerts across every sport too (see **Live fav-alerts**),
+and `sportsing daemon` opens your teams' games when they start (see **Daemon**).
 Every other command needs a sport — a bare one (e.g. `sportsing standings`)
 prints the sports that have it and exits non-zero.
 
 Favorites are stored per sport as `<sport>:<team>` (`nba:UTAH`, `nhl:UTAH`,
 `fifa:USA`) in `~/.config/sportsing/config.json`; add and remove them with each
 sport's `fav` command.
+
+## Daemon — open your teams' games automatically
+
+`sportsing daemon` is an always-on watcher (a per-user launchd agent on macOS):
+it polls every sport you have a favorite in and, when a favorite's game starts,
+does what `<sport> watch` would — Fubo / League Pass **opens the game window**;
+an over-the-air-only game gets a notification naming the channel; an
+unwatchable one gets a notification saying why. It's set up once and survives
+logins and `sportsing upgrade`.
+
+```sh
+sportsing daemon install       # write + load ~/Library/LaunchAgents/com.sportsing.daemon.plist
+sportsing daemon status        # is it running, what it's waiting for, what it last did
+sportsing daemon logs [-f]     # its log (~/Library/Logs/sportsing/daemon.log)
+sportsing daemon mode notify   # notify (click to watch) instead of auto-opening; `open` is the default
+sportsing daemon uninstall     # stop + remove it
+```
+
+- **Status at a glance.** Bare `today` / `next` / `me` end with a one-line
+  footer — `daemon: on — waiting for DEN @ UTAH 7:00 PM`, `daemon: off —
+  sportsing daemon install`, or `daemon: stuck — last poll 47m ago`.
+  `daemon status` shows installed / pid + uptime / last poll / next game and
+  where it'll open / last game acted on, flags **STUCK** when the last poll is
+  older than ~3 poll intervals, and exits 0 only when it's running and healthy
+  (scriptable).
+- **Each game is acted on once** (remembered in
+  `~/.cache/sportsing/daemon-state.json`): close the window and it stays closed;
+  a crash or restart doesn't open it twice. A game already under way that it
+  hasn't acted on yet (say the Mac woke mid-game) is opened then.
+- **Polling** is sparse (every 10 min) until 15 minutes before a favorite's
+  scheduled start, then every 30s until it goes live — including a delayed
+  start (up to 3h late).
+- **One sport failing** (e.g. FIFA without an API key) shows as a warning in
+  `status`; the others keep working.
+- **Install from a global install** (`npm install -g sportsing` or
+  `bun add -g sportsing`): the agent runs that install's stable `sportsing`
+  bin, and `sportsing upgrade` restarts it on the new version. Preview the
+  plist without installing: `sportsing daemon install --dry-run`.
+- The daemon opens the window as a detached `sportsing <sport> watch <team>
+  --supervised` (no terminal needed; closing the window ends it). Set up where
+  you watch first (`sportsing subscriptions set …`, see **Where to watch**).
 
 ## Upgrading to 0.2.0
 
@@ -311,6 +353,11 @@ One supervisor loop that **is** the whole setup: it opens your game and keeps th
 **Ask Claude** and **Get caught up** (catchup) are actually answered — by that
 Claude session itself (no local model is ever spawned). `sportsing fifa agent-setup`
 prints this recipe; `sportsing fifa` and the watch nag point at it.
+
+> **NBA / NHL:** just to have your team's games open when they start, you don't
+> need this loop — use **`sportsing daemon install`** (see **Daemon**). It runs
+> without a Claude session and works across every sport with a favorite.
+> `/loop agent-setup` is for the FIFA overlay's Ask Claude / Get caught up.
 
 > **The cost, honestly:** the loop consumes that Claude session as the always-on
 > answerer for as long as it runs — that's the trade you're choosing. Stop the loop
