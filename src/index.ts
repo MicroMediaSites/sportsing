@@ -1,20 +1,15 @@
 #!/usr/bin/env bun
 import { c } from "./ansi.ts";
 import { ApiError } from "./api.ts";
-import { fifa } from "./sports/fifa.ts";
-import { nba } from "./sports/nba.ts";
-import { nhl } from "./sports/nhl.ts";
+import { SPORTS as REGISTRY, bare } from "./commands/cross.ts";
 import { subscriptions } from "./commands/subscriptions.ts";
 
 const VERSION = "0.1.0";
 
-// Sport namespaces. Add a new sport by writing src/sports/<sport>.ts with a
-// dispatcher `(args: string[]) => unknown` and registering it here.
-const SPORTS: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
-  fifa,
-  nba,
-  nhl,
-};
+// Sport namespaces. Add a new sport by writing src/sports/<sport>.ts and
+// registering it in SPORTS in src/commands/cross.ts (which also makes the bare
+// cross-sport commands include it).
+const SPORTS = Object.fromEntries(REGISTRY.map((s) => [s.key, s.run]));
 
 function help() {
   const b = c.bold;
@@ -22,25 +17,28 @@ function help() {
 
 ${b("USAGE")}
   sportsing <sport> <command> [options]
+  sportsing <today|next|me>          ${c.dim("your favorite teams, every sport")}
 
 ${b("SPORTS")}
   ${c.green("fifa")}               FIFA World Cup 2026 ${c.dim("— sportsing fifa help")}
   ${c.green("nba")}                NBA, preseason through playoffs ${c.dim("— sportsing nba help")}
   ${c.green("nhl")}                NHL, preseason through playoffs ${c.dim("— sportsing nhl help")}
 
+${b("YOUR TEAMS")} ${c.dim("(favorites across every sport, each row tagged with its sport)")}
+  ${c.green("today")}              Your teams' games today ${c.dim("(--tomorrow, --yesterday, --offset N)")}
+  ${c.green("next")}               Each team's next game + countdown
+  ${c.green("me")}                 Dashboard: last result + next game per team
+  ${c.dim("Add favorites per sport: sportsing nba fav add UTAH")}
+
 ${b("SETTINGS")}
   ${c.green("subscriptions")}      What you can watch with + home market ${c.dim("— alias: subs")}
-
-${b("NOTE")}
-  During the World Cup, the ${b("fifa")} prefix is optional —
-  ${c.dim("sportsing today")} is shorthand for ${c.dim("sportsing fifa today")}.
 
 ${b("EXAMPLES")}
   sportsing fifa today
   sportsing fifa next --team USA
   sportsing nba schedule --team UTAH
   sportsing nhl next --team UTAH
-  sportsing today              ${c.dim("(= sportsing fifa today)")}
+  sportsing today              ${c.dim("(your teams, every sport)")}
 `);
 }
 
@@ -66,11 +64,8 @@ async function dispatch(): Promise<void> {
     return;
   }
 
-  // Back-compat: while FIFA is the only sport, a bare `sportsing <command>`
-  // runs as a FIFA command (`sportsing today` == `sportsing fifa today`).
-  // An unknown token surfaces as "Unknown fifa command". Delete this line when
-  // a second sport lands so bare commands require an explicit sport prefix.
-  await fifa([first, ...rest]);
+  // Bare `today`/`next`/`me` run across every sport; anything else gets a hint.
+  await bare(first, rest);
 }
 
 async function main() {

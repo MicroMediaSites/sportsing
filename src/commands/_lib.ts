@@ -43,7 +43,7 @@ export async function withFallback<T>(
       console.error(
         c.yellow(
           "No API key set — showing the offline schedule (no live scores/tables).\n" +
-            "Run `sportsing setup` for live data.",
+            "Run `sportsing fifa setup` for live data.",
         ) + "\n",
       );
       const matches = await getOpenFootballMatches();

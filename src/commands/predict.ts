@@ -49,7 +49,7 @@ export async function predict(args: string[]) {
   }
 
   process.stderr.write(c.dim("Posted to the ask bus — waiting for your Claude agent to answer…\n"));
-  process.stderr.write(c.dim("(keep one serving:  /loop sportsing serve)\n"));
+  process.stderr.write(c.dim("(keep one serving:  /loop sportsing fifa serve)\n"));
   const id = await postQuestion({
     source: "predict",
     question: prompt,
@@ -60,7 +60,7 @@ export async function predict(args: string[]) {
   const prediction = await waitForAnswer(id, 180_000);
   if (prediction === null) {
     console.error(c.yellow("No Claude agent answered within 3 minutes."));
-    console.error(c.dim("Start a serving agent in another Claude session, then retry:  /loop sportsing serve"));
+    console.error(c.dim("Start a serving agent in another Claude session, then retry:  /loop sportsing fifa serve"));
     console.error(c.dim("Or run with --prompt to predict elsewhere."));
     process.exitCode = 1;
     return;

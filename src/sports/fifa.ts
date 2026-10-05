@@ -59,6 +59,11 @@ const ALIASES: Record<string, string> = {
   knockout: "bracket",
 };
 
+/** True if `sportsing fifa <cmd>` is a command (or alias). */
+export function fifaHasCommand(cmd: string): boolean {
+  return Object.hasOwn(ROUTES, cmd) || Object.hasOwn(ALIASES, cmd);
+}
+
 /** Dispatch a `sportsing fifa <command>` invocation. Args are everything after `fifa`. */
 export async function fifa(args: string[]): Promise<void> {
   const [cmd, ...rest] = args;
@@ -80,7 +85,7 @@ function fifaHelp(): void {
 
 ${b("USAGE")}
   sportsing fifa <command> [options]
-  ${c.dim("(during the World Cup, the `fifa` prefix is optional — `sportsing today` works too)")}
+  ${c.dim("(bare `sportsing today|next|me` cover your favorites across every sport)")}
 
 ${b("COMMANDS")}
   ${c.green("today")}              Matches today  ${c.dim("(--tomorrow, --yesterday, --offset N)")}
@@ -102,7 +107,7 @@ ${b("COMMANDS")}
   ${c.green("predict")} ${c.dim("<team> [team]")} AI prediction of an upcoming match ${c.dim("(--prompt)")}
   ${c.green("recap")}  ${c.dim("<team> [team]")} "Here's what you missed" — AI recap of a match's key events ${c.dim("(--prompt)")}
   ${c.green("agent-setup")}        Set up an agent-driven watch session ${c.dim("(points at /loop agent-setup)")}
-  ${c.green("serve")}              Serve the AI bus from a Claude agent ${c.dim("(use: /loop sportsing serve)")}
+  ${c.green("serve")}              Serve the AI bus from a Claude agent ${c.dim("(use: /loop sportsing fifa serve)")}
   ${c.green("ask")}    ${c.dim("--next|--reply")} Low-level AI-bus plumbing ${c.dim("(serve wraps this)")}
   ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
   ${c.green("me")}                 Dashboard for your favorite teams
@@ -123,7 +128,7 @@ ${b("AI (analyze / predict / overlay “Ask Claude”)")}
     ${c.dim("/loop agent-setup")}              ${c.dim("# opens the game + answers Ask/catchup (see: sportsing fifa agent-setup)")}
   ${b("Or compose the two steps yourself:")}
     ${c.dim("sportsing fifa watch --wait")}   ${c.dim("# (backgrounded) opens the game when live")}
-    ${c.dim("/loop sportsing serve")}          ${c.dim("# answers Ask questions + analyze/predict")}
+    ${c.dim("/loop sportsing fifa serve")}          ${c.dim("# answers Ask questions + analyze/predict")}
   Without an answerer loop, the Ask panel shows “No agent”. The serve loop just
   waits for prompts; each tick prints a question for you to answer + reply.
 

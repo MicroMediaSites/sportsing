@@ -9,7 +9,7 @@ browser-streaming window and is installed (with its native binary) automatically
 ```
 sportsing fifa today
 sportsing fifa next --team USA
-sportsing today              # the `fifa` prefix is optional during the World Cup
+sportsing today              # your favorite teams across every sport (fifa, nba, nhl)
 ```
 
 ## Install
@@ -39,7 +39,8 @@ scores or tables).
 
 ## Commands
 
-`sportsing fifa <command>` (or just `sportsing <command>` during the Cup):
+`sportsing fifa <command>` (bare `sportsing today|next|me` cover your favorites
+across every sport — see **Your teams, every sport** below):
 
 | Command | What it does |
 |---|---|
@@ -86,6 +87,21 @@ final status uses hockey periods: `12:34 - 2nd`, `End of 3rd`, `OT`, `SO`,
 `--team X` takes an abbreviation or name — `UTAH`, `UTA`, `Mammoth`, and
 NHL.com codes like `TBL` / `LAK` all work. NHL favorites (`fav add UTAH`) are
 separate from NBA and FIFA ones, so the Jazz and the Mammoth can both be `UTAH`.
+
+## Your teams, every sport
+
+Bare `today`, `next`, and `me` (no sport prefix) aggregate your favorite teams
+across every sport, each row tagged with its sport:
+
+```sh
+sportsing nba fav add UTAH && sportsing nhl fav add UTAH
+sportsing today      # the Jazz and the Mammoth today (--tomorrow, --yesterday, --offset N)
+sportsing next       # each favorite's next game + countdown, soonest first
+sportsing me         # last result + next game per favorite team
+```
+
+Every other command needs a sport — a bare one (e.g. `sportsing standings`)
+prints the sports that have it and exits non-zero.
 
 ## Watch
 
@@ -200,13 +216,13 @@ but `serve` remains the primitive if you want to compose it yourself:
 
 ```sh
 sportsing fifa watch --wait    # (backgrounded) opens the game when it's live
-/loop sportsing serve          # answer-only loop — no watch supervision
+/loop sportsing fifa serve     # answer-only loop — no watch supervision
 ```
 
 > **Run the answerer in a minimal-tool session.** Whether via `agent-setup` or
 > `serve`, the loop reads **untrusted** text (viewer questions + raw API fields)
 > into a tool-capable Claude session. Give that session no MCP/file tools and only
-> the `sportsing ask --reply` Bash capability, so a prompt-injection in a question
+> the `sportsing fifa ask --reply` Bash capability, so a prompt-injection in a question
 > can't reach anything dangerous. `serve` prints this reminder each tick.
 
 ## Development
