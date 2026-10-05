@@ -1,0 +1,265 @@
+{
+  "header": {
+    "competitions": [
+      {
+        "date": "2026-10-03T23:00Z",
+        "status": {
+          "period": null,
+          "displayClock": null,
+          "type": {
+            "state": "post",
+            "shortDetail": "Final"
+          }
+        },
+        "competitors": [
+          {
+            "homeAway": "home",
+            "score": "1",
+            "id": "29",
+            "team": {
+              "id": "29",
+              "abbreviation": "CBJ",
+              "displayName": "Columbus Blue Jackets"
+            }
+          },
+          {
+            "homeAway": "away",
+            "score": "4",
+            "id": "129764",
+            "team": {
+              "id": "129764",
+              "abbreviation": "UTA",
+              "displayName": "Utah Mammoth"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "boxscore": {
+    "teams": [
+      {
+        "team": {
+          "id": "129764",
+          "abbreviation": "UTA"
+        },
+        "statistics": [
+          {
+            "name": "blockedShots",
+            "displayValue": "16"
+          },
+          {
+            "name": "hits",
+            "displayValue": "26"
+          },
+          {
+            "name": "takeaways",
+            "displayValue": "5"
+          },
+          {
+            "name": "shotsTotal",
+            "displayValue": "31"
+          },
+          {
+            "name": "powerPlayGoals",
+            "displayValue": "3"
+          },
+          {
+            "name": "powerPlayOpportunities",
+            "displayValue": "4"
+          },
+          {
+            "name": "powerPlayPct",
+            "displayValue": "75.0"
+          },
+          {
+            "name": "shortHandedGoals",
+            "displayValue": "0"
+          },
+          {
+            "name": "shootoutGoals",
+            "displayValue": "0"
+          },
+          {
+            "name": "faceoffsWon",
+            "displayValue": "27"
+          },
+          {
+            "name": "faceoffPercent",
+            "displayValue": "44.3"
+          },
+          {
+            "name": "giveaways",
+            "displayValue": "24"
+          },
+          {
+            "name": "penalties",
+            "displayValue": "2"
+          },
+          {
+            "name": "penaltyMinutes",
+            "displayValue": "4"
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "29",
+          "abbreviation": "CBJ"
+        },
+        "statistics": [
+          {
+            "name": "blockedShots",
+            "displayValue": "23"
+          },
+          {
+            "name": "hits",
+            "displayValue": "21"
+          },
+          {
+            "name": "takeaways",
+            "displayValue": "8"
+          },
+          {
+            "name": "shotsTotal",
+            "displayValue": "18"
+          },
+          {
+            "name": "powerPlayGoals",
+            "displayValue": "0"
+          },
+          {
+            "name": "powerPlayOpportunities",
+            "displayValue": "2"
+          },
+          {
+            "name": "powerPlayPct",
+            "displayValue": "0.0"
+          },
+          {
+            "name": "shortHandedGoals",
+            "displayValue": "0"
+          },
+          {
+            "name": "shootoutGoals",
+            "displayValue": "0"
+          },
+          {
+            "name": "faceoffsWon",
+            "displayValue": "34"
+          },
+          {
+            "name": "faceoffPercent",
+            "displayValue": "55.7"
+          },
+          {
+            "name": "giveaways",
+            "displayValue": "23"
+          },
+          {
+            "name": "penalties",
+            "displayValue": "4"
+          },
+          {
+            "name": "penaltyMinutes",
+            "displayValue": "8"
+          }
+        ]
+      }
+    ],
+    "players": [
+      {
+        "team": {
+          "id": "129764",
+          "abbreviation": "UTA"
+        },
+        "statistics": [
+          {
+            "name": "goalies",
+            "keys": [
+              "goalsAgainst",
+              "shotsAgainst",
+              "shootoutSaves",
+              "shootoutShotsAgainst",
+              "saves",
+              "savePct",
+              "evenStrengthSaves",
+              "powerPlaySaves",
+              "shortHandedSaves",
+              "timeOnIce",
+              "ytdGoals",
+              "penaltyMinutes"
+            ],
+            "athletes": [
+              {
+                "athlete": {
+                  "shortName": "S. Cossa"
+                },
+                "stats": [
+                  "1",
+                  "18",
+                  "0",
+                  "0",
+                  "17",
+                  ".944",
+                  "15",
+                  "2",
+                  "0",
+                  "60:00",
+                  "0",
+                  "0"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "29",
+          "abbreviation": "CBJ"
+        },
+        "statistics": [
+          {
+            "name": "goalies",
+            "keys": [
+              "goalsAgainst",
+              "shotsAgainst",
+              "shootoutSaves",
+              "shootoutShotsAgainst",
+              "saves",
+              "savePct",
+              "evenStrengthSaves",
+              "powerPlaySaves",
+              "shortHandedSaves",
+              "timeOnIce",
+              "ytdGoals",
+              "penaltyMinutes"
+            ],
+            "athletes": [
+              {
+                "athlete": {
+                  "shortName": "J. Greaves"
+                },
+                "stats": [
+                  "4",
+                  "31",
+                  "0",
+                  "0",
+                  "27",
+                  ".871",
+                  "21",
+                  "5",
+                  "1",
+                  "60:00",
+                  "0",
+                  "0"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

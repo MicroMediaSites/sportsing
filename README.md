@@ -104,6 +104,15 @@ NBA favorites. NBA favorites are separate from FIFA ones.
 subscriptions (see **Where to watch**). `sportsing nba watch` opens Jazz games on
 Fubo by default.
 
+`sportsing nba watch [team] --overlay` opens Fubo's NBA hub with a live-stats
+overlay (same gear / settings / spoiler-delay as the FIFA one) that follows the
+game you open, recognized from the page title's English team names. NBA panels:
+score & clock, FG% / 3P%, leaders (PTS / REB / AST), fouls, timeouts. On an NHL
+game page (`sportsing nhl watch --provider fubo --overlay`): score & clock,
+shots on goal, power plays, faceoff %, goalie saves. Panel choices are saved per
+provider and sport (`overlayPanels["fubo:nba"]`). `--overlay --smoke` checks the
+overlay renders, then tears the window down.
+
 ## NHL
 
 `sportsing nhl <command>` — the same commands as `nba`, for the NHL (ESPN, no

@@ -26,6 +26,7 @@ import {
   withWatchColumn,
   type WatchContext,
 } from "../watch-route.ts";
+import { runLeagueOverlay, smokeLeagueOverlay } from "../league-overlay.ts";
 import { EXAMPLE_TEAM, addDays, getFlag, localDateOf, mineFavorites, noFavoritesHint, ymd } from "./_lib.ts";
 import { fav } from "./fav.ts";
 import { leagueAnalyze, leaguePredict, leagueRecap, type LeagueGames } from "./league-ai.ts";
@@ -551,7 +552,7 @@ function pickOrReport(key: string, sport: string): { key: string; label: string;
 }
 
 /**
- * `watch [team] [--wait] [--provider X] [--url L] [--size WxH] [--smoke]` —
+ * `watch [team] [--wait] [--overlay] [--provider X] [--url L] [--size WxH] [--smoke]` —
  * open the game's stream in that provider's persistent Chrome profile, so an
  * existing login is reused. No team = your favorites.
  *
@@ -566,6 +567,7 @@ function pickOrReport(key: string, sport: string): { key: string; label: string;
  * `--wait` blocks until the next game is live, then opens it. `--smoke` opens
  * the window, confirms it came up over CDP, and tears it down (bounded; for
  * scripts and agents).
+ * `--overlay` adds the live-stats overlay, which follows the game you open.
  */
 async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
   const url = getFlag(args, "--url");
@@ -601,8 +603,12 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
   }
   let pick = pickOrReport(key, cfg.sport);
   if (!pick) return;
+  const overlay = args.includes("--overlay");
 
-  if (args.includes("--smoke")) return smokeWatch(url ?? pick.hub, pick.label, windowSize);
+  if (args.includes("--smoke")) {
+    const target = url ?? pick.hub;
+    return overlay ? smokeLeagueOverlay(cfg, target, pick.label, windowSize) : smokeWatch(target, pick.label, windowSize);
+  }
   // watch blocks until the window is closed; with no TTY nothing ever closes it.
   if (process.stdin.isTTY !== true) {
     console.error(c.yellow("`watch` is interactive — it opens a stream window and blocks until you close it."));
@@ -613,14 +619,16 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
 
   if (scope === undefined) scope = await watchScope(cfg, args);
   if (!scope) {
-    console.error(c.red(`Usage: sportsing ${cfg.sport} watch <team> [--wait] [--provider ${pick.key}] [--url <link>] [--smoke]`));
+    console.error(c.red(`Usage: sportsing ${cfg.sport} watch <team> [--wait] [--overlay] [--provider ${pick.key}] [--url <link>] [--smoke]`));
     console.error(c.dim(`Or add a favorite (sportsing ${cfg.sport} fav add ${EXAMPLE_TEAM[cfg.sport] ?? "<team>"}) and omit the team.`));
     process.exitCode = 1;
     return;
   }
 
+  let g: Game | null = routed;
   if (args.includes("--wait")) {
     const live = await waitForLeagueLive(cfg, scope.ids, scope.label);
+    g = live;
     // A different game than the one routed above (or none was): route this one.
     if (routing && live.id !== routed?.id) {
       const liveKey = routeWatch(live, routing, fallback);
@@ -628,11 +636,16 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
       if (liveKey !== pick.key && !(pick = pickOrReport(liveKey, cfg.sport))) return;
     }
   } else if (!routed) {
-    const g = watchTarget(await scopedSeasons(cfg, scope.ids), Date.now());
+    g = watchTarget(await scopedSeasons(cfg, scope.ids), Date.now());
     console.log(g ? describeWatchGame(g) : c.dim(`No upcoming ${cfg.label} games for ${scope.label}.`));
   }
   // No per-game deep link (yet): open the hub and pick the game's tile.
   if (!url) console.log(c.dim(`Opening ${pick.label}'s ${cfg.label} hub — pick the game there (use --url for a direct link).`));
+  if (overlay) {
+    // Yesterday + today: a late game started yesterday can still be on.
+    const gamesNow = () => gamesOnDays(cfg, addDays(new Date(), -1), 2);
+    return runLeagueOverlay(cfg, { url: url ?? pick.hub, provider: pick, game: g, gamesNow, windowSize });
+  }
   await launchStream(url ?? pick.hub, pick.label, { windowSize, icon: cfg.icon });
 }
 
@@ -782,7 +795,7 @@ ${b("COMMANDS")}
   ${c.green("analyze")} ${c.dim("<team> [team]")}  AI read of the live or latest game ${c.dim("(--prompt)")}
   ${c.green("predict")} ${c.dim("<team> [team]")}  AI prediction for the next game ${c.dim("(--prompt)")}
   ${c.green("recap")}   ${c.dim("<team> [team]")}  AI "here's what you missed" ${c.dim("(--prompt)")}
-  ${c.green("watch")}  ${c.dim("[team]")}      Open the stream where you can watch it ${c.dim("(--wait, --provider, --url, --smoke)")}
+  ${c.green("watch")}  ${c.dim("[team]")}      Open the stream where you can watch it ${c.dim("(--wait, --overlay, --provider, --url, --smoke)")}
   ${c.green("live")}               Auto-refreshing live board ${c.dim("(--notify: favorites' alerts; --quiet: alerts only)")}
 
 ${b("FILTER")}

@@ -1,0 +1,1117 @@
+{
+  "header": {
+    "competitions": [
+      {
+        "date": "2026-10-04T23:00Z",
+        "status": {
+          "period": null,
+          "displayClock": null,
+          "type": {
+            "state": "post",
+            "shortDetail": "Final"
+          }
+        },
+        "competitors": [
+          {
+            "homeAway": "home",
+            "score": "97",
+            "id": "7",
+            "team": {
+              "id": "7",
+              "abbreviation": "DEN",
+              "displayName": "Denver Nuggets"
+            }
+          },
+          {
+            "homeAway": "away",
+            "score": "109",
+            "id": "26",
+            "team": {
+              "id": "26",
+              "abbreviation": "UTAH",
+              "displayName": "Utah Jazz"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "boxscore": {
+    "teams": [
+      {
+        "team": {
+          "id": "26",
+          "abbreviation": "UTAH"
+        },
+        "statistics": [
+          {
+            "name": "fieldGoalsMade-fieldGoalsAttempted",
+            "displayValue": "39-93"
+          },
+          {
+            "name": "fieldGoalPct",
+            "displayValue": "42"
+          },
+          {
+            "name": "threePointFieldGoalsMade-threePointFieldGoalsAttempted",
+            "displayValue": "15-45"
+          },
+          {
+            "name": "threePointFieldGoalPct",
+            "displayValue": "33"
+          },
+          {
+            "name": "freeThrowsMade-freeThrowsAttempted",
+            "displayValue": "16-20"
+          },
+          {
+            "name": "freeThrowPct",
+            "displayValue": "80"
+          },
+          {
+            "name": "totalRebounds",
+            "displayValue": "54"
+          },
+          {
+            "name": "offensiveRebounds",
+            "displayValue": "14"
+          },
+          {
+            "name": "defensiveRebounds",
+            "displayValue": "40"
+          },
+          {
+            "name": "assists",
+            "displayValue": "28"
+          },
+          {
+            "name": "steals",
+            "displayValue": "4"
+          },
+          {
+            "name": "blocks",
+            "displayValue": "5"
+          },
+          {
+            "name": "turnovers",
+            "displayValue": "10"
+          },
+          {
+            "name": "teamTurnovers",
+            "displayValue": "1"
+          },
+          {
+            "name": "totalTurnovers",
+            "displayValue": "11"
+          },
+          {
+            "name": "technicalFouls",
+            "displayValue": "0"
+          },
+          {
+            "name": "totalTechnicalFouls",
+            "displayValue": "0"
+          },
+          {
+            "name": "flagrantFouls",
+            "displayValue": "0"
+          },
+          {
+            "name": "turnoverPoints",
+            "displayValue": "15"
+          },
+          {
+            "name": "fastBreakPoints",
+            "displayValue": "8"
+          },
+          {
+            "name": "pointsInPaint",
+            "displayValue": "34"
+          },
+          {
+            "name": "fouls",
+            "displayValue": "25"
+          },
+          {
+            "name": "largestLead",
+            "displayValue": "18"
+          },
+          {
+            "name": "leadChanges",
+            "displayValue": "2"
+          },
+          {
+            "name": "leadPercentage",
+            "displayValue": "88"
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "7",
+          "abbreviation": "DEN"
+        },
+        "statistics": [
+          {
+            "name": "fieldGoalsMade-fieldGoalsAttempted",
+            "displayValue": "36-89"
+          },
+          {
+            "name": "fieldGoalPct",
+            "displayValue": "40"
+          },
+          {
+            "name": "threePointFieldGoalsMade-threePointFieldGoalsAttempted",
+            "displayValue": "11-39"
+          },
+          {
+            "name": "threePointFieldGoalPct",
+            "displayValue": "28"
+          },
+          {
+            "name": "freeThrowsMade-freeThrowsAttempted",
+            "displayValue": "14-21"
+          },
+          {
+            "name": "freeThrowPct",
+            "displayValue": "67"
+          },
+          {
+            "name": "totalRebounds",
+            "displayValue": "47"
+          },
+          {
+            "name": "offensiveRebounds",
+            "displayValue": "12"
+          },
+          {
+            "name": "defensiveRebounds",
+            "displayValue": "35"
+          },
+          {
+            "name": "assists",
+            "displayValue": "27"
+          },
+          {
+            "name": "steals",
+            "displayValue": "4"
+          },
+          {
+            "name": "blocks",
+            "displayValue": "8"
+          },
+          {
+            "name": "turnovers",
+            "displayValue": "11"
+          },
+          {
+            "name": "teamTurnovers",
+            "displayValue": "0"
+          },
+          {
+            "name": "totalTurnovers",
+            "displayValue": "11"
+          },
+          {
+            "name": "technicalFouls",
+            "displayValue": "0"
+          },
+          {
+            "name": "totalTechnicalFouls",
+            "displayValue": "0"
+          },
+          {
+            "name": "flagrantFouls",
+            "displayValue": "0"
+          },
+          {
+            "name": "turnoverPoints",
+            "displayValue": "15"
+          },
+          {
+            "name": "fastBreakPoints",
+            "displayValue": "14"
+          },
+          {
+            "name": "pointsInPaint",
+            "displayValue": "40"
+          },
+          {
+            "name": "fouls",
+            "displayValue": "23"
+          },
+          {
+            "name": "largestLead",
+            "displayValue": "6"
+          },
+          {
+            "name": "leadChanges",
+            "displayValue": "2"
+          },
+          {
+            "name": "leadPercentage",
+            "displayValue": "11"
+          }
+        ]
+      }
+    ]
+  },
+  "leaders": [
+    {
+      "team": {
+        "id": "7",
+        "abbreviation": "DEN"
+      },
+      "leaders": [
+        {
+          "name": "points",
+          "leaders": [
+            {
+              "displayValue": "14",
+              "athlete": {
+                "shortName": "J. Strawther"
+              }
+            }
+          ]
+        },
+        {
+          "name": "assists",
+          "leaders": [
+            {
+              "displayValue": "7",
+              "athlete": {
+                "shortName": "N. Jokic"
+              }
+            }
+          ]
+        },
+        {
+          "name": "rebounds",
+          "leaders": [
+            {
+              "displayValue": "7",
+              "athlete": {
+                "shortName": "M. Bagley III"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "team": {
+        "id": "26",
+        "abbreviation": "UTAH"
+      },
+      "leaders": [
+        {
+          "name": "points",
+          "leaders": [
+            {
+              "displayValue": "17",
+              "athlete": {
+                "shortName": "L. Markkanen"
+              }
+            }
+          ]
+        },
+        {
+          "name": "assists",
+          "leaders": [
+            {
+              "displayValue": "4",
+              "athlete": {
+                "shortName": "I. Collier"
+              }
+            }
+          ]
+        },
+        {
+          "name": "rebounds",
+          "leaders": [
+            {
+              "displayValue": "7",
+              "athlete": {
+                "shortName": "M. Bamba"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "plays": [
+    {
+      "type": {
+        "text": "Shooting Foul"
+      },
+      "text": "Cameron Johnson shooting foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 1
+      }
+    },
+    {
+      "type": {
+        "text": "Shooting Foul"
+      },
+      "text": "Jusuf Nurkic shooting foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 1
+      }
+    },
+    {
+      "type": {
+        "text": "Full Timeout"
+      },
+      "text": "Jazz Full timeout",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 1
+      }
+    },
+    {
+      "type": {
+        "text": "Shooting Foul"
+      },
+      "text": "Darryn Peterson shooting foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 1
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Jaren Jackson Jr. personal foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 1
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Keyonte George personal foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 1
+      }
+    },
+    {
+      "type": {
+        "text": "Full Timeout"
+      },
+      "text": "Nuggets Full timeout",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 1
+      }
+    },
+    {
+      "type": {
+        "text": "Loose Ball Foul"
+      },
+      "text": "Julian Strawther loose ball foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 1
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Isaiah Collier personal foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 1
+      }
+    },
+    {
+      "type": {
+        "text": "Shooting Foul"
+      },
+      "text": "Trevon Brazile shooting foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 1
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Tyus Jones personal foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 1
+      }
+    },
+    {
+      "type": {
+        "text": "End Period"
+      },
+      "text": "End of the 1st Quarter",
+      "team": null,
+      "period": {
+        "number": 1
+      }
+    },
+    {
+      "type": {
+        "text": "Loose Ball Foul"
+      },
+      "text": "Jaren Jackson Jr. loose ball foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Josh Okogie personal foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Shooting Foul"
+      },
+      "text": "Darryn Peterson shooting foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Darryn Peterson personal foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Jaren Jackson Jr. personal foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Zeke Nnaji personal foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Shooting Foul"
+      },
+      "text": "Jusuf Nurkic shooting foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Shooting Foul"
+      },
+      "text": "Ryan Nembhard shooting foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Full Timeout"
+      },
+      "text": "Nuggets Full timeout",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Keyonte George personal foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Ryan Nembhard personal foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Shooting Foul"
+      },
+      "text": "Ryan Nembhard shooting foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Cameron Johnson personal foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Full Timeout"
+      },
+      "text": "Nuggets Full timeout",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Full Timeout"
+      },
+      "text": "Jazz Full timeout",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Nikola Jokic personal foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Shooting Foul"
+      },
+      "text": "Isaiah Collier shooting foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Shooting Foul"
+      },
+      "text": "Cameron Johnson shooting foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Shooting Foul"
+      },
+      "text": "Nikola Jokic shooting foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "End Period"
+      },
+      "text": "End of the 2nd Quarter",
+      "team": null,
+      "period": {
+        "number": 2
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Keyonte George personal foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Ace Bailey personal foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Full Timeout"
+      },
+      "text": "Jazz Full timeout",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Cam Whitmore personal foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Keyonte George personal foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Trevon Brazile personal foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Full Timeout"
+      },
+      "text": "Jazz Full timeout",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Shooting Foul"
+      },
+      "text": "Trevon Brazile shooting foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Offensive Foul"
+      },
+      "text": "Zeke Nnaji offensive foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Offensive Foul Turnover"
+      },
+      "text": "Zeke Nnaji offensive foul turnover",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Offensive Foul"
+      },
+      "text": "Ace Bailey offensive foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Offensive Foul Turnover"
+      },
+      "text": "Ace Bailey offensive foul turnover",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Cam Whitmore personal foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Shooting Foul"
+      },
+      "text": "Julian Strawther shooting foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Full Timeout"
+      },
+      "text": "Nuggets Full timeout",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Tamar Bates personal foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Blake Hinson personal foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Offensive Foul"
+      },
+      "text": "Zeke Nnaji offensive foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Offensive Foul Turnover"
+      },
+      "text": "Zeke Nnaji offensive foul turnover",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "End Period"
+      },
+      "text": "End of the 3rd Quarter",
+      "team": null,
+      "period": {
+        "number": 3
+      }
+    },
+    {
+      "type": {
+        "text": "Shooting Foul"
+      },
+      "text": "Blake Hinson shooting foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 4
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Tamar Bates personal foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 4
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Harrison Ingram personal foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 4
+      }
+    },
+    {
+      "type": {
+        "text": "Loose Ball Foul"
+      },
+      "text": "DaRon Holmes II loose ball foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 4
+      }
+    },
+    {
+      "type": {
+        "text": "Shooting Foul"
+      },
+      "text": "Alpha Diallo shooting foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 4
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Trey Alexander personal foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 4
+      }
+    },
+    {
+      "type": {
+        "text": "Personal Foul"
+      },
+      "text": "Trevon Brazile personal foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 4
+      }
+    },
+    {
+      "type": {
+        "text": "Full Timeout"
+      },
+      "text": "Nuggets Full timeout",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 4
+      }
+    },
+    {
+      "type": {
+        "text": "Loose Ball Foul"
+      },
+      "text": "Harrison Ingram loose ball foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 4
+      }
+    },
+    {
+      "type": {
+        "text": "Loose Ball Foul"
+      },
+      "text": "Alpha Diallo loose ball foul",
+      "team": {
+        "id": "7"
+      },
+      "period": {
+        "number": 4
+      }
+    },
+    {
+      "type": {
+        "text": "Shooting Foul"
+      },
+      "text": "Tamar Bates shooting foul",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 4
+      }
+    },
+    {
+      "type": {
+        "text": "Full Timeout"
+      },
+      "text": "Jazz Full timeout",
+      "team": {
+        "id": "26"
+      },
+      "period": {
+        "number": 4
+      }
+    },
+    {
+      "type": {
+        "text": "End Period"
+      },
+      "text": "End of the 4th Quarter",
+      "team": null,
+      "period": {
+        "number": 4
+      }
+    }
+  ]
+}
