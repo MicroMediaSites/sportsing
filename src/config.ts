@@ -25,7 +25,8 @@ interface Config {
   streamProviders?: Record<string, string>;
   /** Calibrated overlay delay (seconds) per provider, to sync stats to the stream. */
   streamDelay?: Record<string, number>;
-  /** Overlay panel choices (the gear/settings) — per provider → { panel: on }. */
+  /** Overlay panel choices (the gear/settings) — per provider (FIFA) or
+   *  provider:sport (e.g. "fubo:nba") → { panel: on }. */
   overlayPanels?: Record<string, Record<string, boolean>>;
   /** What the user can watch with (see SUBSCRIPTIONS in watchability.ts). */
   subscriptions?: string[];
@@ -115,11 +116,16 @@ export async function setStreamDelay(provider: string, seconds: number): Promise
   await writeConfig(cfg);
 }
 
-/** Overlay panel visibility for a provider (defaults merged with saved choices). */
-export async function getOverlayPanels(provider: string): Promise<Record<string, boolean>> {
+/** Overlay panel visibility for a provider (defaults merged with saved choices).
+ *  `provider` is the overlayPanels key: the provider (FIFA, e.g. "fubo") or
+ *  provider:sport for the league overlays (e.g. "fubo:nba"), whose panels differ. */
+export async function getOverlayPanels(
+  provider: string,
+  defaults: Record<string, boolean> = OVERLAY_PANEL_DEFAULTS,
+): Promise<Record<string, boolean>> {
   const cfg = await readConfig();
   const saved = cfg.overlayPanels?.[provider.trim().toLowerCase()] ?? {};
-  return { ...OVERLAY_PANEL_DEFAULTS, ...saved };
+  return { ...defaults, ...saved };
 }
 
 export async function setOverlayPanel(provider: string, key: string, on: boolean): Promise<void> {

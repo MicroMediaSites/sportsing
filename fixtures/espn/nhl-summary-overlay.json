@@ -1,0 +1,380 @@
+{
+  "header": {
+    "competitions": [
+      {
+        "date": "2026-10-03T23:00Z",
+        "status": {
+          "period": null,
+          "displayClock": null,
+          "type": {
+            "state": "post",
+            "shortDetail": "Final"
+          }
+        },
+        "competitors": [
+          {
+            "homeAway": "home",
+            "score": "1",
+            "id": "29",
+            "team": {
+              "id": "29",
+              "abbreviation": "CBJ",
+              "displayName": "Columbus Blue Jackets"
+            }
+          },
+          {
+            "homeAway": "away",
+            "score": "4",
+            "id": "129764",
+            "team": {
+              "id": "129764",
+              "abbreviation": "UTA",
+              "displayName": "Utah Mammoth"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "boxscore": {
+    "teams": [
+      {
+        "team": {
+          "id": "129764",
+          "abbreviation": "UTA"
+        },
+        "statistics": [
+          {
+            "name": "blockedShots",
+            "label": "Blocked Shots",
+            "displayValue": "16"
+          },
+          {
+            "name": "hits",
+            "label": "Hits",
+            "displayValue": "26"
+          },
+          {
+            "name": "takeaways",
+            "label": "Takeaways",
+            "displayValue": "5"
+          },
+          {
+            "name": "shotsTotal",
+            "label": "Shots",
+            "displayValue": "31"
+          },
+          {
+            "name": "powerPlayGoals",
+            "label": "Power Play Goals",
+            "displayValue": "3"
+          },
+          {
+            "name": "powerPlayOpportunities",
+            "label": "Power Play Opportunities",
+            "displayValue": "4"
+          },
+          {
+            "name": "powerPlayPct",
+            "label": "Power Play Percentage",
+            "displayValue": "75.0"
+          },
+          {
+            "name": "shortHandedGoals",
+            "label": "Short Handed Goals",
+            "displayValue": "0"
+          },
+          {
+            "name": "shootoutGoals",
+            "label": "Shootout Goals",
+            "displayValue": "0"
+          },
+          {
+            "name": "faceoffsWon",
+            "label": "Faceoffs Won",
+            "displayValue": "27"
+          },
+          {
+            "name": "faceoffPercent",
+            "label": "Faceoff Win Percent",
+            "displayValue": "44.3"
+          },
+          {
+            "name": "giveaways",
+            "label": "Giveaways",
+            "displayValue": "24"
+          },
+          {
+            "name": "penalties",
+            "label": "Total Penalties",
+            "displayValue": "2"
+          },
+          {
+            "name": "penaltyMinutes",
+            "label": "Penalty Minutes",
+            "displayValue": "4"
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "29",
+          "abbreviation": "CBJ"
+        },
+        "statistics": [
+          {
+            "name": "blockedShots",
+            "label": "Blocked Shots",
+            "displayValue": "23"
+          },
+          {
+            "name": "hits",
+            "label": "Hits",
+            "displayValue": "21"
+          },
+          {
+            "name": "takeaways",
+            "label": "Takeaways",
+            "displayValue": "8"
+          },
+          {
+            "name": "shotsTotal",
+            "label": "Shots",
+            "displayValue": "18"
+          },
+          {
+            "name": "powerPlayGoals",
+            "label": "Power Play Goals",
+            "displayValue": "0"
+          },
+          {
+            "name": "powerPlayOpportunities",
+            "label": "Power Play Opportunities",
+            "displayValue": "2"
+          },
+          {
+            "name": "powerPlayPct",
+            "label": "Power Play Percentage",
+            "displayValue": "0.0"
+          },
+          {
+            "name": "shortHandedGoals",
+            "label": "Short Handed Goals",
+            "displayValue": "0"
+          },
+          {
+            "name": "shootoutGoals",
+            "label": "Shootout Goals",
+            "displayValue": "0"
+          },
+          {
+            "name": "faceoffsWon",
+            "label": "Faceoffs Won",
+            "displayValue": "34"
+          },
+          {
+            "name": "faceoffPercent",
+            "label": "Faceoff Win Percent",
+            "displayValue": "55.7"
+          },
+          {
+            "name": "giveaways",
+            "label": "Giveaways",
+            "displayValue": "23"
+          },
+          {
+            "name": "penalties",
+            "label": "Total Penalties",
+            "displayValue": "4"
+          },
+          {
+            "name": "penaltyMinutes",
+            "label": "Penalty Minutes",
+            "displayValue": "8"
+          }
+        ]
+      }
+    ],
+    "players": [
+      {
+        "team": {
+          "id": "129764"
+        },
+        "statistics": [
+          {
+            "name": "goalies",
+            "labels": [
+              "GA",
+              "SA",
+              "SOS",
+              "SOSA",
+              "SV",
+              "SV%",
+              "ESSV",
+              "PPSV",
+              "SHSV",
+              "TOI",
+              "YTDG",
+              "PIM"
+            ],
+            "athletes": [
+              {
+                "athlete": {
+                  "displayName": "Sebastian Cossa"
+                },
+                "stats": [
+                  "1",
+                  "18",
+                  "0",
+                  "0",
+                  "17",
+                  ".944",
+                  "15",
+                  "2",
+                  "0",
+                  "60:00",
+                  "0",
+                  "0"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "team": {
+          "id": "29"
+        },
+        "statistics": [
+          {
+            "name": "goalies",
+            "labels": [
+              "GA",
+              "SA",
+              "SOS",
+              "SOSA",
+              "SV",
+              "SV%",
+              "ESSV",
+              "PPSV",
+              "SHSV",
+              "TOI",
+              "YTDG",
+              "PIM"
+            ],
+            "athletes": [
+              {
+                "athlete": {
+                  "displayName": "Jet Greaves"
+                },
+                "stats": [
+                  "4",
+                  "31",
+                  "0",
+                  "0",
+                  "27",
+                  ".871",
+                  "21",
+                  "5",
+                  "1",
+                  "60:00",
+                  "0",
+                  "0"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "leaders": [
+    {
+      "team": {
+        "id": "29"
+      },
+      "leaders": [
+        {
+          "name": "goals",
+          "displayName": "Goals",
+          "leaders": [
+            {
+              "displayValue": "1",
+              "athlete": {
+                "displayName": "Kent Johnson"
+              }
+            }
+          ]
+        },
+        {
+          "name": "assists",
+          "displayName": "Assists",
+          "leaders": [
+            {
+              "displayValue": "1",
+              "athlete": {
+                "displayName": "Matthew Knies"
+              }
+            }
+          ]
+        },
+        {
+          "name": "points",
+          "displayName": "Points",
+          "leaders": [
+            {
+              "displayValue": "1",
+              "athlete": {
+                "displayName": "Kent Johnson"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "team": {
+        "id": "129764"
+      },
+      "leaders": [
+        {
+          "name": "goals",
+          "displayName": "Goals",
+          "leaders": [
+            {
+              "displayValue": "2",
+              "athlete": {
+                "displayName": "Nick Schmaltz"
+              }
+            }
+          ]
+        },
+        {
+          "name": "assists",
+          "displayName": "Assists",
+          "leaders": [
+            {
+              "displayValue": "2",
+              "athlete": {
+                "displayName": "Dylan Guenther"
+              }
+            }
+          ]
+        },
+        {
+          "name": "points",
+          "displayName": "Points",
+          "leaders": [
+            {
+              "displayValue": "3",
+              "athlete": {
+                "displayName": "Dylan Guenther"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "plays": []
+}

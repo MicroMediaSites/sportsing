@@ -21,35 +21,33 @@ import { fenceSafe } from "./prompt-fence.ts";
  *  deep-link tile-scorer (AGT-543) and the post-landing warning (AGT-544). */
 export type WatchLang = "english" | "spanish";
 
-const BOOTSTRAP = [
-  "(function(){",
-  "if(window.__sbInit)return;window.__sbInit=true;",
-  "var D=" + JSON.stringify(OVERLAY_PANEL_DEFAULTS) + ";", // panel defaults — single source of truth (config.ts)
-  "var PANELS=[['score','Score & clock'],['stats','Possession / shots'],['winprob','Win-probability breakdown'],['odds','Odds line'],['h2h','Head-to-head'],['events','Live events'],['scores','Other live scores'],['ask','Ask Claude'],['catchup','Get caught up']];",
-  // HTML-escape AND quote-escape: textContent→innerHTML handles <>&, but these
-  // values are also interpolated into double-quoted attributes (e.g. data-watch),
-  // so escape \" and ' too — API-controlled fields (ids) must not break out of an attr.
-  "function esc(s){var d=document.createElement('div');d.appendChild(document.createTextNode(String(s==null?'':s)));return d.innerHTML.replace(/\"/g,'&quot;').replace(/'/g,'&#39;');}",
-  "function row(label,a,b){return '<div style=\"display:flex;justify-content:space-between;margin-top:3px\"><span>'+esc(a)+'</span><span style=\"color:#8b949e\">'+label+'</span><span>'+esc(b)+'</span></div>';}",
-  // One outcome row for the win-probability breakdown: a colour dot + label on
-  // the left, the percentage right-aligned. (The old layout reused row(), whose
-  // 3-column [a][label][b] shape scattered the three outcomes awkwardly.)
-  // `col` lands in a style attribute, so guard it to a hex literal (defence in
-  // depth — callers pass constants, but this keeps the contract safe). label/pct
-  // are HTML-escaped via esc(); pct should already be a clamped number.
-  "function wprow(col,label,pct){var sc=/^#[0-9a-fA-F]{3,8}$/.test(col)?col:'#8b949e';return '<div style=\"display:flex;justify-content:space-between;font-size:12px;padding:1px 0\"><span><span style=\"color:'+sc+'\">\\u25cf</span> '+esc(label)+'</span><b>'+esc(pct)+'%</b></div>';}",
-  "function show(id,on){var e=document.getElementById(id);if(e)e.style.display=on?(e.dataset.disp||''):'none';}",
-  "function fmtCd(ms){var s=Math.max(0,Math.floor(ms/1000));return 'in '+Math.floor(s/60)+':'+('0'+(s%60)).slice(-2);}",
-  "function statusCell(state,kickoff,detail,id){if(state==='in')return '<span data-watch=\"'+esc(id)+'\" style=\"color:#3fb950;cursor:pointer;font-weight:700\">\\u25cf LIVE \\u25b6</span>';if(state==='pre'){var k=Date.parse(kickoff||'');var ms=k-Date.now();if(k&&ms>0&&ms<=1800000)return '<span style=\"color:#d29922;font-size:11px\">'+fmtCd(ms)+'</span>';if(k)return '<span style=\"color:#8b949e;font-size:11px\">'+esc(new Date(k).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}))+'</span>';}return '<span style=\"color:#8b949e;font-size:11px\">'+esc(detail||'')+'</span>';}",
-  "function cb(key,label,checked){return '<label style=\"display:flex;align-items:center;gap:8px;padding:3px 0;cursor:pointer\"><input type=\"checkbox\" data-k=\"'+key+'\"'+(checked?' checked':'')+'>'+esc(label)+'</label>';}",
-  // A separately-draggable element: drag from `handle`; if the press doesn't
-  // move (a click), fire onClick instead — lets the gear be both draggable and
-  // a button. Presses that start on an input/button/label don't initiate a drag.
-  "function draggable(el,handle,onClick){handle.addEventListener('mousedown',function(e){if(e.target.closest('input,a')||(e.target.closest('button')&&e.target!==handle))return;var sx=e.clientX,sy=e.clientY,l=el.offsetLeft,t=el.offsetTop,moved=false;function mm(ev){var dx=ev.clientX-sx,dy=ev.clientY-sy;if(!moved&&Math.abs(dx)+Math.abs(dy)<4)return;moved=true;el.style.left=(l+dx)+'px';el.style.top=(t+dy)+'px';el.style.right='auto';el.style.bottom='auto';}function mu(){document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu);if(!moved&&onClick)onClick();}document.addEventListener('mousemove',mm);document.addEventListener('mouseup',mu);});}",
-  "function call(o){if(window.__sbCall)window.__sbCall(JSON.stringify(o));}",
-  "function mk(){",
-  "  if(!document.body){return setTimeout(mk,200);}",
-  "  if(document.getElementById('sb-gear'))return;",
+// ── Shared overlay chrome (page-side JS) ────────────────────────────────────
+// The pieces every stream overlay shares — FIFA's here and the NBA/NHL one in
+// league-overlay.ts: helper functions, the floating gear, the settings modal
+// (panel checkboxes + delay slider), and their wiring. Each overlay supplies
+// its own PANELS / D (defaults) and stats window, then splices these in.
+
+// HTML-escape AND quote-escape: textContent→innerHTML handles <>&, but these
+// values are also interpolated into double-quoted attributes (e.g. data-watch),
+// so escape \" and ' too — API-controlled fields (ids) must not break out of an attr.
+export const JS_ESC =
+  "function esc(s){var d=document.createElement('div');d.appendChild(document.createTextNode(String(s==null?'':s)));return d.innerHTML.replace(/\"/g,'&quot;').replace(/'/g,'&#39;');}";
+export const JS_ROW =
+  "function row(label,a,b){return '<div style=\"display:flex;justify-content:space-between;margin-top:3px\"><span>'+esc(a)+'</span><span style=\"color:#8b949e\">'+label+'</span><span>'+esc(b)+'</span></div>';}";
+export const JS_SHOW =
+  "function show(id,on){var e=document.getElementById(id);if(e)e.style.display=on?(e.dataset.disp||''):'none';}";
+export const JS_CB =
+  "function cb(key,label,checked){return '<label style=\"display:flex;align-items:center;gap:8px;padding:3px 0;cursor:pointer\"><input type=\"checkbox\" data-k=\"'+key+'\"'+(checked?' checked':'')+'>'+esc(label)+'</label>';}";
+// A separately-draggable element: drag from `handle`; if the press doesn't
+// move (a click), fire onClick instead — lets the gear be both draggable and
+// a button. Presses that start on an input/button/label don't initiate a drag.
+export const JS_DRAGGABLE =
+  "function draggable(el,handle,onClick){handle.addEventListener('mousedown',function(e){if(e.target.closest('input,a')||(e.target.closest('button')&&e.target!==handle))return;var sx=e.clientX,sy=e.clientY,l=el.offsetLeft,t=el.offsetTop,moved=false;function mm(ev){var dx=ev.clientX-sx,dy=ev.clientY-sy;if(!moved&&Math.abs(dx)+Math.abs(dy)<4)return;moved=true;el.style.left=(l+dx)+'px';el.style.top=(t+dy)+'px';el.style.right='auto';el.style.bottom='auto';}function mu(){document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu);if(!moved&&onClick)onClick();}document.addEventListener('mousemove',mm);document.addEventListener('mouseup',mu);});}";
+export const JS_CALL =
+  "function call(o){if(window.__sbCall)window.__sbCall(JSON.stringify(o));}";
+
+/** Inside mk(): create the gear (`gear`) and the settings modal (`set`). */
+export const JS_SHELL_CREATE = [
   // (a) the always-present floating gear — draggable, and a click toggles settings.
   "  var gear=document.createElement('button');gear.id='sb-gear';gear.title='settings';gear.textContent='\\u2699';",
   "  gear.style.cssText='position:fixed;top:16px;right:16px;z-index:2147483647;width:34px;height:34px;border-radius:50%;background:rgba(12,12,16,0.94);color:#8b949e;border:none;cursor:pointer;font-size:17px;line-height:34px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,0.5);user-select:none';",
@@ -65,9 +63,71 @@ const BOOTSTRAP = [
   + "<div style=\"margin-top:11px;font-size:11px\"><div style=\"display:flex;justify-content:space-between;color:#8b949e\"><span>delay</span><span id=\"sb-delay\">0s</span></div><input id=\"sb-slider\" type=\"range\" min=\"0\" max=\"300\" step=\"5\" value=\"0\" style=\"width:100%;margin-top:4px;accent-color:#1f6feb\"></div>"
   + "<div style=\"color:#555;font-size:10px;margin-top:6px\">delay trails your stream to avoid spoilers (up to 5 min)</div></div>';",
   "  document.body.appendChild(set);",
+];
+
+/** Style for the stats window (`stats`), created by each overlay's mk(). */
+export const STATS_CSS =
+  "position:fixed;top:16px;left:16px;z-index:2147483646;width:262px;border-radius:10px;background:rgba(12,12,16,0.94);color:#e6edf3;font:13px/1.45 system-ui,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,0.6);user-select:none;display:none";
+
+/** Inside mk(), after `gear`/`set`/`stats` exist: dragging, the settings close
+ *  button, one checkbox per PANELS entry (checked from D), and the delay slider. */
+export const JS_SHELL_WIRE = [
+  "  function toggleSet(){set.style.display=set.style.display==='none'?'block':'none';}",
+  "  draggable(gear,gear,toggleSet);",
+  "  draggable(set,document.getElementById('sb-set-head'));",
+  "  draggable(stats,document.getElementById('sb-stats-head'));",
+  "  document.getElementById('sb-set-x').addEventListener('click',function(){set.style.display='none';});",
+  "  var cbs=document.getElementById('sb-cbs');cbs.innerHTML=PANELS.map(function(p){return cb(p[0],p[1],!!D[p[0]]);}).join('');",
+  "  cbs.addEventListener('change',function(e){if(e.target&&e.target.dataset.k)call({fn:'pref',key:e.target.dataset.k,on:e.target.checked});});",
+  "  document.getElementById('sb-slider').addEventListener('input',function(e){call({fn:'delay',set:Number(e.target.value)});});",
+];
+
+/** Inside window.__sb.update(d), with `P` = d.panels: keep the settings
+ *  controls (delay label, slider, checkboxes) in sync regardless of which
+ *  window is visible. */
+export const JS_SYNC_SETTINGS = [
+  "    var dl=document.getElementById('sb-delay'),sl=document.getElementById('sb-slider'),dv=d.delay||0;if(dl)dl.textContent=dv>=60?(Math.floor(dv/60)+'m '+(dv%60)+'s'):(dv+'s');if(sl&&document.activeElement!==sl)sl.value=dv;",
+  "    var cbx=document.querySelectorAll('#sb-cbs input[data-k]');for(var i=0;i<cbx.length;i++){var k=cbx[i].dataset.k;if(P[k]!==undefined)cbx[i].checked=!!P[k];}",
+];
+
+/** The buffered snapshot from `delaySec` ago — what a (delayed) stream is
+ *  showing: the newest one at or before the cutoff, else the oldest. Null when
+ *  nothing is buffered yet. */
+export function snapshotAtDelay<T>(buffer: { t: number; data: T }[], delaySec: number, now: number): T | null {
+  if (!buffer.length) return null;
+  const cutoff = now - delaySec * 1000;
+  let chosen = buffer[0]!;
+  for (const b of buffer) if (b.t <= cutoff) chosen = b;
+  return chosen.data;
+}
+
+const BOOTSTRAP = [
+  "(function(){",
+  "if(window.__sbInit)return;window.__sbInit=true;",
+  "var D=" + JSON.stringify(OVERLAY_PANEL_DEFAULTS) + ";", // panel defaults — single source of truth (config.ts)
+  "var PANELS=[['score','Score & clock'],['stats','Possession / shots'],['winprob','Win-probability breakdown'],['odds','Odds line'],['h2h','Head-to-head'],['events','Live events'],['scores','Other live scores'],['ask','Ask Claude'],['catchup','Get caught up']];",
+  JS_ESC,
+  JS_ROW,
+  // One outcome row for the win-probability breakdown: a colour dot + label on
+  // the left, the percentage right-aligned. (The old layout reused row(), whose
+  // 3-column [a][label][b] shape scattered the three outcomes awkwardly.)
+  // `col` lands in a style attribute, so guard it to a hex literal (defence in
+  // depth — callers pass constants, but this keeps the contract safe). label/pct
+  // are HTML-escaped via esc(); pct should already be a clamped number.
+  "function wprow(col,label,pct){var sc=/^#[0-9a-fA-F]{3,8}$/.test(col)?col:'#8b949e';return '<div style=\"display:flex;justify-content:space-between;font-size:12px;padding:1px 0\"><span><span style=\"color:'+sc+'\">\\u25cf</span> '+esc(label)+'</span><b>'+esc(pct)+'%</b></div>';}",
+  JS_SHOW,
+  "function fmtCd(ms){var s=Math.max(0,Math.floor(ms/1000));return 'in '+Math.floor(s/60)+':'+('0'+(s%60)).slice(-2);}",
+  "function statusCell(state,kickoff,detail,id){if(state==='in')return '<span data-watch=\"'+esc(id)+'\" style=\"color:#3fb950;cursor:pointer;font-weight:700\">\\u25cf LIVE \\u25b6</span>';if(state==='pre'){var k=Date.parse(kickoff||'');var ms=k-Date.now();if(k&&ms>0&&ms<=1800000)return '<span style=\"color:#d29922;font-size:11px\">'+fmtCd(ms)+'</span>';if(k)return '<span style=\"color:#8b949e;font-size:11px\">'+esc(new Date(k).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}))+'</span>';}return '<span style=\"color:#8b949e;font-size:11px\">'+esc(detail||'')+'</span>';}",
+  JS_CB,
+  JS_DRAGGABLE,
+  JS_CALL,
+  "function mk(){",
+  "  if(!document.body){return setTimeout(mk,200);}",
+  "  if(document.getElementById('sb-gear'))return;",
+  ...JS_SHELL_CREATE,
   // (c) the free-standing stats window — appears only when >=1 panel is enabled.
   "  var stats=document.createElement('div');stats.id='sb-stats';",
-  "  stats.style.cssText='position:fixed;top:16px;left:16px;z-index:2147483646;width:262px;border-radius:10px;background:rgba(12,12,16,0.94);color:#e6edf3;font:13px/1.45 system-ui,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,0.6);user-select:none;display:none';",
+  "  stats.style.cssText='" + STATS_CSS + "';",
   "  stats.innerHTML='"
   + "<div id=\"sb-stats-head\" style=\"display:flex;align-items:center;justify-content:space-between;padding:7px 11px;cursor:move;color:#8b949e;font-size:11px;border-bottom:1px solid #21262d\"><span>\\u26bd live</span><span id=\"sb-fresh\"></span></div>"
   + "<div style=\"padding:9px 13px 11px\">"
@@ -84,14 +144,7 @@ const BOOTSTRAP = [
   + "</div>';",
   "  document.body.appendChild(stats);",
   // wiring
-  "  function toggleSet(){set.style.display=set.style.display==='none'?'block':'none';}",
-  "  draggable(gear,gear,toggleSet);",
-  "  draggable(set,document.getElementById('sb-set-head'));",
-  "  draggable(stats,document.getElementById('sb-stats-head'));",
-  "  document.getElementById('sb-set-x').addEventListener('click',function(){set.style.display='none';});",
-  "  var cbs=document.getElementById('sb-cbs');cbs.innerHTML=PANELS.map(function(p){return cb(p[0],p[1],!!D[p[0]]);}).join('');",
-  "  cbs.addEventListener('change',function(e){if(e.target&&e.target.dataset.k)call({fn:'pref',key:e.target.dataset.k,on:e.target.checked});});",
-  "  document.getElementById('sb-slider').addEventListener('input',function(e){call({fn:'delay',set:Number(e.target.value)});});",
+  ...JS_SHELL_WIRE,
   "  stats.addEventListener('click',function(e){var t=e.target;while(t&&t!==stats){if(t.getAttribute&&t.getAttribute('data-watch')!==null){call({fn:'watch',id:t.getAttribute('data-watch')});return;}t=t.parentElement;}});",
   "  document.getElementById('sb-h2h').addEventListener('click',function(){document.getElementById('sb-h2h-out').textContent='Loading…';call({fn:'headToHead'});});",
   "  var askIn=document.getElementById('sb-ask-in');function doAsk(){var q=(askIn.value||'').trim();if(!q)return;document.getElementById('sb-ask-out').textContent='Asking Claude…';call({fn:'ask',q:q});}",
@@ -104,9 +157,7 @@ const BOOTSTRAP = [
   "function matchList(g){var h='';for(var i=0;i<g.length;i++){h+='<div style=\"display:flex;justify-content:space-between;gap:8px;padding:2px 0\"><span>'+esc(g[i].home)+' '+esc(g[i].hs)+' – '+esc(g[i].as)+' '+esc(g[i].away)+'</span>'+statusCell(g[i].state,g[i].kickoff,g[i].detail,g[i].id)+'</div>';}return h;}",
   "window.__sb={",
   "  update:function(d){mk();var P=d.panels||{};",
-  // keep the settings controls in sync regardless of which window is visible
-  "    var dl=document.getElementById('sb-delay'),sl=document.getElementById('sb-slider'),dv=d.delay||0;if(dl)dl.textContent=dv>=60?(Math.floor(dv/60)+'m '+(dv%60)+'s'):(dv+'s');if(sl&&document.activeElement!==sl)sl.value=dv;",
-  "    var cbx=document.querySelectorAll('#sb-cbs input[data-k]');for(var i=0;i<cbx.length;i++){var k=cbx[i].dataset.k;if(P[k]!==undefined)cbx[i].checked=!!P[k];}",
+  ...JS_SYNC_SETTINGS,
   // today (hub) view — the stats window shows the day's matches regardless of panels
   "    if(d.mode==='today'){show('sb-stats',true);['sb-pl-score','sb-pl-stats','sb-pl-winprob','sb-pl-odds','sb-pl-events','sb-pl-scores','sb-pl-h2h','sb-pl-ask','sb-pl-catchup'].forEach(function(i){show(i,false);});var td=document.getElementById('sb-pl-today');show('sb-pl-today',true);td.innerHTML=matchList(d.games||[])||'<span style=\"color:#8b949e\">no matches today</span>';var fr0=document.getElementById('sb-fresh');if(fr0)fr0.textContent='';return;}",
   // match view — the window appears only when something is enabled
@@ -434,13 +485,7 @@ export async function runOverlayStream(
 
   // The buffered snapshot from `delaySec` ago — what the user's (delayed) stream
   // is actually showing. Used both to render and to build a spoiler-safe recap.
-  const delayedSnapshot = (): Record<string, unknown> | null => {
-    if (!buffer.length) return null;
-    const cutoff = Date.now() - delaySec * 1000;
-    let chosen = buffer[0]!;
-    for (const b of buffer) if (b.t <= cutoff) chosen = b;
-    return chosen.data;
-  };
+  const delayedSnapshot = (): Record<string, unknown> | null => snapshotAtDelay(buffer, delaySec, Date.now());
 
   const renderDelayed = () => {
     const data = delayedSnapshot();
