@@ -940,8 +940,8 @@ export function parseLiveGame(raw: any): LiveGame | null {
   const period = Number(status.period) || lastPeriod;
 
   const sideOf = (homeAway: "home" | "away"): LiveGameSide => {
-    const c = (comp.competitors ?? []).find((x: any) => x?.homeAway === homeAway);
-    const id = String(c?.team?.id ?? c?.id ?? "");
+    const competitor = (comp.competitors ?? []).find((x: any) => x?.homeAway === homeAway);
+    const id = String(competitor?.team?.id ?? competitor?.id ?? "");
     const ofTeam = (x: any) => String(x?.team?.id ?? "") === id;
 
     const stats: Record<string, string> = {};
@@ -977,7 +977,7 @@ export function parseLiveGame(raw: any): LiveGame | null {
       else if (isTeamFoul(t) && (Number(p?.period?.number) || 0) === period) periodFouls++;
     }
 
-    return { id, abbreviation: c?.team?.abbreviation ?? "?", score: scoreOf(c?.score) || "0", stats, leaders, goalies, timeoutsUsed, periodFouls };
+    return { id, abbreviation: competitor?.team?.abbreviation ?? "?", score: scoreOf(competitor?.score) || "0", stats, leaders, goalies, timeoutsUsed, periodFouls };
   };
 
   return { state, detail: status.type?.shortDetail ?? "", period, home: sideOf("home"), away: sideOf("away") };
