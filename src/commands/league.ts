@@ -8,9 +8,11 @@
 // (`--team`, favorites) is resolved to a team via the league's /teams list.
 
 import { c } from "../ansi.ts";
-import { getScoreboardGames, getTeamGames, getTeams, SEASON_TYPES, type EspnTeam, type League } from "../espn.ts";
+import { getScoreboardGames, getStandings, getTeamGames, getTeams, SEASON_TYPES, type EspnTeam, type League } from "../espn.ts";
 import { fmtDate, fmtDayHeader, gameLine, relativeTime } from "../format.ts";
 import type { Game } from "../game.ts";
+import { STANDINGS_LAYOUTS, groupMatches, loadStandingsView, renderStandingsTable, type StandingsLevel } from "../standings.ts";
+import { getFavorites } from "../config.ts";
 import { EXAMPLE_TEAM, addDays, getFlag, localDateOf, mineFavorites, noFavoritesHint, ymd } from "./_lib.ts";
 import { fav } from "./fav.ts";
 
@@ -128,13 +130,18 @@ async function scopeOf(cfg: LeagueConfig, args: string[]): Promise<Scope> {
     const t = resolveTeam(teams, teamArg, cfg.aliases) ?? unknownTeam(cfg, teamArg);
     return { kind: "teams", ids: new Set([t.id]), label: t.name };
   }
+  return { kind: "teams", ids: favoriteIds(cfg, teams, favs!), label: "your favorites" };
+}
+
+/** Resolve favorite names to team ids; unresolvable ones are warned about and skipped. */
+function favoriteIds(cfg: LeagueConfig, teams: EspnTeam[], favs: string[]): Set<string> {
   const ids = new Set<string>();
-  for (const f of favs!) {
+  for (const f of favs) {
     const t = resolveTeam(teams, f, cfg.aliases);
     if (t) ids.add(t.id);
     else console.error(c.yellow(`Skipping favorite "${f}" — not a ${cfg.label} team.`));
   }
-  return { kind: "teams", ids, label: "your favorites" };
+  return ids;
 }
 
 /** Every game for the scoped teams' full seasons. */
@@ -254,6 +261,46 @@ async function results(cfg: LeagueConfig, args: string[]): Promise<void> {
   printByDay(games);
 }
 
+/** `standings [--conference X | --division X]` — regular-season standings,
+ *  favorites highlighted. Tables are the league's default level (NBA
+ *  conferences, NHL divisions); a filter switches to that level and shows the
+ *  one matching table. Before the regular season, last season's final
+ *  standings, labelled as such. */
+async function standings(cfg: LeagueConfig, args: string[]): Promise<void> {
+  const layout = STANDINGS_LAYOUTS[cfg.league];
+  if (!layout) throw new Error(`No standings layout for ${cfg.label}.`);
+  const conference = getFlag(args, "--conference");
+  const division = getFlag(args, "--division");
+  if (conference && division) throw new Error("Use --conference or --division, not both.");
+  const filter = conference ?? division;
+  const level: StandingsLevel = conference ? "conference" : division ? "division" : layout.level;
+
+  const [view, favs] = await Promise.all([
+    loadStandingsView((q) => getStandings(cfg.league, q), level),
+    getFavorites(cfg.sport),
+  ]);
+  if (view.kind === "not-started") {
+    title(cfg, `Standings${view.upcoming ? ` ${view.upcoming}` : ""}`);
+    console.log(c.dim("\nThe regular season hasn't started yet, and ESPN has no earlier standings to show."));
+    return;
+  }
+
+  const { standings: data } = view;
+  const groups = filter ? data.groups.filter((g) => groupMatches(g, filter)) : data.groups;
+  if (groups.length === 0) {
+    const names = data.groups.map((g) => g.abbreviation || g.name).join(", ");
+    throw new Error(`No ${cfg.label} ${level} "${filter}". Try one of: ${names}.`);
+  }
+  const ids = favs.length > 0 ? favoriteIds(cfg, await getTeams(cfg.league), favs) : new Set<string>();
+
+  title(cfg, `Standings ${data.seasonName}${view.kind === "last-season" ? " (final)" : ""}`);
+  if (view.kind === "last-season") {
+    const upcoming = view.upcoming ? `The ${view.upcoming} regular season` : "The regular season";
+    console.log(c.yellow(`${upcoming} hasn't started — showing last season's final standings.`));
+  }
+  for (const g of groups) console.log("\n" + renderStandingsTable(g, layout, ids));
+}
+
 /** `fav [add|rm|list] [team]` — `add` resolves the team against the league's
  *  /teams list and stores its ESPN abbreviation; list/rm are the shared fav. */
 async function leagueFav(cfg: LeagueConfig, args: string[]): Promise<void> {
@@ -271,10 +318,11 @@ const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<vo
   next,
   schedule,
   results,
+  standings,
   fav: leagueFav,
 };
 
-const ALIASES: Record<string, string> = { t: "today", n: "next" };
+const ALIASES: Record<string, string> = { t: "today", n: "next", st: "standings" };
 
 function help(cfg: LeagueConfig): void {
   const b = c.bold;
@@ -290,11 +338,13 @@ ${b("COMMANDS")}
   ${c.green("next")}               Next game + countdown
   ${c.green("schedule")}           A team's whole season, by day ${c.dim(`(league-wide: next ${WINDOW_DAYS} days)`)}
   ${c.green("results")}            Finished games, newest first ${c.dim(`(league-wide: last ${WINDOW_DAYS} days)`)}
+  ${c.green("standings")}          Regular-season standings, favorites ★ ${c.dim("(--conference X, --division X)")}
   ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
 
 ${b("FILTER")}
   ${c.dim("--team X")} on today/next/schedule/results picks one team (abbreviation or name).
   ${c.dim("--mine")} on today/next/schedule/results limits output to your ${cfg.label} favorites.
+  ${c.dim("--conference X")} / ${c.dim("--division X")} on standings shows one table (e.g. West, Pacific).
 
 ${b("TAGS")}
   ${c.yellow("PRE")} preseason · ${c.magenta("POST")} postseason. Times are local.
@@ -307,6 +357,7 @@ ${b("EXAMPLES")}
   sportsing ${s} fav add ${ex}
   sportsing ${s} schedule --team ${ex}
   sportsing ${s} results --mine
+  sportsing ${s} standings --conference West
 `);
 }
 

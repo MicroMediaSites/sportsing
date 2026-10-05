@@ -104,18 +104,21 @@ export function looksOffTeams(raw: any): boolean {
 }
 
 /** Standings drift: either a `children` array of groups (conferences / WC
- *  groups) or a top-level `standings`, each with an `entries` array whose rows
- *  name a team. An empty table (offseason) is fine — shape, not emptiness. */
+ *  groups — or conferences nesting divisions, with `level=3`) or a top-level
+ *  `standings`; every leaf group has an `entries` array whose rows name a team.
+ *  An empty table (offseason) is fine — shape, not emptiness. */
 export function looksOffStandings(raw: any): boolean {
   if (!raw || typeof raw !== "object") return true;
   const groups = Array.isArray(raw.children) ? raw.children : raw.standings ? [raw] : null;
   if (!groups) return true;
-  for (const g of groups) {
-    const entries = g?.standings?.entries;
-    if (!Array.isArray(entries)) return true;
-    if (!entries.every((e: any) => e?.team?.abbreviation && Array.isArray(e?.stats))) return true;
-  }
-  return false;
+  return groups.some(groupLooksOff);
+}
+
+function groupLooksOff(g: any): boolean {
+  if (Array.isArray(g?.children) && !g?.standings) return g.children.length === 0 || g.children.some(groupLooksOff);
+  const entries = g?.standings?.entries;
+  if (!Array.isArray(entries)) return true;
+  return !entries.every((e: any) => e?.team?.abbreviation && Array.isArray(e?.stats));
 }
 
 /** WC2026 scoreboard search window (YYYYMMDD) — opening day → final. */
@@ -356,42 +359,90 @@ export interface EspnStandingsEntry {
 }
 
 export interface EspnStandingsGroup {
-  /** e.g. "Western Conference", "Group A". */
+  /** e.g. "Western Conference", "Pacific Division", "Group A". */
   name: string;
   abbreviation: string;
+  /** The enclosing group for a nested table (a division's conference), else null. */
+  parent: { name: string; abbreviation: string } | null;
   entries: EspnStandingsEntry[];
 }
 
-/** Parse a standings response (conference/group children, or a single
- *  top-level table). Exported for tests. */
-export function parseStandings(raw: any): EspnStandingsGroup[] {
-  const groups: any[] = Array.isArray(raw?.children) ? raw.children : raw?.standings ? [raw] : [];
-  return groups.map((g: any) => ({
-    name: g?.name ?? "",
-    abbreviation: g?.abbreviation ?? "",
-    entries: (g?.standings?.entries ?? []).map((e: any) => ({
-      teamId: String(e?.team?.id ?? ""),
-      team: e?.team?.displayName ?? e?.team?.name ?? "?",
-      abbreviation: e?.team?.abbreviation ?? "",
-      stats: Object.fromEntries(
-        (e?.stats ?? [])
-          .filter((s: any) => s?.name)
-          .map((s: any) => [s.name, String(s.displayValue ?? s.value ?? "")]),
-      ),
-    })),
-  }));
+export interface EspnStandings {
+  /** ESPN season year — the year the season ends (2026-27 → 2027); null if absent. */
+  season: number | null;
+  /** e.g. "2026-27"; "" if absent. */
+  seasonName: string;
+  groups: EspnStandingsGroup[];
 }
 
-/** Current standings for `league`, grouped (NBA/NHL conferences, WC groups). */
-export async function getStandings(league: League, ttlMs = 10 * 60_000): Promise<EspnStandingsGroup[]> {
+/** Parse a standings response's tables (conference/group children, divisions
+ *  nested under conferences, or a single top-level table), flattened to the
+ *  leaf tables in ESPN's order. Exported for tests. */
+export function parseStandings(raw: any): EspnStandingsGroup[] {
+  const groups: any[] = Array.isArray(raw?.children) ? raw.children : raw?.standings ? [raw] : [];
+  return groups.flatMap((g) => leafGroups(g, null));
+}
+
+function leafGroups(g: any, parent: EspnStandingsGroup["parent"]): EspnStandingsGroup[] {
+  const name = g?.name ?? "";
+  const abbreviation = g?.abbreviation ?? "";
+  if (Array.isArray(g?.children) && !g?.standings) {
+    return g.children.flatMap((child: any) => leafGroups(child, { name, abbreviation }));
+  }
+  return [
+    {
+      name,
+      abbreviation,
+      parent,
+      entries: (g?.standings?.entries ?? []).map((e: any) => ({
+        teamId: String(e?.team?.id ?? ""),
+        team: e?.team?.displayName ?? e?.team?.name ?? "?",
+        abbreviation: e?.team?.abbreviation ?? "",
+        stats: Object.fromEntries(
+          (e?.stats ?? [])
+            .filter((s: any) => s?.name)
+            .map((s: any) => [s.name, String(s.displayValue ?? s.value ?? "")]),
+        ),
+      })),
+    },
+  ];
+}
+
+/** Parse a whole standings response: season metadata plus its tables. Exported for tests. */
+export function parseStandingsResponse(raw: any): EspnStandings {
+  const year = Number(raw?.season?.year);
+  return {
+    season: Number.isInteger(year) && year > 0 ? year : null,
+    seasonName: String(raw?.season?.displayName ?? ""),
+    groups: parseStandings(raw),
+  };
+}
+
+/** Which standings to fetch. Omitted fields take ESPN's defaults (current
+ *  season, its current season type, conference tables). */
+export interface StandingsQuery {
+  /** ESPN season year (the year the season ends). */
+  season?: number;
+  seasonType?: SeasonType;
+  /** "division" nests division tables under conferences (`level=3`). */
+  level?: "conference" | "division";
+}
+
+/** Standings for `league`, grouped (NBA/NHL conferences or divisions, WC groups). */
+export async function getStandings(league: League, query: StandingsQuery = {}, ttlMs = 10 * 60_000): Promise<EspnStandings> {
+  const params = new URLSearchParams();
+  if (query.season !== undefined) params.set("season", String(query.season));
+  if (query.seasonType !== undefined) params.set("seasontype", String(query.seasonType));
+  if (query.level === "division") params.set("level", "3");
+  const qs = params.toString();
   const raw = await fetchEspn(
-    `${STANDINGS_BASE}/${league}/standings`,
-    espnCacheKey(league, "standings"),
+    `${STANDINGS_BASE}/${league}/standings${qs ? `?${qs}` : ""}`,
+    espnCacheKey(league, "standings", qs),
     ttlMs,
     "standings",
   );
   if (looksOffStandings(raw)) warnDriftOnce();
-  return parseStandings(raw);
+  return parseStandingsResponse(raw);
 }
 
 /** Every tournament event — played and upcoming (opening day → final). The full
