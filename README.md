@@ -135,8 +135,9 @@ separate from NBA and FIFA ones, so the Jazz and the Mammoth can both be `UTAH`.
 `standings`, `season`, `bracket`, `watch`, and `analyze` / `predict` / `recap`
 work exactly as for the NBA — the AI prompts speak hockey (goaltending, special
 teams, every goal and penalty). There's
-no default NHL streaming provider: `nhl watch` follows **Where to watch** — an
-over-the-air game prints its channel (e.g. Utah 16) and opens nothing.
+no default NHL streaming provider: `nhl watch` follows **Where to watch** — a
+Mammoth game on Utah 16 opens Fubo (which carries Utah 16 in-market) with the
+`fubo` subscription, or prints the channel to tune in with only `local-ota`.
 
 ## Where to watch (NBA / NHL)
 
