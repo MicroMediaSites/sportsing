@@ -13,6 +13,7 @@ import { c } from "./ansi.ts";
 import { getGameSummary, getTeams, type EspnGameSummary, type EspnTeam } from "./espn.ts";
 import { getOverlayPanels, getStreamDelay, setOverlayPanel, setStreamDelay } from "./config.ts";
 import { attachToPage, freePort, type CdpSession } from "./cdp.ts";
+import { deepLinkGame, leagueTileTerms } from "./deep-link.ts";
 import { spawnStreamWindow, type StreamWindow } from "./stream.ts";
 import type { Game } from "./game.ts";
 import type { LeagueConfig } from "./commands/league.ts";
@@ -168,12 +169,20 @@ export async function runLeagueOverlay(
     game: Game | null;
     gamesNow: () => Promise<Game[]>;
     windowSize?: { width: number; height: number };
+    /** Click `game`'s tile on the hub and start its player (deep-link.ts). */
+    deepLink?: boolean;
   },
 ): Promise<void> {
   const spec = specFor(cfg);
   const opened = await openWithOverlay(opts.url, opts.provider.label, leagueBootstrap(spec, cfg.icon), opts.windowSize);
   if (!opened) return;
   const { win, session } = opened;
+  const target = opts.game;
+  if (session && opts.deepLink && target) {
+    void deepLinkGame(session, leagueTileTerms(target.home.name), leagueTileTerms(target.away.name)).then((ok) => {
+      if (!ok) console.log(c.dim(`Couldn't find ${target.name} on ${opts.provider.label} — pick it there and the overlay will follow.`));
+    });
+  }
 
   console.log(c.bold(c.cyan(`${cfg.icon} Opening ${opts.provider.label} with the ${cfg.label} overlay`)) + c.dim(`  ${opts.url}`));
   console.log(c.dim("Just a floating ⚙ by default — click it to pick panels and sync the delay. The overlay follows the game you open."));

@@ -109,7 +109,9 @@ NBA favorites. NBA favorites are separate from FIFA ones.
 
 `today` / `next` / `schedule` show a **WATCH** column once you've set your
 subscriptions (see **Where to watch**). `sportsing nba watch` opens Jazz games on
-Fubo by default.
+Fubo by default, and goes straight into the game: it clicks the game's tile on
+the hub and starts the player (the daemon does the same). If the tile can't be
+found the window stays on the hub to pick from. `--url` skips this.
 
 `sportsing nba watch [team] --overlay` opens Fubo's NBA hub with a live-stats
 overlay (same gear / settings / spoiler-delay as the FIFA one) that follows the
