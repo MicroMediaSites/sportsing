@@ -643,14 +643,24 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
     g = watchTarget(await scopedSeasons(cfg, scope.ids), Date.now());
     console.log(g ? describeWatchGame(g) : c.dim(`No upcoming ${cfg.label} games for ${scope.label}.`));
   }
-  // No per-game deep link (yet): open the hub and pick the game's tile.
-  if (!url) console.log(c.dim(`Opening ${pick.label}'s ${cfg.label} hub — pick the game there (use --url for a direct link).`));
+  // With a target game and no explicit link, deep-link: click the game's tile
+  // on the hub and start its player. --url opens exactly what was asked.
+  const deepLink = !url && g ? { home: g.home.name, away: g.away.name, name: g.name } : undefined;
+  if (!url) {
+    console.log(
+      c.dim(
+        deepLink
+          ? `Opening ${pick.label}'s ${cfg.label} hub and going into ${g!.name} (use --url for a direct link).`
+          : `Opening ${pick.label}'s ${cfg.label} hub — pick the game there (use --url for a direct link).`,
+      ),
+    );
+  }
   if (overlay) {
     // Yesterday + today: a late game started yesterday can still be on.
     const gamesNow = () => gamesOnDays(cfg, addDays(new Date(), -1), 2);
-    return runLeagueOverlay(cfg, { url: url ?? pick.hub, provider: pick, game: g, gamesNow, windowSize });
+    return runLeagueOverlay(cfg, { url: url ?? pick.hub, provider: pick, game: g, gamesNow, windowSize, deepLink: !!deepLink });
   }
-  await launchStream(url ?? pick.hub, pick.label, { windowSize, icon: cfg.icon });
+  await launchStream(url ?? pick.hub, pick.label, { windowSize, icon: cfg.icon, deepLink });
 }
 
 /** Favorite-team alert feed for the league (see league-alerts.ts), with the

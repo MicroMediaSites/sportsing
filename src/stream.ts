@@ -20,6 +20,8 @@ import { mkdtemp, writeFile, mkdir } from "fs/promises";
 import { rmSync, existsSync } from "fs";
 import { mount } from "@openthink/ui-leaf";
 import { c } from "./ansi.ts";
+import { attachToPage, freePort, type CdpSession } from "./cdp.ts";
+import { deepLinkGame, leagueTileTerms, type DeepLinkGame } from "./deep-link.ts";
 
 /** Persistent Chrome profile path for a provider — one per provider so logins
  *  don't collide and two providers can run concurrently. New profiles live under
@@ -200,14 +202,17 @@ export async function spawnStreamWindow(
 
 /**
  * Open `url` in a persistent-profile app-mode Chrome window and block until it
- * closes. Ctrl-C tears the window down.
+ * closes. Ctrl-C tears the window down. With `deepLink`, the window exposes CDP
+ * and the game's tile on the hub is clicked and its player started
+ * (deep-link.ts); if that fails the window just stays on the hub.
  */
 export async function launchStream(
   url: string,
   label: string,
-  opts: { windowSize?: { width: number; height: number }; icon?: string } = {},
+  opts: { windowSize?: { width: number; height: number }; icon?: string; deepLink?: DeepLinkGame } = {},
 ): Promise<void> {
-  const win = await spawnStreamWindow(url, label, opts);
+  const port = opts.deepLink ? await freePort() : undefined;
+  const win = await spawnStreamWindow(url, label, { windowSize: opts.windowSize, ...(port ? { debugPort: port } : {}) });
   if (!win) {
     process.exitCode = 1;
     return;
@@ -216,7 +221,22 @@ export async function launchStream(
   console.log(c.bold(c.cyan(`${opts.icon ?? "⚽"} Opening ${label}`)) + c.dim(`  ${url}`));
   console.log(c.dim("Close the window (or press Ctrl-C) when you're done."));
 
+  let session: CdpSession | undefined;
+  if (port && opts.deepLink) {
+    const game = opts.deepLink;
+    void (async () => {
+      try {
+        session = await attachToPage(port);
+        const ok = await deepLinkGame(session, leagueTileTerms(game.home), leagueTileTerms(game.away));
+        console.log(c.dim(ok ? `Opened ${game.name}.` : `Couldn't find ${game.name} on ${label} — pick it there.`));
+      } catch (e) {
+        console.log(c.dim(`Couldn't auto-open ${game.name} — pick it on ${label}. (${e instanceof Error ? e.message : String(e)})`));
+      }
+    })();
+  }
+
   const stop = () => {
+    session?.close();
     win.close();
     process.exit(0);
   };
@@ -224,4 +244,5 @@ export async function launchStream(
   process.on("SIGTERM", stop);
 
   await win.exited;
+  session?.close();
 }
