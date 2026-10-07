@@ -45,9 +45,13 @@ export const HOME_MARKETS: Record<string, HomeMarket> = {
       "kjzz-tv": ["fubo", "local-ota"],
       kjzz: ["fubo", "local-ota"],
       "jazz+": [], // the team's own streaming app
-      // Mammoth: over the air only.
-      "utah 16": ["local-ota"],
-      "mammoth+": [],
+      // Mammoth: Utah 16 (KUPX) is a broadcast station (OTA ch. 16) that Fubo
+      // also carries in-market. ESPN lists it as "Utah 16"; the call-sign
+      // spellings are aliases.
+      "utah 16": ["fubo", "local-ota"],
+      kupx: ["fubo", "local-ota"],
+      "kupx-tv": ["fubo", "local-ota"],
+      "mammoth+": [], // the team's own streaming app
     },
   },
 };

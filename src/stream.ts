@@ -71,7 +71,8 @@ export const PROVIDERS: Record<string, Provider> = {
       // Jazz local (and national NBA) games on Fubo — the league page, same /p/
       // section scheme as the World Cup hub.
       nba: "https://www.fubo.tv/p/nba",
-      // National NHL games on networks Fubo carries (ESPN, ABC, NHL Network) the
+      // Mammoth local games (Utah 16 / KUPX, carried in-market) and national NHL
+      // games on networks Fubo carries (ESPN, ABC, NHL Network) — whatever the
       // watchability resolver routes to Fubo.
       nhl: "https://www.fubo.tv/p/nhl",
     },

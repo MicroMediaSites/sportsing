@@ -77,6 +77,23 @@ describe("acceptance cases", () => {
     });
   });
 
+  test("Mammoth on Utah 16 with Fubo → Fubo (it carries Utah 16 in-market), ahead of over-the-air", () => {
+    const g = game(MAMMOTH, RANGERS, [
+      { name: "MSG", market: "home" },
+      { name: "Utah 16", market: "away" },
+    ]);
+    const fubo = { watchable: true, via: "Fubo", service: "fubo", note: "on Utah 16" } as const;
+    expect(resolveWatch(g, ["fubo"], "utah", "nhl")).toEqual(fubo);
+    expect(resolveWatch(g, ["local-ota", "fubo"], "utah", "nhl")).toEqual(fubo);
+  });
+
+  test("KUPX call-sign spellings resolve like Utah 16", () => {
+    for (const name of ["KUPX", "KUPX-TV"]) {
+      const g = game(RANGERS, MAMMOTH, [{ name, market: "home" }]);
+      expect(resolveWatch(g, ["fubo"], "utah", "nhl")).toMatchObject({ via: "Fubo", note: `on ${name}` });
+    }
+  });
+
   test("ESPN+-only national NHL game without it → not watchable", () => {
     const g = game(RANGERS, MAMMOTH, [{ name: "ESPN+", market: "national" }]);
     expect(resolveWatch(g, ALL, "utah", "nhl")).toEqual({
@@ -191,7 +208,8 @@ describe("real ESPN games (fixtures captured 2026-10-04)", () => {
   test("Mammoth regular season: Utah 16 vs ESPN+/Disney+/Hulu exclusive", () => {
     const events = fixture("nhl-schedule-regular.json");
     const at = (id: string) => toGame(events.find((x) => x.id === id), SEASON_TYPES.regular);
-    expect(resolveWatch(at("401892443"), ALL, "utah", "nhl")).toMatchObject({ watchable: true, via: "Utah 16" });
+    expect(resolveWatch(at("401892443"), ALL, "utah", "nhl")).toMatchObject({ watchable: true, via: "Fubo", note: "on Utah 16" });
+    expect(resolveWatch(at("401892443"), ["local-ota"], "utah", "nhl")).toMatchObject({ watchable: true, via: "Utah 16" });
     expect(resolveWatch(at("401891828"), ALL, "utah", "nhl")).toMatchObject({
       watchable: false,
       note: "Disney+ / ESPN+ / Hulu exclusive — no subscription",

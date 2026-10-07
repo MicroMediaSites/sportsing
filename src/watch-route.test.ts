@@ -42,6 +42,7 @@ function game(away: GameCompetitor, home: GameCompetitor, broadcasts: Broadcast[
 
 const NBA_ALL: WatchContext = { sport: "nba", subscriptions: ["fubo", "nba-league-pass", "local-ota"], homeMarket: "utah" };
 const NHL_ALL: WatchContext = { sport: "nhl", subscriptions: ["fubo", "nba-league-pass", "local-ota"], homeMarket: "utah" };
+const NHL_OTA: WatchContext = { ...NHL_ALL, subscriptions: ["local-ota"] };
 
 const JAZZ_HOME = game(LAKERS, JAZZ, [{ name: "KJZZ-TV", market: "home" }]);
 const OUT_OF_MARKET = game(CELTICS, LAKERS, [{ name: "Spectrum Sports Net", market: "home" }]);
@@ -59,7 +60,8 @@ describe("WATCH cell", () => {
   test("service, over-the-air channel, ✗, ?", () => {
     expect(strip(watchCell(JAZZ_HOME, NBA_ALL))).toBe("Fubo");
     expect(strip(watchCell(OUT_OF_MARKET, NBA_ALL))).toBe("NBA League Pass");
-    expect(strip(watchCell(MAMMOTH_OTA, NHL_ALL))).toBe("Utah 16");
+    expect(strip(watchCell(MAMMOTH_OTA, NHL_ALL))).toBe("Fubo");
+    expect(strip(watchCell(MAMMOTH_OTA, NHL_OTA))).toBe("Utah 16");
     expect(strip(watchCell(ESPN_PLUS, NHL_ALL))).toBe("✗");
     expect(strip(watchCell(UNLISTED, NBA_ALL))).toBe("?");
   });
@@ -99,7 +101,8 @@ describe("withWatchColumn", () => {
 
 test("watchSummary: one line per outcome", () => {
   expect(watchSummary(watchOf(JAZZ_HOME, NBA_ALL))).toBe("Fubo — on KJZZ-TV");
-  expect(watchSummary(watchOf(MAMMOTH_OTA, NHL_ALL))).toBe("Utah 16 — over the air");
+  expect(watchSummary(watchOf(MAMMOTH_OTA, NHL_ALL))).toBe("Fubo — on Utah 16");
+  expect(watchSummary(watchOf(MAMMOTH_OTA, NHL_OTA))).toBe("Utah 16 — over the air");
   expect(watchSummary(watchOf(ESPN_PLUS, NHL_ALL))).toBe("✗ ESPN+ exclusive — no subscription");
   expect(watchSummary(watchOf(UNLISTED, NBA_ALL))).toBe("? no broadcasts listed yet");
 });
@@ -115,7 +118,11 @@ describe("planWatch", () => {
   });
 
   test("over the air: name the channel, open nothing", () => {
-    expect(planWatch(watchOf(MAMMOTH_OTA, NHL_ALL), "fubo")).toEqual({ kind: "tune", message: "Utah 16 — over the air" });
+    expect(planWatch(watchOf(MAMMOTH_OTA, NHL_OTA), "fubo")).toEqual({ kind: "tune", message: "Utah 16 — over the air" });
+  });
+
+  test("Utah 16 with Fubo: open Fubo's hub instead of tuning in", () => {
+    expect(planWatch(watchOf(MAMMOTH_OTA, NHL_ALL), null)).toEqual({ kind: "open", provider: "fubo", note: "Fubo — on Utah 16" });
   });
 
   test("unwatchable: say why, even with a fallback provider", () => {
