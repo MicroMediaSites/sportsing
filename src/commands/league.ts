@@ -45,6 +45,9 @@ export interface LeagueConfig {
   league: League;
   /** Display name, e.g. "NBA". */
   label: string;
+  /** Short name for cross-sport rows and tags when `label` is long
+   *  (e.g. "EPL" for "Premier League"). Defaults to `label`. */
+  shortLabel?: string;
   /** Header glyph, e.g. "🏀". */
   icon: string;
   /** Extra accepted team abbreviations → the ESPN /teams abbreviation
@@ -608,6 +611,15 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
     console.warn(c.yellow(`Ignoring --size "${sizeFlag}" — expected WxH, e.g. 660x500. Opening at the default size.`));
   }
 
+  // No team named and no favorites: say so before anything provider-related.
+  // (--smoke and --url need no team.)
+  if (!url && !args.includes("--smoke") && positionalTerms(args).length === 0 && (await getFavorites(cfg.sport)).length === 0) {
+    console.error(c.red(`No ${cfg.label} favorites — add one with `) + c.bold(`sportsing ${cfg.sport} fav add ${EXAMPLE_TEAM[cfg.sport] ?? "<team>"}`) + c.red(", or name a team:"));
+    console.error(c.dim(`  sportsing ${cfg.sport} watch <team>`));
+    process.exitCode = 1;
+    return;
+  }
+
   const fallback = await watchFallback(cfg);
   const routing = providerFlag || url ? null : await watchContext(cfg);
 
@@ -817,6 +829,10 @@ function leagueGames(cfg: LeagueConfig): LeagueGames {
   };
 }
 
+/** Commands with no club-soccer form: soccer has no conferences, playoff
+ *  race or bracket, so they're left out of its command list and help. */
+const NOT_FOR_CLUB_SOCCER = new Set(["season", "bracket"]);
+
 const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<void>> = {
   today,
   next,
@@ -835,8 +851,10 @@ const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<vo
 
 const ALIASES: Record<string, string> = { t: "today", n: "next", st: "standings" };
 
-/** True if `sportsing <league> <cmd>` is a command (or alias). */
-export function leagueHasCommand(cmd: string): boolean {
+/** True if `sportsing <league> <cmd>` is a command (or alias). With `cfg`,
+ *  commands that league doesn't have (soccer: season, bracket) are excluded. */
+export function leagueHasCommand(cmd: string, cfg?: Pick<LeagueConfig, "league">): boolean {
+  if (cfg && isClubSoccer(cfg.league) && NOT_FOR_CLUB_SOCCER.has(cmd)) return false;
   return Object.hasOwn(COMMANDS, cmd) || Object.hasOwn(ALIASES, cmd);
 }
 
@@ -844,7 +862,12 @@ function help(cfg: LeagueConfig): void {
   const b = c.bold;
   const s = cfg.sport;
   const ex = EXAMPLE_TEAM[s] ?? "<team>";
-  console.log(`${b(c.cyan(`${cfg.icon} sportsing ${s}`))} — ${cfg.label}, preseason through playoffs
+  const soccer = isClubSoccer(cfg.league);
+  const standingsLine = soccer
+    ? `  ${c.green("standings")}          League table: P W D L GF GA GD Pts, favorites ★`
+    : `  ${c.green("standings")}          Regular-season standings, favorites ★ ${c.dim("(--conference X, --division X)")}`;
+  const nonSoccer = (text: string) => (soccer ? "" : text);
+  console.log(`${b(c.cyan(`${cfg.icon} sportsing ${s}`))} — ${cfg.label}${soccer ? "" : ", preseason through playoffs"}
 
 ${b("USAGE")}
   sportsing ${s} <command> [options]
@@ -854,10 +877,10 @@ ${b("COMMANDS")}
   ${c.green("next")}               Next game + countdown
   ${c.green("schedule")}           A team's whole season, by day ${c.dim(`(league-wide: next ${WINDOW_DAYS} days)`)}
   ${c.green("results")}            Finished games, newest first ${c.dim(`(league-wide: last ${WINDOW_DAYS} days)`)}
-  ${c.green("standings")}          Regular-season standings, favorites ★ ${c.dim("(--conference X, --division X)")}
-  ${c.green("season")} ${c.dim("[team]")}      Favorites' season: record, splits, playoff race
+${standingsLine}
+${nonSoccer(`  ${c.green("season")} ${c.dim("[team]")}      Favorites' season: record, splits, playoff race
   ${c.green("bracket")}            Playoff bracket ${c.dim("(projected before the postseason; --season YYYY for a past one)")}
-  ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
+`)}  ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
   ${c.green("analyze")} ${c.dim("<team> [team]")}  AI read of the live or latest game ${c.dim("(--prompt)")}
   ${c.green("predict")} ${c.dim("<team> [team]")}  AI prediction for the next game ${c.dim("(--prompt)")}
   ${c.green("recap")}   ${c.dim("<team> [team]")}  AI "here's what you missed" ${c.dim("(--prompt)")}
@@ -867,10 +890,10 @@ ${b("COMMANDS")}
 ${b("FILTER")}
   ${c.dim("--team X")} on today/next/schedule/results picks one team (abbreviation or name).
   ${c.dim("--mine")} on today/next/schedule/results limits output to your ${cfg.label} favorites.
-  ${c.dim("--conference X")} / ${c.dim("--division X")} on standings shows one table (e.g. West, Pacific).
-
+${nonSoccer(`  ${c.dim("--conference X")} / ${c.dim("--division X")} on standings shows one table (e.g. West, Pacific).
+`)}
 ${b("TAGS")}
-  ${c.yellow("PRE")} preseason · ${c.magenta("POST")} postseason. Times are local.
+${soccer ? "  Times are local. Draws are shown as such." : `  ${c.yellow("PRE")} preseason · ${c.magenta("POST")} postseason. Times are local.`}
   WATCH: the service or channel · ${c.red("✗")} can't watch · ${c.dim("?")} unknown ${c.dim("(from `sportsing subscriptions`)")}
 
 ${b("DATA")}
@@ -883,7 +906,7 @@ ${b("EXAMPLES")}
   sportsing ${s} fav add ${ex}
   sportsing ${s} schedule --team ${ex}
   sportsing ${s} results --mine
-  sportsing ${s} standings --conference West
+  sportsing ${s} standings${soccer ? "" : " --conference West"}
   sportsing ${s} recap ${ex} --prompt
 `);
 }
@@ -893,7 +916,7 @@ export function leagueNamespace(cfg: LeagueConfig): (args: string[]) => Promise<
   return async (args) => {
     const [cmd, ...rest] = args;
     if (!cmd || cmd === "help" || cmd === "--help" || cmd === "-h") return help(cfg);
-    const run = COMMANDS[cmd] ?? COMMANDS[ALIASES[cmd] ?? ""];
+    const run = leagueHasCommand(cmd, cfg) ? (COMMANDS[cmd] ?? COMMANDS[ALIASES[cmd] ?? ""]) : undefined;
     if (!run) {
       console.error(c.red(`Unknown ${cfg.sport} command: ${cmd}`));
       console.error(c.dim(`Run \`sportsing ${cfg.sport} help\` for usage.`));

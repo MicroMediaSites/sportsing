@@ -30,6 +30,9 @@ ${b("SPORTS")}
   ${c.green("fifa")}               FIFA World Cup 2026 ${c.dim("— sportsing fifa help")}
   ${c.green("nba")}                NBA, preseason through playoffs ${c.dim("— sportsing nba help")}
   ${c.green("nhl")}                NHL, preseason through playoffs ${c.dim("— sportsing nhl help")}
+  ${c.green("epl")}                Premier League ${c.dim("— sportsing epl help")}
+  ${c.green("seriea")}             Serie A ${c.dim("— sportsing seriea help")}
+  ${c.green("ligue1")}             Ligue 1 ${c.dim("— sportsing ligue1 help")}
 
 ${b("YOUR TEAMS")} ${c.dim("(favorites across every sport, each row tagged with its sport)")}
   ${c.green("today")}              Your teams' games today ${c.dim("(--tomorrow, --yesterday, --offset N)")}
@@ -48,6 +51,8 @@ ${b("EXAMPLES")}
   sportsing fifa next --team USA
   sportsing nba schedule --team UTAH
   sportsing nhl next --team UTAH
+  sportsing epl standings
+  sportsing ligue1 next --team PSG
   sportsing today              ${c.dim("(your teams, every sport)")}
 `);
 }
