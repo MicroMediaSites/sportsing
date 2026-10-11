@@ -5,6 +5,7 @@
 import { LEAGUES } from "../espn.ts";
 import { leagueNamespace, type LeagueConfig } from "../commands/league.ts";
 import { CONCEDED, type StatProfile } from "../stats.ts";
+import type { PlayerStatProfile } from "../squad.ts";
 
 // ESPN `teams/{id}/statistics` season averages (the avg* fields are per game
 // already). Points allowed comes from the results, not the endpoint.
@@ -28,6 +29,29 @@ const NBA_STATS: StatProfile = {
   ],
 };
 
+// ESPN `teams/{id}/athletes/statistics` (category "game"): per-game averages
+// already, and percentages on a 0-100 scale. Always shown beside GP.
+const NBA_PLAYER_STATS: PlayerStatProfile = {
+  source: "athlete-statistics",
+  category: "game",
+  positionGroups: [
+    { key: "C", label: "Centers", abbreviations: ["C"] },
+    { key: "F", label: "Forwards", abbreviations: ["F"] },
+    { key: "G", label: "Guards", abbreviations: ["G"] },
+  ],
+  stats: [
+    { key: "gamesPlayed", label: "Games played", short: "GP", higherIsBetter: true, format: "int" },
+    { key: "avgMinutes", label: "Minutes", short: "MIN", higherIsBetter: true, format: "avg" },
+    { key: "avgPoints", label: "Points", short: "PTS", higherIsBetter: true, format: "avg" },
+    { key: "avgRebounds", label: "Rebounds", short: "REB", higherIsBetter: true, format: "avg" },
+    { key: "avgAssists", label: "Assists", short: "AST", higherIsBetter: true, format: "avg" },
+    { key: "avgSteals", label: "Steals", short: "STL", higherIsBetter: true, format: "avg" },
+    { key: "avgBlocks", label: "Blocks", short: "BLK", higherIsBetter: true, format: "avg" },
+    { key: "fieldGoalPct", label: "Field goal %", short: "FG%", higherIsBetter: true, format: "pct" },
+    { key: "threePointPct", label: "Three-point %", short: "3P%", higherIsBetter: true, format: "pct" },
+  ],
+};
+
 export const NBA: LeagueConfig = {
   sport: "nba",
   league: LEAGUES.nba,
@@ -38,6 +62,7 @@ export const NBA: LeagueConfig = {
   // Jazz local broadcasts (and the national NBA games) stream on Fubo.
   watchProvider: "fubo",
   statProfile: NBA_STATS,
+  playerStatProfile: NBA_PLAYER_STATS,
 };
 
 /** Dispatch a `sportsing nba <command>` invocation. Args are everything after `nba`. */

@@ -573,6 +573,47 @@ export async function getTeamStatistics(
   return parseTeamStatistics(raw);
 }
 
+// --- Rosters and player statistics ---
+
+// Player statistics live on a different host from the rest of site/v2.
+const SITE_WEB = "https://site.web.api.espn.com/apis/site/v2/sports";
+
+/** A team's raw `roster` payload. Current squad unless `season` (ESPN year) is
+ *  given. NBA and soccer: flat `athletes[]`; NHL: grouped
+ *  `[{position, items:[…]}]`. Soccer athletes carry `statistics` for the
+ *  payload's season. Parsing lives in src/squad.ts. */
+export async function getTeamRosterRaw(
+  league: League,
+  team: string | number,
+  ttlMs = 60 * 60_000,
+  season?: number,
+): Promise<any> {
+  const seasonQs = season === undefined ? "" : `?season=${season}`;
+  return fetchEspn(
+    espnUrl(league, `teams/${encodeURIComponent(String(team))}/roster${seasonQs}`),
+    espnCacheKey(league, `roster${season === undefined ? "" : `_${season}`}`, team),
+    ttlMs,
+    "roster",
+  );
+}
+
+/** A team's raw `athletes/statistics` payload (NBA, NHL): `results[]`
+ *  categories, each with `leaders[]` listing every rostered player's stats for
+ *  `season` (ESPN year; the payload's `requestedSeason` says what it covers). */
+export async function getTeamAthleteStatisticsRaw(
+  league: League,
+  team: string | number,
+  season: number,
+  ttlMs = 60 * 60_000,
+): Promise<any> {
+  return fetchEspn(
+    `${SITE_WEB}/${league}/teams/${encodeURIComponent(String(team))}/athletes/statistics?season=${season}`,
+    espnCacheKey(league, `astats_${season}`, team),
+    ttlMs,
+    "player statistics",
+  );
+}
+
 // --- Finished-match boxscores (club soccer) ---
 
 export interface MatchBoxscoreSide {

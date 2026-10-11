@@ -1,0 +1,239 @@
+{
+ "season": {
+  "year": 2027,
+  "displayName": "2026-27",
+  "type": 2,
+  "name": "Regular Season"
+ },
+ "team": {
+  "id": "129764",
+  "abbreviation": "UTAH",
+  "displayName": "Utah Mammoth"
+ },
+ "athletes": [
+  {
+   "position": "Centers",
+   "items": [
+    {
+     "id": "5080143",
+     "displayName": "Logan Cooley",
+     "fullName": "Logan Cooley",
+     "shortName": "L. Cooley",
+     "jersey": "92",
+     "age": 22,
+     "birthPlace": {
+      "city": "Pittsburgh",
+      "state": "PA",
+      "country": "USA",
+      "displayText": "Pittsburgh, PA"
+     },
+     "position": {
+      "id": "1",
+      "name": "Center",
+      "displayName": "Center",
+      "abbreviation": "C",
+      "leaf": true
+     },
+     "status": {
+      "id": "1",
+      "name": "Active",
+      "type": "active",
+      "abbreviation": "Active"
+     },
+     "injuries": []
+    },
+    {
+     "id": "3150468",
+     "displayName": "Liam O'Brien",
+     "fullName": "Liam O'Brien",
+     "shortName": "L. O'Brien",
+     "jersey": "38",
+     "age": 32,
+     "birthPlace": {
+      "city": "Halifax",
+      "state": "NS",
+      "country": "CAN",
+      "displayText": "Halifax, CAN"
+     },
+     "position": {
+      "id": "1",
+      "name": "Center",
+      "displayName": "Center",
+      "abbreviation": "C",
+      "leaf": true
+     },
+     "status": {
+      "id": "1",
+      "name": "Active",
+      "type": "active",
+      "abbreviation": "Active"
+     },
+     "injuries": []
+    }
+   ]
+  },
+  {
+   "position": "Left Wings",
+   "items": [
+    {
+     "id": "5149183",
+     "displayName": "Daniil But",
+     "fullName": "Daniil But",
+     "shortName": "D. But",
+     "jersey": "50",
+     "age": 21,
+     "birthPlace": {
+      "city": "Yaroslavl",
+      "country": "RUS",
+      "displayText": "Yaroslavl, RUS"
+     },
+     "position": {
+      "id": "2",
+      "name": "Left Wing",
+      "displayName": "Left Wing",
+      "abbreviation": "LW",
+      "leaf": true
+     },
+     "status": {
+      "id": "1",
+      "name": "Active",
+      "type": "active",
+      "abbreviation": "Active"
+     },
+     "injuries": []
+    }
+   ]
+  },
+  {
+   "position": "Right Wings",
+   "items": [
+    {
+     "id": "4874723",
+     "displayName": "Dylan Guenther",
+     "fullName": "Dylan Guenther",
+     "shortName": "D. Guenther",
+     "jersey": "11",
+     "age": 23,
+     "birthPlace": {
+      "city": "Edmonton",
+      "state": "AB",
+      "country": "CAN",
+      "displayText": "Edmonton, CAN"
+     },
+     "position": {
+      "id": "3",
+      "name": "Right Wing",
+      "displayName": "Right Wing",
+      "abbreviation": "RW",
+      "leaf": true
+     },
+     "status": {
+      "id": "1",
+      "name": "Active",
+      "type": "active",
+      "abbreviation": "Active"
+     },
+     "injuries": []
+    }
+   ]
+  },
+  {
+   "position": "Defense",
+   "items": [
+    {
+     "id": "4196959",
+     "displayName": "Nick DeSimone",
+     "fullName": "Nick DeSimone",
+     "shortName": "N. DeSimone",
+     "jersey": "57",
+     "age": 31,
+     "birthPlace": {
+      "city": "East Amherst",
+      "state": "NY",
+      "country": "USA",
+      "displayText": "East Amherst, NY"
+     },
+     "position": {
+      "id": "4",
+      "name": "Defense",
+      "displayName": "Defense",
+      "abbreviation": "D",
+      "leaf": true
+     },
+     "status": {
+      "id": "1",
+      "name": "Active",
+      "type": "active",
+      "abbreviation": "Active"
+     },
+     "injuries": [
+      {
+       "status": "Out",
+       "date": "2026-10-10T22:33Z"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "position": "Goalies",
+   "items": [
+    {
+     "id": "4874732",
+     "displayName": "Sebastian Cossa",
+     "fullName": "Sebastian Cossa",
+     "shortName": "S. Cossa",
+     "jersey": "33",
+     "age": 23,
+     "birthPlace": {
+      "city": "Hamilton",
+      "state": "ON",
+      "country": "CAN",
+      "displayText": "Hamilton, CAN"
+     },
+     "position": {
+      "id": "5",
+      "name": "Goaltender",
+      "displayName": "Goaltender",
+      "abbreviation": "G",
+      "leaf": false
+     },
+     "status": {
+      "id": "1",
+      "name": "Active",
+      "type": "active",
+      "abbreviation": "Active"
+     },
+     "injuries": []
+    },
+    {
+     "id": "3942065",
+     "displayName": "Karel Vejmelka",
+     "fullName": "Karel Vejmelka",
+     "shortName": "K. Vejmelka",
+     "jersey": "70",
+     "age": 30,
+     "birthPlace": {
+      "city": "Trebic",
+      "country": "CZE",
+      "displayText": "Trebic, CZE"
+     },
+     "position": {
+      "id": "5",
+      "name": "Goaltender",
+      "displayName": "Goaltender",
+      "abbreviation": "G",
+      "leaf": false
+     },
+     "status": {
+      "id": "1",
+      "name": "Active",
+      "type": "active",
+      "abbreviation": "Active"
+     },
+     "injuries": []
+    }
+   ]
+  }
+ ]
+}

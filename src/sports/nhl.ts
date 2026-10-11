@@ -5,6 +5,7 @@
 import { LEAGUES } from "../espn.ts";
 import { leagueNamespace, type LeagueConfig } from "../commands/league.ts";
 import type { StatProfile } from "../stats.ts";
+import type { PlayerStatProfile } from "../squad.ts";
 
 // ESPN `teams/{id}/statistics` gives season totals for most of these, so the
 // per-game figures are derived. ESPN lists no hits, blocked shots, power-play
@@ -26,6 +27,41 @@ const NHL_STATS: StatProfile = {
   ],
 };
 
+// ESPN `teams/{id}/athletes/statistics`: skaters are in the "team" category,
+// goalies in "goalkeeping". Season totals, except time on ice (seconds per
+// game) and the goalie rates. savePct is a 0-1 ratio.
+const NHL_PLAYER_STATS: PlayerStatProfile = {
+  source: "athlete-statistics",
+  category: "team",
+  positionGroups: [
+    { key: "C", label: "Centers", abbreviations: ["C"] },
+    { key: "LW", label: "Left wings", abbreviations: ["LW"] },
+    { key: "RW", label: "Right wings", abbreviations: ["RW"] },
+    { key: "D", label: "Defensemen", abbreviations: ["D"] },
+    { key: "G", label: "Goalies", abbreviations: ["G"] },
+  ],
+  stats: [
+    { key: "games", label: "Games played", short: "GP", higherIsBetter: true, format: "int" },
+    { key: "goals", label: "Goals", short: "G", higherIsBetter: true, format: "int" },
+    { key: "assists", label: "Assists", short: "A", higherIsBetter: true, format: "int" },
+    { key: "points", label: "Points", short: "PTS", higherIsBetter: true, format: "int" },
+    { key: "plusMinus", label: "Plus/minus", short: "+/-", higherIsBetter: true, format: "signed" },
+    { key: "penaltyMinutes", label: "Penalty minutes", short: "PIM", higherIsBetter: false, format: "int" },
+    { key: "timeOnIcePerGame", label: "Time on ice per game", short: "TOI", higherIsBetter: true, format: "clock" },
+  ],
+  goalie: {
+    group: "G",
+    category: "goalkeeping",
+    stats: [
+      { key: "games", label: "Games played", short: "GP", higherIsBetter: true, format: "int" },
+      { key: "wins", label: "Wins", short: "W", higherIsBetter: true, format: "int" },
+      { key: "losses", label: "Losses", short: "L", higherIsBetter: false, format: "int" },
+      { key: "avgGoalsAgainst", label: "Goals against average", short: "GAA", higherIsBetter: false, format: "avg2" },
+      { key: "savePct", label: "Save %", short: "SV%", higherIsBetter: true, format: "ratio3" },
+    ],
+  },
+};
+
 export const NHL: LeagueConfig = {
   sport: "nhl",
   league: LEAGUES.nhl,
@@ -36,6 +72,7 @@ export const NHL: LeagueConfig = {
   aliases: { LAK: "LA", NJD: "NJ", SJS: "SJ", TBL: "TB", UTA: "UTAH" },
   periods: { regulation: 3, shootout: true },
   statProfile: NHL_STATS,
+  playerStatProfile: NHL_PLAYER_STATS,
 };
 
 /** Dispatch a `sportsing nhl <command>` invocation. Args are everything after `nhl`. */

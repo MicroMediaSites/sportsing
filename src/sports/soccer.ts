@@ -12,6 +12,7 @@ import { LEAGUES } from "../espn.ts";
 import { SOCCER_PERIODS } from "../format.ts";
 import { leagueNamespace, SOCCER_NEXT_SCAN_DAYS, type LeagueConfig } from "../commands/league.ts";
 import { CONCEDED, SCORED, type StatProfile } from "../stats.ts";
+import type { PlayerStatProfile } from "../squad.ts";
 
 // Per-match means of ESPN's summary boxscore, aggregated over the season (club
 // soccer's team statistics endpoint is empty). Goals come from the scores. No xG.
@@ -38,11 +39,47 @@ const SOCCER_STATS: StatProfile = {
   ],
 };
 
+// ESPN's soccer roster payload carries each athlete's season `statistics` (no
+// extra call), shared by the club leagues and FIFA (src/sports/fifa.ts). ESPN
+// has no minutes or clean sheets for players, so those aren't offered, and its
+// `shotsFaced` is always 0 (so no save %); goalkeepers get saves and goals conceded. Starts = appearances less sub-ins.
+export const SOCCER_PLAYER_STATS: PlayerStatProfile = {
+  source: "roster",
+  positionGroups: [
+    { key: "GK", label: "Goalkeepers", abbreviations: ["G"] },
+    { key: "DEF", label: "Defenders", abbreviations: ["D"] },
+    { key: "MID", label: "Midfielders", abbreviations: ["M"] },
+    { key: "FWD", label: "Forwards", abbreviations: ["F"] },
+  ],
+  stats: [
+    { key: "appearances", label: "Appearances", short: "APP", higherIsBetter: true, format: "int" },
+    { key: "starts", label: "Starts", short: "ST", higherIsBetter: true, format: "int", derive: { kind: "diff", a: "appearances", b: "subIns" } },
+    { key: "totalGoals", label: "Goals", short: "G", higherIsBetter: true, format: "int" },
+    { key: "goalAssists", label: "Assists", short: "A", higherIsBetter: true, format: "int" },
+    { key: "totalShots", label: "Shots", short: "SH", higherIsBetter: true, format: "int" },
+    { key: "shotsOnTarget", label: "Shots on target", short: "SOT", higherIsBetter: true, format: "int" },
+    { key: "yellowCards", label: "Yellow cards", short: "YC", higherIsBetter: false, format: "int" },
+    { key: "redCards", label: "Red cards", short: "RC", higherIsBetter: false, format: "int" },
+  ],
+  goalie: {
+    group: "GK",
+    stats: [
+      { key: "appearances", label: "Appearances", short: "APP", higherIsBetter: true, format: "int" },
+      { key: "starts", label: "Starts", short: "ST", higherIsBetter: true, format: "int", derive: { kind: "diff", a: "appearances", b: "subIns" } },
+      { key: "saves", label: "Saves", short: "SV", higherIsBetter: true, format: "int" },
+      { key: "goalsConceded", label: "Goals conceded", short: "GC", higherIsBetter: false, format: "int" },
+      { key: "yellowCards", label: "Yellow cards", short: "YC", higherIsBetter: false, format: "int" },
+      { key: "redCards", label: "Red cards", short: "RC", higherIsBetter: false, format: "int" },
+    ],
+  },
+};
+
 const SOCCER = {
   icon: "⚽",
   periods: SOCCER_PERIODS,
   nextScanDays: SOCCER_NEXT_SCAN_DAYS,
   statProfile: SOCCER_STATS,
+  playerStatProfile: SOCCER_PLAYER_STATS,
 } as const;
 
 export const EPL: LeagueConfig = {

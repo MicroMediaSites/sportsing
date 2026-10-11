@@ -1,0 +1,506 @@
+{
+ "season": {
+  "year": 2026,
+  "displayName": "2026 FIFA World Cup",
+  "type": 13803,
+  "name": "Final"
+ },
+ "team": {
+  "id": "660",
+  "abbreviation": "USA",
+  "displayName": "United States"
+ },
+ "athletes": [
+  {
+   "id": "252974",
+   "displayName": "Matt Freese",
+   "fullName": "Matt Freese",
+   "shortName": "M. Freese",
+   "jersey": "24",
+   "age": 28,
+   "citizenship": "USA",
+   "birthPlace": {},
+   "position": {
+    "id": "1",
+    "name": "Goalkeeper",
+    "displayName": "Goalkeeper",
+    "abbreviation": "G",
+    "leaf": false
+   },
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   },
+   "injuries": [],
+   "statistics": {
+    "splits": {
+     "name": "Total",
+     "type": "total",
+     "categories": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "foulsCommitted",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "foulsSuffered",
+         "value": 2.0,
+         "displayValue": "2"
+        },
+        {
+         "name": "redCards",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "yellowCards",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "ownGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "appearances",
+         "value": 4.0,
+         "displayValue": "4"
+        },
+        {
+         "name": "subIns",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "goalAssists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "offsides",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shotsOnTarget",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "totalShots",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "totalGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      },
+      {
+       "name": "goalKeeping",
+       "stats": [
+        {
+         "name": "saves",
+         "value": 8.0,
+         "displayValue": "8"
+        },
+        {
+         "name": "shotsFaced",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "goalsConceded",
+         "value": 5.0,
+         "displayValue": "5"
+        }
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "303693",
+   "displayName": "Chris Brady",
+   "fullName": "Chris Brady",
+   "shortName": "C. Brady",
+   "jersey": "25",
+   "age": 22,
+   "citizenship": "USA",
+   "birthPlace": {},
+   "position": {
+    "id": "1",
+    "name": "Goalkeeper",
+    "displayName": "Goalkeeper",
+    "abbreviation": "G",
+    "leaf": false
+   },
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   },
+   "injuries": [],
+   "statistics": {
+    "splits": {
+     "name": "Total",
+     "type": "total",
+     "categories": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "foulsCommitted",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "foulsSuffered",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "redCards",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "yellowCards",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "ownGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "appearances",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "subIns",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "goalAssists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "offsides",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shotsOnTarget",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "totalShots",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "totalGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      },
+      {
+       "name": "goalKeeping",
+       "stats": [
+        {
+         "name": "saves",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shotsFaced",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "goalsConceded",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "303794",
+   "displayName": "Matt Turner",
+   "fullName": "Matt Turner",
+   "shortName": "M. Turner",
+   "jersey": "1",
+   "age": 32,
+   "citizenship": "USA",
+   "birthPlace": {},
+   "position": {
+    "id": "1",
+    "name": "Goalkeeper",
+    "displayName": "Goalkeeper",
+    "abbreviation": "G",
+    "leaf": false
+   },
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   },
+   "injuries": [],
+   "statistics": {
+    "splits": {
+     "name": "Total",
+     "type": "total",
+     "categories": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "foulsCommitted",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "foulsSuffered",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "redCards",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "yellowCards",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "ownGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "appearances",
+         "value": 1.0,
+         "displayValue": "1"
+        },
+        {
+         "name": "subIns",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "goalAssists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "offsides",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shotsOnTarget",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "totalShots",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "totalGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      },
+      {
+       "name": "goalKeeping",
+       "stats": [
+        {
+         "name": "saves",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shotsFaced",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "goalsConceded",
+         "value": 3.0,
+         "displayValue": "3"
+        }
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "77072",
+   "displayName": "Mark McKenzie",
+   "fullName": "Mark McKenzie",
+   "shortName": "M. McKenzie",
+   "jersey": "22",
+   "age": 27,
+   "citizenship": "USA",
+   "birthPlace": {
+    "city": "New York City",
+    "country": "USA"
+   },
+   "position": {
+    "id": "2",
+    "name": "Defender",
+    "displayName": "Defender",
+    "abbreviation": "D",
+    "leaf": false
+   },
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   },
+   "injuries": [],
+   "statistics": {
+    "splits": {
+     "name": "Total",
+     "type": "total",
+     "categories": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "foulsCommitted",
+         "value": 1.0,
+         "displayValue": "1"
+        },
+        {
+         "name": "foulsSuffered",
+         "value": 1.0,
+         "displayValue": "1"
+        },
+        {
+         "name": "redCards",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "yellowCards",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "ownGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "appearances",
+         "value": 1.0,
+         "displayValue": "1"
+        },
+        {
+         "name": "subIns",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "goalAssists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "offsides",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shotsOnTarget",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "totalShots",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "totalGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      },
+      {
+       "name": "goalKeeping",
+       "stats": [
+        {
+         "name": "saves",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shotsFaced",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "goalsConceded",
+         "value": 3.0,
+         "displayValue": "3"
+        }
+       ]
+      }
+     ]
+    }
+   }
+  }
+ ]
+}
