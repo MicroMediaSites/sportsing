@@ -225,7 +225,8 @@ export function renderComparison(cmp: Comparison): string {
   const lines = [headerLine(a), headerLine(b)];
   if (cmp.kind === "last-season") lines.push(c.yellow(`Preseason — figures and table are ${cmp.season}'s.`));
   lines.push("");
-  lines.push(c.dim(pad("", LABEL_W) + pad(a.abbreviation, 14, "right") + "  " + pad(b.abbreviation, 15, "right")));
+  // Each cell is value(8) + " " + rank(4) + mark(2); team codes sit over the values.
+  lines.push(c.dim(pad("", LABEL_W) + pad(a.abbreviation, 8, "right") + pad("", 7) + " " + pad(b.abbreviation, 8, "right")));
   for (const row of cmp.stats) {
     lines.push(pad(row.label, LABEL_W) + statCell(row, "a") + " " + statCell(row, "b"));
   }
