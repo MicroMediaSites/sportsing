@@ -21,7 +21,6 @@ import { rmSync, existsSync } from "fs";
 import { mount } from "@openthink/ui-leaf";
 import { c } from "./ansi.ts";
 import { attachToPage, freePort, type CdpSession } from "./cdp.ts";
-import { watchWindow } from "./window-watch.ts";
 import { deepLinkGame, leagueTileTerms, type DeepLinkGame } from "./deep-link.ts";
 
 /** Persistent Chrome profile path for a provider — one per provider so logins
@@ -154,9 +153,6 @@ export default function Stream({ data }: ViewProps<StreamData>) {
 }
 `;
 
-/** How long to wait for ui-leaf to reap after we abort (its kill grace is 5s). */
-const KILL_WAIT_MS = 7000;
-
 export interface StreamWindow {
   /** Resolves when the window/mount exits (cleans up the temp viewsRoot). */
   exited: Promise<void>;
@@ -197,11 +193,6 @@ export async function spawnStreamWindow(
   // hang. (This is the clean-reap behavior the old proc.kill() relied on.)
   const ac = new AbortController();
 
-  // Always expose CDP so we can tell when the window is gone (see window-watch.ts):
-  // ui-leaf doesn't notice a closed window / quit Chrome on macOS. If the port
-  // can't be had we just fall back to relying on view.closed.
-  const debugPort = opts.debugPort ?? (await freePort().catch(() => 0));
-
   // mount() resolves once the window is up and rejects if the native binary is
   // missing or the child dies before serving. The SDK resolves that binary from
   // this package's node_modules; a standalone `bun build --compile` artifact has
@@ -214,7 +205,7 @@ export async function spawnStreamWindow(
       data: { url, label },
       shell: "app",
       profile: { dir },
-      ...(debugPort ? { debugPort } : {}),
+      ...(opts.debugPort ? { debugPort: opts.debugPort } : {}),
       ...(opts.windowSize ? { windowSize: opts.windowSize } : {}),
       port: 0,
       silent: true, // keep the launch quiet (matches the old stdout/stderr: "ignore")
@@ -234,24 +225,17 @@ export async function spawnStreamWindow(
     return null;
   }
 
-  // Window lifetime: end when ui-leaf says so, OR when the last page closes / Chrome
-  // quits. In the latter case view.closed may never settle, so abort (close, then
-  // SIGKILL after the grace) and give it a bounded wait before declaring exited.
-  const watcher = debugPort ? watchWindow(debugPort) : null;
+  // Window lifetime: ui-leaf resolves view.closed for every end state, including
+  // the user closing the last window or quitting Chrome (reason "browser"), so all
+  // reasons are a normal exit.
   const exited = (async () => {
-    const reason = await Promise.race([view.closed.then(() => null), watcher?.gone ?? new Promise<never>(() => {})]);
-    watcher?.stop();
-    if (reason) {
-      ac.abort();
-      await Promise.race([view.closed, Bun.sleep(KILL_WAIT_MS)]);
-    }
+    await view.closed;
     cleanup();
   })();
 
   return {
     exited,
     close: () => {
-      watcher?.stop();
       ac.abort();
       cleanup();
     },

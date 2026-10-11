@@ -50,7 +50,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@openthink/ui-leaf": "^1.5.1"
+    "@openthink/ui-leaf": "^1.7.0"
   },
   "trustedDependencies": [
     "@openthink/ui-leaf"
