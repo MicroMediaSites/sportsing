@@ -48,7 +48,7 @@ export async function attachToPage(port: number, timeoutMs = 20_000): Promise<Cd
     }
     await Bun.sleep(250);
   }
-  if (!wsUrl) throw new Error(`No CDP page target on 127.0.0.1:${port} (is debugPort supported?)`);
+  if (!wsUrl) throw new Error("Couldn't connect to the stream window to open the game (no window appeared, or Chrome's remote debugging is disabled by policy). Pick the game in the window, if one opened.");
   if (!wsUrl.startsWith("ws://127.0.0.1:") && !wsUrl.startsWith("ws://localhost:")) {
     throw new Error(`Refusing non-loopback CDP endpoint: ${wsUrl}`);
   }

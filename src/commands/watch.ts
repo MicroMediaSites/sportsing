@@ -1,6 +1,7 @@
 import { c } from "../ansi.ts";
 import { findCurrentMatch, resolveWatchTarget, type EspnEvent } from "../espn.ts";
 import { getStreamProvider } from "../config.ts";
+import { warnIfNoGuiSession } from "../gui-session.ts";
 import { launchStream, pickProvider, spawnStreamWindow } from "../stream.ts";
 import { runOverlayStream, type WatchLang } from "../overlay.ts";
 import { freePort, attachToPage } from "../cdp.ts";
@@ -54,6 +55,9 @@ export async function watch(args: string[]) {
     return;
   }
   const provider = pick;
+
+  // Before anything opens (and before --wait waits): tell the user now if no window can appear.
+  if (!args.includes("--supervised")) warnIfNoGuiSession();
 
   // `watch` opens a window and BLOCKS until you close it (or Ctrl-C). With no
   // controlling TTY — an agent/build smoke-test, `< /dev/null` — nothing ever
