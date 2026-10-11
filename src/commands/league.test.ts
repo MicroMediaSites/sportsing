@@ -1,5 +1,6 @@
 import { test, expect } from "bun:test";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 // Pure helpers only — no network, never reads or writes ~/.config/sportsing.
 import {
@@ -13,6 +14,7 @@ import {
   easternScoreboardDate,
   liveBoard,
   leagueHasCommand,
+  watchEntry,
 } from "./league.ts";
 import { NBA } from "../sports/nba.ts";
 import { toGame, SEASON_TYPES, type EspnTeam } from "../espn.ts";
@@ -195,4 +197,40 @@ test("liveBoard: everything in play, plus today's upcoming and finished, ascendi
 
 test("live is a league command", () => {
   expect(leagueHasCommand("live")).toBe(true);
+});
+
+// AGT-1780: what `watch` does at entry with no team / no favorites.
+const NONE = { teamGiven: false, favCount: 0, provider: false, url: false, smoke: false };
+
+test("watchEntry: --provider with no team and no favorites opens the hub", () => {
+  expect(watchEntry({ ...NONE, provider: true })).toBe("hub");
+  expect(watchEntry({ ...NONE, provider: true, smoke: true })).toBe("hub");
+});
+
+test("watchEntry: --url with no team and no favorites opens the URL", () => {
+  expect(watchEntry({ ...NONE, url: true })).toBe("hub");
+});
+
+test("watchEntry: bare watch with no favorites gets the friendly message", () => {
+  expect(watchEntry(NONE)).toBe("no-favorites");
+  expect(watchEntry({ ...NONE, smoke: true })).toBe("normal");
+});
+
+test("watchEntry: a team or favorites keeps the normal flow", () => {
+  expect(watchEntry({ ...NONE, teamGiven: true })).toBe("normal");
+  expect(watchEntry({ ...NONE, teamGiven: true, provider: true, url: true })).toBe("normal");
+  expect(watchEntry({ ...NONE, favCount: 2, provider: true })).toBe("normal");
+});
+
+test("epl watch with no favorites, bare: friendly message, exit 1", async () => {
+  const home = mkdtempSync(join(tmpdir(), "sp-"));
+  const p = Bun.spawn(["bun", join(import.meta.dir, "../index.ts"), "epl", "watch"], {
+    env: { ...process.env, HOME: home },
+    stdin: "ignore",
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const err = await new Response(p.stderr).text();
+  expect(await p.exited).toBe(1);
+  expect(err).toContain("favorites");
 });
