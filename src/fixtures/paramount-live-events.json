@@ -1,0 +1,11 @@
+{
+  "note": "Hand-written mirror of paramountplus.com/shows/serie-a/ (captured 2026-10-11): section#live-events-grid > div.grid-view-container > article.grid-view-item.live-event > a.link + span.title; hero .hero__slide .cta-box > a.button.playIcon 'WATCH LIVE'.",
+  "path": "/shows/serie-a/",
+  "hero": "/live-tv/stream/serie-a/11111111-aaaa-4bbb-8ccc-000000000001/",
+  "tiles": [
+    { "title": "Cagliari vs. Juventus", "href": "/live-tv/stream/serie-a/11111111-aaaa-4bbb-8ccc-000000000001", "live": true },
+    { "title": "Internazionale vs. AS Roma", "href": "/live-tv/stream/serie-a/22222222-aaaa-4bbb-8ccc-000000000002", "live": false },
+    { "title": "Paris Saint-Germain vs. Lyon", "href": "/live-tv/stream/ligue-1/33333333-aaaa-4bbb-8ccc-000000000003", "live": false },
+    { "title": "Napoli vs. Lazio", "href": "/live-tv/stream/serie-a/44444444-aaaa-4bbb-8ccc-000000000004", "live": false }
+  ]
+}

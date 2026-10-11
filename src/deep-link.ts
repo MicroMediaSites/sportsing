@@ -37,6 +37,108 @@ export function leagueTileTerms(name: string): string[] {
 export const JS_SPLIT_MATCHUP =
   "function split(t){var s=[' v. ',' vs. ',' vs ',' v ',' versus ',' at ',' @ '];for(var k=0;k<s.length;k++){var i=t.indexOf(s[k]);if(i>0)return [t.slice(0,i),t.slice(i+s[k].length)];}return null;}";
 
+// ---------------------------------------------------------------------------
+// Paramount+ (AGT-1716). Its league hub (/shows/serie-a/) has a "live events"
+// grid of <article class="live-event"> tiles, each with a real <a class="link">
+// to /live-tv/stream/<league>/<uuid>, so we skip the generic click-a-tile path:
+// extract {title, href, live} per tile in-page, match the teams in Node (pure,
+// unit-tested), and navigate straight to the href.
+// NOT in scope yet: Prime Video (League Pass channel) and Peacock live-game
+// pages — add their matchers here once those DOMs are captured.
+// ---------------------------------------------------------------------------
+
+/** One Paramount+ live-events tile, as extracted in-page. */
+export interface ParamountTile {
+  title: string; // "Cagliari vs. Juventus" (Home vs. Away, full club names)
+  href: string;
+  live: boolean; // tile carries the Live badge / event-time--live
+}
+
+/** What the in-page extractor returns. */
+export interface ParamountPage {
+  path: string;
+  tiles: ParamountTile[];
+  /** href of the hero "WATCH LIVE" button, if any. */
+  hero: string | null;
+}
+
+/** Page-side extractor (evaluated over CDP; returns a JSON string). */
+export const JS_PARAMOUNT_EXTRACT =
+  "(function(){var t=[],a=document.querySelectorAll('article.live-event');" +
+  "for(var i=0;i<a.length;i++){var l=a[i].querySelector('a.link'),s=a[i].querySelector('span.title');if(!l||!s)continue;" +
+  "t.push({title:(s.textContent||'').replace(/\\s+/g,' ').trim(),href:l.getAttribute('href')||'',live:!!a[i].querySelector('.live-icon-copy,.event-time--live')});}" +
+  "var h=null,b=document.querySelectorAll('.hero__slide .cta-box a.button');" +
+  "for(var j=0;j<b.length;j++){if(/watch live/i.test(b[j].textContent||'')){h=b[j].getAttribute('href');break;}}" +
+  "return JSON.stringify({path:location.pathname,tiles:t,hero:h});})()";
+
+const CLUB_NOISE = new Set(["fc", "cf", "ac", "as", "sc", "afc", "ssc", "ss", "us", "ud", "cd", "calcio"]);
+const CLUB_ALIASES: Record<string, string> = { psg: "paris saint germain", "paris sg": "paris saint germain" };
+
+/** Lowercase, strip accents/punctuation/club-prefix noise ("AS Roma" → "roma"). */
+export function normalizeClub(name: string): string {
+  const n = name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  const kept = n.split(" ").filter((w) => w && !CLUB_NOISE.has(w)).join(" ");
+  const k = kept || n;
+  return CLUB_ALIASES[k] ?? k;
+}
+
+/** Tolerant club match: equal after normalising, or one contains the other
+ *  ("Inter" ⊂ "Internazionale"); the shorter side needs ≥4 chars. */
+export function clubMatches(tileSide: string, term: string): boolean {
+  const a = normalizeClub(tileSide);
+  const b = normalizeClub(term);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  return short.length >= 4 && long.includes(short);
+}
+
+const uuidOf = (href: string): string => (/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})/i.exec(href)?.[1] ?? "").toLowerCase();
+
+/**
+ * Pure core: the URL to open for the game among the tiles, or null. A tile
+ * matches when its title's two sides match the two teams (either order); a live
+ * tile beats a non-live one. A non-live pick still defers to the hero WATCH LIVE
+ * link, but only when that link's uuid is the matched tile's.
+ */
+export function pickParamountTarget(
+  tiles: ParamountTile[],
+  hero: string | null,
+  A: string[],
+  B: string[],
+  base = "https://www.paramountplus.com",
+): string | null {
+  const any = (side: string, terms: string[]) => terms.some((t) => clubMatches(side, t));
+  const hits = tiles.filter((t) => {
+    if (!t.href) return false;
+    const sp = /^(.+?)\s+(?:vs\.?|v\.?|versus|at|@)\s+(.+)$/i.exec(t.title.replace(/\s+/g, " ").trim());
+    return !!sp && ((any(sp[1]!, A) && any(sp[2]!, B)) || (any(sp[1]!, B) && any(sp[2]!, A)));
+  });
+  const tile = hits.find((t) => t.live) ?? hits[0];
+  if (!tile) return null;
+  const id = uuidOf(tile.href);
+  const href = !tile.live && hero && id && uuidOf(hero) === id ? hero : tile.href;
+  try {
+    return new URL(href, base).toString();
+  } catch {
+    return null;
+  }
+}
+
+export const isParamountUrl = (u: string): boolean => /(^|\.)paramountplus\.com$/i.test(safeHost(u));
+function safeHost(u: string): string {
+  try {
+    return new URL(u).hostname;
+  } catch {
+    return "";
+  }
+}
+
 // Auto-open the game over the existing ui-leaf CDP session (no separate
 // browser), in two phases: (1) find the game's tile on the hub by team name
 // (any language) and click it to route there; (2) some providers (Fubo) land on
@@ -129,11 +231,29 @@ export async function deepLinkGame(session: CdpSession, A: string[], B: string[]
     }
   };
 
-  // Phase 1 — click the matchup tile to route to the game's page.
+  // Phase 1 — click the matchup tile to route to the game's page. Paramount+
+  // instead navigates straight to the matched tile's link (see above).
   let routed = false;
   for (let i = 0; i < 8 && !routed; i++) {
     await new Promise((r) => setTimeout(r, 1500)); // hub SPA lazy-loads — keep trying
-    if ((await evalValue(js)) === true) routed = true;
+    if (isParamountUrl(String(await evalValue("location.href")))) {
+      let pg: ParamountPage | undefined;
+      try {
+        pg = JSON.parse((await evalValue(JS_PARAMOUNT_EXTRACT)) as string) as ParamountPage;
+      } catch {
+        continue; // page navigating / no result this tick
+      }
+      if (pg.path.includes("/user-profile/whos-watching")) throw new Error("pick a profile, then the match");
+      const target = pickParamountTarget(pg.tiles, pg.hero, A, B);
+      if (target) {
+        try {
+          await session.send("Page.navigate", { url: target });
+          routed = true;
+        } catch {
+          /* page navigating — retry */
+        }
+      }
+    } else if ((await evalValue(js)) === true) routed = true;
   }
   if (!routed) return false;
 
