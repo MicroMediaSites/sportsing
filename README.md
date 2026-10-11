@@ -141,13 +141,13 @@ no default NHL streaming provider: `nhl watch` follows **Where to watch** — a
 Mammoth game on Utah 16 opens Fubo (which carries Utah 16 in-market) with the
 `fubo` subscription, or prints the channel to tune in with only `local-ota`.
 
-## Where to watch (NBA / NHL)
+## Where to watch (NBA / NHL / club soccer)
 
 Tell sportsing what you can watch with and where you live, once — it applies to
 every sport:
 
 ```sh
-sportsing subscriptions set fubo prime-video nba-league-pass local-ota   # whichever you have (or `none`)
+sportsing subscriptions set fubo prime-video peacock paramount-plus nba-league-pass local-ota   # whichever you have (or `none`)
 sportsing subscriptions market utah   # home market (default: utah)
 sportsing subscriptions               # show them (alias: subs)
 ```
@@ -156,9 +156,9 @@ From each game's broadcasts (ESPN), sportsing then works out how *you* can watch
 it:
 
 - **WATCH column** in `today` / `next` / `schedule`: the service (`Fubo`,
-  `Prime Video`, `NBA League Pass`) or over-the-air channel, `✗` if you can't watch it, `?` if it
+  `Prime Video`, `Peacock`, `Paramount+`, `NBA League Pass`) or over-the-air channel, `✗` if you can't watch it, `?` if it
   can't tell. With no subscriptions set, a one-line hint replaces the column.
-- **`<sport> watch`** acts on the same answer: opens Fubo, Prime Video or League Pass, prints
+- **`<sport> watch`** acts on the same answer: opens Fubo, Prime Video, Peacock, Paramount+ or League Pass, prints
   the channel for an over-the-air-only game (nothing to open; exits 0), or says
   why a game isn't watchable (exits 1). `--provider` / `--url` override it.
 - **League Pass** covers out-of-market NBA games only — blacked out when a
@@ -168,6 +168,18 @@ it:
 - **League Pass opens through Prime Video** (its Prime Video Channels page), in
   the same browser profile as `prime-video` — one Amazon sign-in covers both.
   `prime-video` itself is Amazon's own national NBA games.
+- **Club soccer** (`epl`, `seriea`, `ligue1`) has no home market: every listed
+  broadcast is national. NBC, USA Net, CBS, CBSSN, beIN Sports, Universo and
+  Telemundo route to Fubo (NBC, CBS and Telemundo also over the air), Peacock
+  to `peacock`, Paramount+ to `paramount-plus`. Tubi is known but not carried
+  (`✗`). A match ESPN lists no broadcast for is assumed to be on the league's
+  usual home when you have it, shown as `no broadcast listed yet (assumed)`:
+  Premier League → Peacock, Ligue 1 → beIN Sports on Fubo. Serie A has no
+  default (ESPN lists Paramount+ on every match). Without that subscription
+  the match shows `?`. `epl watch` opens Peacock's Premier League page,
+  `seriea watch` Paramount+'s Serie A page, and Fubo's soccer page serves all
+  three leagues; going into the match itself is best effort, so on some pages
+  you pick it there.
 
 ## Your teams, every sport
 

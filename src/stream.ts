@@ -68,7 +68,10 @@ export const PROVIDERS: Record<string, Provider> = {
   // deep-link can find the game tiles.
   peacock: {
     label: "Peacock",
-    hubs: { fifa: "https://www.peacocktv.com/watch/sports-La-Copa-Mundial-de-la-FIFA-2026" },
+    hubs: {
+      fifa: "https://www.peacocktv.com/watch/sports-La-Copa-Mundial-de-la-FIFA-2026",
+      epl: "https://www.peacocktv.com/sports/premier-league",
+    },
   },
   fubo: {
     label: "Fubo",
@@ -81,6 +84,11 @@ export const PROVIDERS: Record<string, Provider> = {
       // games on networks Fubo carries (ESPN, ABC, NHL Network) — whatever the
       // watchability resolver routes to Fubo.
       nhl: "https://www.fubo.tv/p/nhl",
+      // Club soccer (NBC / USA / CBS / beIN …). Fubo has no per-league pages
+      // (they redirect home), so all three leagues share the soccer hub.
+      epl: "https://www.fubo.tv/p/soccer",
+      seriea: "https://www.fubo.tv/p/soccer",
+      ligue1: "https://www.fubo.tv/p/soccer",
     },
   },
   // Amazon's national NBA games (Prime's own package, not League Pass). The
@@ -88,6 +96,11 @@ export const PROVIDERS: Record<string, Provider> = {
   "prime-video": {
     label: "Prime Video",
     hubs: { nba: "https://www.amazon.com/gp/video/sports" },
+  },
+  // Serie A: every match is on Paramount+.
+  "paramount-plus": {
+    label: "Paramount+",
+    hubs: { seriea: "https://www.paramountplus.com/shows/serie-a/" },
   },
   // Out-of-market NBA games — the provider key matches the `nba-league-pass`
   // subscription id the watchability resolver routes to. Opened as the Prime

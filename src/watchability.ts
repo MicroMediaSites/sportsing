@@ -10,12 +10,14 @@ import type { Broadcast, Game, GameCompetitor } from "./game.ts";
 
 /** Services / reception the user can have. Order is the routing preference:
  *  an openable service beats a channel you have to tune an antenna to. */
-export const SUBSCRIPTIONS = ["fubo", "prime-video", "nba-league-pass", "local-ota"] as const;
+export const SUBSCRIPTIONS = ["fubo", "prime-video", "peacock", "paramount-plus", "nba-league-pass", "local-ota"] as const;
 export type Subscription = (typeof SUBSCRIPTIONS)[number];
 
 export const SUBSCRIPTION_LABELS: Record<Subscription, string> = {
   fubo: "Fubo",
   "prime-video": "Prime Video",
+  peacock: "Peacock",
+  "paramount-plus": "Paramount+",
   "nba-league-pass": "NBA League Pass",
   "local-ota": "over the air",
 };
@@ -25,13 +27,30 @@ export function isSubscription(s: string): s is Subscription {
 }
 
 /** Sports the resolver knows how to route (ESPN-backed, `Game`-shaped). */
-export type WatchSport = "nba" | "nhl";
+export type WatchSport = "nba" | "nhl" | "epl" | "seriea" | "ligue1";
+
+/** Club-soccer leagues: no home market (every listed broadcast is national)
+ *  and no blackouts. */
+const CLUB_SOCCER: readonly WatchSport[] = ["epl", "seriea", "ligue1"];
+const isSoccer = (sport: WatchSport) => CLUB_SOCCER.includes(sport);
+
+/** What an unlisted match (ESPN lists no broadcasts at all) is assumed to be
+ *  on, per sport — the same guess League Pass gets for NBA, shown as "no
+ *  broadcast listed yet (assumed)". Only applies when the user has `service`;
+ *  otherwise the match stays unknown. Serie A has none: every match lists
+ *  Paramount+. */
+export const ASSUMED_WHEN_UNLISTED: Partial<Record<WatchSport, { service: Subscription; channel: string }>> = {
+  epl: { service: "peacock", channel: "Peacock" },
+  // beIN Sports holds the exclusive US rights; Fubo carries it.
+  ligue1: { service: "fubo", channel: "beIN Sports" },
+};
 
 export interface HomeMarket {
   name: string;
   /** ESPN team ids of this market's local teams, per sport. Ids, not
-   *  abbreviations: the Mammoth are `UTAH` in /teams but `UTA` in schedules. */
-  teams: Record<WatchSport, string[]>;
+   *  abbreviations: the Mammoth are `UTAH` in /teams but `UTA` in schedules.
+   *  Club soccer has no entries: it has no home market. */
+  teams: Partial<Record<WatchSport, string[]>>;
   /** Local-market channels (lowercased name → subscriptions that carry it).
    *  `[]` = known, but none of the supported subscriptions carry it. */
   channels: Record<string, Subscription[]>;
@@ -72,6 +91,20 @@ const NATIONAL: Record<string, Subscription[]> = {
   "nba tv": ["fubo"],
   "nhl net": ["fubo"],
   "nhl network": ["fubo"],
+  // Club soccer (ESPN's names, lowercased).
+  "usa net": ["fubo"],
+  "usa network": ["fubo"],
+  cbssn: ["fubo"],
+  "cbs sports network": ["fubo"],
+  "bein sports": ["fubo"],
+  "bein sports en español": ["fubo"],
+  "bein sports en espanol": ["fubo"],
+  universo: ["fubo"],
+  telemundo: ["fubo", "local-ota"],
+  peacock: ["peacock"],
+  "paramount+": ["paramount-plus"],
+  "paramount plus": ["paramount-plus"],
+  tubi: [], // known, none of the supported subscriptions carry it
   // Known, but none of the supported subscriptions carry them.
   "espn+": [],
   tnt: [],
@@ -81,7 +114,6 @@ const NATIONAL: Record<string, Subscription[]> = {
   // Amazon's own national NBA package (2025–26 on) — not League Pass.
   "prime video": ["prime-video"],
   "amazon prime video": ["prime-video"],
-  peacock: [],
   "disney+": [],
   hulu: [],
   "apple tv": [],
@@ -130,20 +162,21 @@ export function resolveWatch(
   if (!market) return unknown(`unknown home market "${homeMarket}"`);
 
   const has = new Set(subscriptions);
-  const local = market.teams[sport];
+  const soccer = isSoccer(sport);
+  const local = market.teams[sport] ?? [];
   const isLocal = (t: GameCompetitor) => t.id !== "" && local.includes(t.id);
   const localTeam = isLocal(game.home) ? game.home : isLocal(game.away) ? game.away : null;
 
   const listed = game.broadcasts.filter((b) => key(b.name) !== LEAGUE_PASS_ROW);
   const reachable = listed.filter(
-    (b) => b.market === "national" || (b.market === "home" && isLocal(game.home)) || (b.market === "away" && isLocal(game.away)),
+    (b) => b.market === "national" || soccer || (b.market === "home" && isLocal(game.home)) || (b.market === "away" && isLocal(game.away)),
   );
 
-  const routes: { service: Subscription; channel: string }[] = [];
+  const routes: { service: Subscription; channel: string; assumed?: boolean }[] = [];
   const unrecognized: Broadcast[] = [];
   const notCarried: Broadcast[] = [];
   for (const b of reachable) {
-    const carriers = b.market === "national" ? NATIONAL[key(b.name)] : market.channels[key(b.name)];
+    const carriers = b.market === "national" || soccer ? NATIONAL[key(b.name)] : market.channels[key(b.name)];
     if (!carriers) {
       unrecognized.push(b);
       continue;
@@ -167,6 +200,13 @@ export function resolveWatch(
     routes.push({ service: "nba-league-pass", channel: SUBSCRIPTION_LABELS["nba-league-pass"] });
   }
 
+  // Club soccer: a match ESPN lists nothing for is assumed to be on the
+  // league's usual home (Premier League → Peacock, Ligue 1 → beIN on Fubo).
+  const assumed = ASSUMED_WHEN_UNLISTED[sport];
+  if (assumed && game.broadcasts.length === 0 && has.has(assumed.service)) {
+    routes.push({ ...assumed, assumed: true });
+  }
+
   if (routes.length) {
     const best = routes.sort((a, b) => SUBSCRIPTIONS.indexOf(a.service) - SUBSCRIPTIONS.indexOf(b.service))[0]!;
     if (best.service === "local-ota") return { watchable: true, via: best.channel, service: best.service, note: `${best.channel} — over the air` };
@@ -174,7 +214,8 @@ export function resolveWatch(
       const note = game.broadcasts.length ? "out-of-market on League Pass" : "no broadcast listed yet (assumed)";
       return { watchable: true, via: best.channel, service: best.service, note };
     }
-    return { watchable: true, via: SUBSCRIPTION_LABELS[best.service], service: best.service, note: `on ${best.channel}` };
+    const note = best.assumed ? "no broadcast listed yet (assumed)" : `on ${best.channel}`;
+    return { watchable: true, via: SUBSCRIPTION_LABELS[best.service], service: best.service, note };
   }
 
   if (game.broadcasts.length === 0) return unknown("no broadcasts listed yet");

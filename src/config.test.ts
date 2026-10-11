@@ -89,6 +89,13 @@ test("parseSubscriptions: reports unrecognized ids", () => {
   expect(parseSubscriptions(["fubo,espn+", "hulu", "espn+"])).toEqual({ subscriptions: ["fubo"], invalid: ["espn+", "hulu"] });
 });
 
+test("parseSubscriptions: peacock and paramount-plus, in canonical order", () => {
+  expect(parseSubscriptions(["local-ota", "paramount-plus", "peacock", "fubo"])).toEqual({
+    subscriptions: ["fubo", "peacock", "paramount-plus", "local-ota"],
+    invalid: [],
+  });
+});
+
 test("subscriptionsOf: tolerates missing / malformed stored values", () => {
   expect(subscriptionsOf(undefined)).toEqual([]);
   expect(subscriptionsOf("fubo")).toEqual([]);
