@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
 // Pure helpers only — never launches a window or touches ~/.config/sportsing.
-import { PROVIDERS, pickProvider } from "./stream.ts";
+import { PROVIDERS, pickProvider, profileDir } from "./stream.ts";
 import { waitPollMs } from "./commands/watch.ts";
 
 test("pickProvider: per-sport hubs — Fubo has FIFA, NBA, and NHL hubs", () => {
@@ -20,7 +20,7 @@ test("pickProvider: FIFA keeps both World Cup providers", () => {
 test("pickProvider: a provider with no hub for the sport is refused, naming the ones that have one", () => {
   expect(pickProvider("peacock", "nba")).toEqual({
     ok: false,
-    error: "Peacock has no nba hub. Known for nba: fubo, nba-league-pass.",
+    error: "Peacock has no nba hub. Known for nba: fubo, prime-video, nba-league-pass.",
   });
   expect(pickProvider("peacock", "nhl")).toEqual({ ok: false, error: "Peacock has no nhl hub. Known for nhl: fubo." });
   expect(pickProvider("nba-league-pass", "nhl")).toEqual({
@@ -34,4 +34,9 @@ test("waitPollMs: 60s normally, 30s inside 15 min, 15s inside 5 min and once pas
   expect(waitPollMs(10 * 60_000)).toBe(30_000);
   expect(waitPollMs(2 * 60_000)).toBe(15_000);
   expect(waitPollMs(-60_000)).toBe(15_000);
+});
+
+test("profileDir: League Pass opens through Prime Video, so it shares the Prime Video profile", () => {
+  expect(profileDir("NBA League Pass")).toBe(profileDir("Prime Video"));
+  expect(profileDir("Fubo")).not.toBe(profileDir("Prime Video"));
 });

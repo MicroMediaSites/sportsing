@@ -124,9 +124,18 @@ describe("unknown broadcasters never resolve to a false yes", () => {
     expect(resolveWatch(g, ["nba-league-pass"], "utah", "nba").watchable).toBe("unknown");
   });
 
-  test("no broadcasts listed yet → unknown, even with League Pass", () => {
-    expect(resolveWatch(game(CELTICS, LAKERS, []), ALL, "utah", "nba").watchable).toBe("unknown");
+  test("no broadcasts listed, out-of-market → League Pass", () => {
+    expect(resolveWatch(game(CELTICS, LAKERS, []), ALL, "utah", "nba")).toEqual({
+      watchable: true,
+      via: "NBA League Pass",
+      service: "nba-league-pass",
+      note: "no broadcast listed yet (assumed)",
+    });
+  });
+
+  test("no broadcasts listed → unknown for an in-market team, or without League Pass", () => {
     expect(resolveWatch(game(LAKERS, JAZZ, []), ALL, "utah", "nba").watchable).toBe("unknown");
+    expect(resolveWatch(game(CELTICS, LAKERS, []), ["fubo"], "utah", "nba").watchable).toBe("unknown");
   });
 
   test("in-market team with no local feed listed → unknown, not no", () => {
@@ -154,6 +163,16 @@ describe("routing details", () => {
   test("other markets' regional feeds are geo-locked: unknown names there are ignored", () => {
     const g = game(CELTICS, LAKERS, [{ name: "Spectrum Sports Net", market: "home" }]);
     expect(resolveWatch(g, ["fubo"], "utah", "nba")).toMatchObject({ watchable: false });
+  });
+
+  test("Prime Video national game → Prime Video with the prime-video subscription", () => {
+    const g = game(CELTICS, LAKERS, [{ name: "Prime Video", market: "national" }]);
+    expect(resolveWatch(g, ["prime-video", "nba-league-pass"], "utah", "nba")).toEqual({
+      watchable: true,
+      via: "Prime Video",
+      service: "prime-video",
+      note: "on Prime Video",
+    });
   });
 
   test("national NBA game blacks out League Pass for out-of-market teams too", () => {

@@ -22,7 +22,7 @@ export interface WatchContext {
 }
 
 /** Shown in place of the WATCH column when no subscriptions are configured. */
-export const SUBSCRIPTIONS_HINT = "Where to watch: run `sportsing subscriptions set fubo nba-league-pass local-ota` (whichever you have).";
+export const SUBSCRIPTIONS_HINT = "Where to watch: run `sportsing subscriptions set fubo prime-video nba-league-pass local-ota` (whichever you have).";
 
 export function watchOf(g: Game, ctx: WatchContext): Watchability {
   return resolveWatch(g, ctx.subscriptions, ctx.homeMarket, ctx.sport);
@@ -67,6 +67,7 @@ export function watchSummary(w: Watchability): string {
 /** Streaming-provider key (stream.ts PROVIDERS) for each openable subscription. */
 export const SERVICE_PROVIDER: Record<Exclude<Subscription, "local-ota">, string> = {
   fubo: "fubo",
+  "prime-video": "prime-video",
   "nba-league-pass": "nba-league-pass",
 };
 

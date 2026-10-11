@@ -63,7 +63,9 @@ describe("WATCH cell", () => {
     expect(strip(watchCell(MAMMOTH_OTA, NHL_ALL))).toBe("Fubo");
     expect(strip(watchCell(MAMMOTH_OTA, NHL_OTA))).toBe("Utah 16");
     expect(strip(watchCell(ESPN_PLUS, NHL_ALL))).toBe("✗");
-    expect(strip(watchCell(UNLISTED, NBA_ALL))).toBe("?");
+    expect(strip(watchCell(UNLISTED, NHL_ALL))).toBe("?");
+    // NBA: an unlisted out-of-market game is assumed to be on League Pass.
+    expect(strip(watchCell(UNLISTED, NBA_ALL))).toBe("NBA League Pass");
   });
 
   test("live games get a cell; finished games don't", () => {
@@ -104,7 +106,8 @@ test("watchSummary: one line per outcome", () => {
   expect(watchSummary(watchOf(MAMMOTH_OTA, NHL_ALL))).toBe("Fubo — on Utah 16");
   expect(watchSummary(watchOf(MAMMOTH_OTA, NHL_OTA))).toBe("Utah 16 — over the air");
   expect(watchSummary(watchOf(ESPN_PLUS, NHL_ALL))).toBe("✗ ESPN+ exclusive — no subscription");
-  expect(watchSummary(watchOf(UNLISTED, NBA_ALL))).toBe("? no broadcasts listed yet");
+  expect(watchSummary(watchOf(UNLISTED, NHL_ALL))).toBe("? no broadcasts listed yet");
+  expect(watchSummary(watchOf(UNLISTED, NBA_ALL))).toBe("NBA League Pass — no broadcast listed yet (assumed)");
 });
 
 describe("planWatch", () => {
@@ -130,7 +133,7 @@ describe("planWatch", () => {
   });
 
   test("unknown: fall back to the configured provider, else explain", () => {
-    expect(planWatch(watchOf(UNLISTED, NBA_ALL), "fubo")).toMatchObject({ kind: "open", provider: "fubo" });
+    expect(planWatch(watchOf(UNLISTED, NHL_ALL), "fubo")).toMatchObject({ kind: "open", provider: "fubo" });
     const none = planWatch(watchOf(UNLISTED, NHL_ALL), null);
     expect(none.kind).toBe("none");
     expect(none.kind === "none" && none.message).toBe("Can't tell where it airs — no broadcasts listed yet.");
@@ -146,4 +149,5 @@ test("every openable service maps to a provider with a hub for its sport", () =>
   expect(PROVIDERS[SERVICE_PROVIDER.fubo]!.hubs.nba).toBeTruthy();
   expect(PROVIDERS[SERVICE_PROVIDER.fubo]!.hubs.nhl).toBeTruthy();
   expect(PROVIDERS[SERVICE_PROVIDER["nba-league-pass"]]!.hubs.nba).toBeTruthy();
+  expect(PROVIDERS[SERVICE_PROVIDER["prime-video"]]!.hubs.nba).toBeTruthy();
 });

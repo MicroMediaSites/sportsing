@@ -147,23 +147,27 @@ Tell sportsing what you can watch with and where you live, once — it applies t
 every sport:
 
 ```sh
-sportsing subscriptions set fubo nba-league-pass local-ota   # whichever you have (or `none`)
-sportsing subscriptions market utah                          # home market (default: utah)
-sportsing subscriptions                                      # show them (alias: subs)
+sportsing subscriptions set fubo prime-video nba-league-pass local-ota   # whichever you have (or `none`)
+sportsing subscriptions market utah   # home market (default: utah)
+sportsing subscriptions               # show them (alias: subs)
 ```
 
 From each game's broadcasts (ESPN), sportsing then works out how *you* can watch
 it:
 
 - **WATCH column** in `today` / `next` / `schedule`: the service (`Fubo`,
-  `NBA League Pass`) or over-the-air channel, `✗` if you can't watch it, `?` if it
+  `Prime Video`, `NBA League Pass`) or over-the-air channel, `✗` if you can't watch it, `?` if it
   can't tell. With no subscriptions set, a one-line hint replaces the column.
-- **`<sport> watch`** acts on the same answer: opens Fubo or League Pass, prints
+- **`<sport> watch`** acts on the same answer: opens Fubo, Prime Video or League Pass, prints
   the channel for an over-the-air-only game (nothing to open; exits 0), or says
   why a game isn't watchable (exits 1). `--provider` / `--url` override it.
 - **League Pass** covers out-of-market NBA games only — blacked out when a
-  home-market team plays or the game has a national broadcast. National
-  exclusives you don't carry are flagged.
+  home-market team plays or the game has a national broadcast. An out-of-market
+  game with no broadcasts listed yet (common in preseason) is assumed to be on
+  League Pass. National exclusives you don't carry are flagged.
+- **League Pass opens through Prime Video** (its Prime Video Channels page), in
+  the same browser profile as `prime-video` — one Amazon sign-in covers both.
+  `prime-video` itself is Amazon's own national NBA games.
 
 ## Your teams, every sport
 
