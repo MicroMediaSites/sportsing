@@ -53,7 +53,7 @@ async function show(): Promise<void> {
   const [subs, market] = await Promise.all([getSubscriptions(), getHomeMarket()]);
   console.log(c.bold(c.cyan("📺 Subscriptions")));
   if (subs.length === 0) {
-    console.log(c.dim("  none yet — e.g. ") + c.bold("sportsing subscriptions set fubo prime-video nba-league-pass local-ota"));
+    console.log(c.dim("  none yet — e.g. ") + c.bold("sportsing subscriptions set fubo prime-video peacock paramount-plus nba-league-pass local-ota"));
   } else {
     for (const s of subs) console.log(`  ${s} ${c.dim("— " + SUBSCRIPTION_LABELS[s])}`);
   }
