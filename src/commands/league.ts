@@ -292,7 +292,7 @@ function title(cfg: LeagueConfig, text: string): void {
 
 /** Subscriptions + home market for the WATCH column / `watch` routing; null
  *  when none are configured (nothing to resolve against). */
-async function watchContext(cfg: LeagueConfig): Promise<WatchContext | null> {
+export async function watchContext(cfg: LeagueConfig): Promise<WatchContext | null> {
   if (!isWatchSport(cfg.sport)) return null;
   const [subscriptions, homeMarket] = await Promise.all([getSubscriptions(), getHomeMarket()]);
   return subscriptions.length ? { sport: cfg.sport, subscriptions, homeMarket } : null;

@@ -1,7 +1,8 @@
 import { test, expect, afterEach, spyOn } from "bun:test";
+import type { Game } from "../game.ts";
 // Pure helpers + the commands over fake sports — no network, never reads or
 // writes ~/.config/sportsing.
-import { SPORTS, alertersSummary, bareHint, live, lastAndNext, matchState, me, next, nextPerTeam, noFavoritesHint, tagged, today, type Row, type Sport } from "./cross.ts";
+import { SPORTS, allGames, allJson, allSources, alertersSummary, isAllRequest, loadAll, sortAll, type AllSource, bareHint, live, lastAndNext, matchState, me, next, nextPerTeam, noFavoritesHint, tagged, today, type Row, type Sport } from "./cross.ts";
 
 const strip = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
 const HOUR = 3_600_000;
@@ -189,4 +190,119 @@ test("alertersSummary names each sport's teams", () => {
   expect(alertersSummary([{ label: "NBA", teams: ["Utah Jazz"] }, { label: "FIFA", teams: ["USA", "Mexico"] }])).toBe(
     "NBA: Utah Jazz · FIFA: USA, Mexico",
   );
+});
+
+// ── today --all ──────────────────────────────────────────────────────────────
+
+const comp = (id: string, abbreviation: string, score = "") => ({ id, name: abbreviation + " FC", abbreviation, score });
+function g(id: string, h: number, state: Game["state"], over: Partial<Game> = {}): Game {
+  return {
+    id,
+    date: at(h),
+    name: "",
+    state,
+    detail: state === "post" ? "Final" : "",
+    period: 0,
+    clock: "",
+    seasonType: "regular",
+    home: comp("1", "HOM", state === "pre" ? "" : "2"),
+    away: comp("2", "AWY", state === "pre" ? "" : "1"),
+    broadcasts: [],
+    ...over,
+  };
+}
+function src(key: string, games: Game[] | Error, over: Partial<AllSource> = {}): AllSource {
+  return {
+    sport: { key, label: key.toUpperCase(), icon: "*" },
+    games: async () => {
+      if (games instanceof Error) throw games;
+      return games;
+    },
+    watch: async () => null,
+    favorites: async () => new Set<string>(),
+    ...over,
+  };
+}
+const SOURCES = () => [
+  src("nba", [g("n-fin", -5, "post"), g("n-late", 6, "pre")]),
+  src("nhl", [g("h-soon", 2, "pre"), g("h-live", 1, "in")]),
+  src("epl", [g("e-live", -1, "in"), g("e-mid", 4, "pre")]),
+];
+const ids = (rows: { game: Game }[]) => rows.map((r) => r.game.id);
+
+test("sortAll: live first, then upcoming by start, then finished", async () => {
+  const { rows } = await loadAll(SOURCES(), new Date());
+  expect(ids(rows)).toEqual(["e-live", "h-live", "h-soon", "e-mid", "n-late", "n-fin"]);
+  expect(ids(sortAll([{ game: g("b", 3, "pre") }, { game: g("a", 1, "pre") }]))).toEqual(["a", "b"]);
+});
+
+test("rows are tagged with their league", async () => {
+  const { out } = await capture(() => allGames(SOURCES(), []));
+  const line = (id: string) => out.find((l) => l.includes(id === "n" ? "NBA" : id.toUpperCase()))!;
+  expect(out.filter((l) => l.includes("NBA")).length).toBe(2);
+  expect(line("nhl")).toContain("* NHL");
+  expect(out.some((l) => l.trim() === "Live")).toBe(true);
+  expect(out.some((l) => l.trim() === "Upcoming")).toBe(true);
+  expect(out.some((l) => l.trim() === "Final")).toBe(true);
+});
+
+test("--upcoming hides finished games", async () => {
+  const { rows } = await loadAll(SOURCES(), new Date(), { upcoming: true });
+  expect(ids(rows)).not.toContain("n-fin");
+  expect(rows.length).toBe(5);
+  const { out } = await capture(() => allGames(SOURCES(), ["--upcoming"]));
+  expect(out.some((l) => l.trim() === "Final")).toBe(false);
+});
+
+test("a league whose fetch throws gets a one-line note; the rest still print", async () => {
+  const srcs = [src("nba", new Error("boom")), src("nhl", [g("h1", 1, "pre")])];
+  const { out } = await capture(() => allGames(srcs, []));
+  expect(out).toContain("NBA: couldn't load (boom)");
+  expect(out.some((l) => l.includes("NHL"))).toBe(true);
+  expect(process.exitCode ?? 0).toBe(0);
+});
+
+test("favorites are starred; a WATCH column replaces the hint when subscriptions exist", async () => {
+  const fav = src("nhl", [g("h1", 1, "pre")], { favorites: async () => new Set(["1"]) });
+  let r = await capture(() => allGames([fav, src("nba", [g("n1", 2, "pre")])], []));
+  expect(r.out.find((l) => l.includes("NHL"))!.trim().startsWith("★")).toBe(true);
+  expect(r.out.find((l) => l.includes("NBA"))!.includes("★")).toBe(false);
+  expect(r.out.some((l) => l.includes("Where to watch: run"))).toBe(true);
+  const ctx = { sport: "nhl" as const, subscriptions: ["local-ota" as const], homeMarket: "utah" };
+  r = await capture(() => allGames([src("nhl", [g("h1", 1, "pre")], { watch: async () => ctx })], []));
+  expect(r.out.some((l) => l.includes("Where to watch: run"))).toBe(false);
+  expect(r.out.some((l) => l.includes("WATCH"))).toBe(true);
+});
+
+test("--json prints plain objects with the documented shape", async () => {
+  const fav = src("nhl", [g("h1", 1, "post", { detail: "Final", home: comp("1", "AAA", "2"), away: comp("2", "BBB", "2") })], {
+    favorites: async () => new Set(["2"]),
+  });
+  const { out } = await capture(() => allGames([fav], ["--json"]));
+  const parsed = JSON.parse(out.join("\n"));
+  expect(parsed).toHaveLength(1);
+  expect(Object.keys(parsed[0]).sort()).toEqual(
+    ["away", "favorite", "home", "id", "league", "scores", "sport", "start", "state", "status", "watch"].sort(),
+  );
+  expect(parsed[0]).toMatchObject({ sport: "nhl", league: "NHL", id: "h1", state: "post", scores: { home: "2", away: "2" }, favorite: true, status: "Final · draw" });
+  expect(Object.keys(parsed[0].watch).sort()).toEqual(["note", "via", "watchable"]);
+});
+
+test("allJson without a periods naming uses the source's status text", () => {
+  const row = { sport: { key: "nba", label: "NBA", icon: "*" }, game: g("x", 0, "in", { detail: "Q3 4:00" }), line: "", cell: "", watch: { watchable: null, via: null, note: "" }, favorite: false };
+  expect(allJson(row).status).toBe("Q3 4:00");
+});
+
+test("allSources covers every LeagueConfig league, not FIFA", () => {
+  expect(allSources().map((s) => s.sport.key)).toEqual(["nba", "nhl", "epl", "seriea", "ligue1"]);
+});
+
+test("`all` and `today --all` dispatch to the all-leagues view; bare `today` does not", () => {
+  expect(isAllRequest("all", [])).toBe(true);
+  expect(isAllRequest("all", ["--tomorrow"])).toBe(true);
+  expect(isAllRequest("today", ["--all", "--upcoming"])).toBe(true);
+  expect(isAllRequest("t", ["--all"])).toBe(true);
+  expect(isAllRequest("today", [])).toBe(false);
+  expect(isAllRequest("today", ["--tomorrow"])).toBe(false);
+  expect(isAllRequest("next", ["--all"])).toBe(false);
 });

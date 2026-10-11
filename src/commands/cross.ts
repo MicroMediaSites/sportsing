@@ -13,8 +13,9 @@ import { LIVE_REFRESH_MS, pollAlerters, raise, type Alerter } from "../alerts.ts
 import { getMatches } from "../api.ts";
 import { getFavorites } from "../config.ts";
 import { getTeams } from "../espn.ts";
-import { fmtDate, gameLine, matchLine, relativeTime } from "../format.ts";
-import type { GameState } from "../game.ts";
+import { fmtDate, gameLine, isDraw, matchLine, periodStatus, relativeTime } from "../format.ts";
+import type { Game, GameState } from "../game.ts";
+import { watchCell, watchHeading, watchOf, withWatchColumn, SUBSCRIPTIONS_HINT, type WatchContext } from "../watch-route.ts";
 import { fifa, fifaHasCommand } from "../sports/fifa.ts";
 import { NBA, nba } from "../sports/nba.ts";
 import { NHL, nhl } from "../sports/nhl.ts";
@@ -34,6 +35,7 @@ import {
   leagueHasCommand,
   parseOffset,
   teamSeason,
+  watchContext,
   type LeagueConfig,
 } from "./league.ts";
 
@@ -58,6 +60,8 @@ export interface Sport {
   key: string;
   label: string;
   icon: string;
+  /** The ESPN league behind this sport; absent for FIFA (not a LeagueConfig league). */
+  cfg?: LeagueConfig;
   /** `sportsing <key> …` dispatcher. */
   run: (args: string[]) => unknown | Promise<unknown>;
   /** True if `sportsing <key> <cmd>` exists. */
@@ -132,6 +136,7 @@ function league(cfg: LeagueConfig, run: Sport["run"]): Sport {
     key: cfg.sport,
     label: cfg.shortLabel ?? cfg.label,
     icon: cfg.icon,
+    cfg,
     run,
     has: (cmd) => leagueHasCommand(cmd, cfg),
     alerter: () => leagueAlerter(cfg),
@@ -283,6 +288,159 @@ export async function today(sports: Sport[], args: string[], footer?: Footer): P
   printFooter(footer);
 }
 
+// ── today --all ──────────────────────────────────────────────────────────────
+
+/** One league's inputs for `today --all`; injectable so tests need no network. */
+export interface AllSource {
+  sport: Pick<Sport, "key" | "label" | "icon">;
+  /** The league's periods naming (status text), as its own `today` uses. */
+  periods?: LeagueConfig["periods"];
+  /** Every game on one local day (same day logic as the league's `today`). */
+  games: (day: Date) => Promise<Game[]>;
+  /** Subscriptions + home market; null when none are configured. */
+  watch: () => Promise<WatchContext | null>;
+  /** Favorite team ids. */
+  favorites: () => Promise<Set<string>>;
+}
+
+/** The real sources: every registered sport that has a LeagueConfig. */
+export function allSources(sports: Sport[] = SPORTS): AllSource[] {
+  return sports.flatMap((s): AllSource[] => {
+    const cfg = s.cfg;
+    if (!cfg) return [];
+    return [
+      {
+        sport: s,
+        periods: cfg.periods,
+        games: (day) => gamesOnDays(cfg, day, 1),
+        watch: () => watchContext(cfg),
+        favorites: async () => {
+          const favs = await getFavorites(cfg.sport);
+          return favs.length === 0 ? new Set<string>() : favoriteIds(cfg, await getTeams(cfg.league), favs);
+        },
+      },
+    ];
+  });
+}
+
+export interface AllRow {
+  sport: Pick<Sport, "key" | "label" | "icon">;
+  game: Game;
+  line: string;
+  /** Rendered WATCH cell ("" for finished games or without subscriptions). */
+  cell: string;
+  watch: { watchable: boolean | "unknown" | null; via: string | null; note: string };
+  favorite: boolean;
+}
+
+const STATE_ORDER: Record<GameState, number> = { in: 0, pre: 1, post: 2 };
+
+/** Live first, then upcoming by start time, then finished (by start time). */
+export function sortAll<T extends { game: Pick<Game, "state" | "date"> }>(rows: T[]): T[] {
+  return [...rows].sort(
+    (a, b) => STATE_ORDER[a.game.state] - STATE_ORDER[b.game.state] || Date.parse(a.game.date) - Date.parse(b.game.date),
+  );
+}
+
+/** Fetch every league in parallel; a league that fails becomes a note, not an error. */
+export async function loadAll(
+  sources: AllSource[],
+  day: Date,
+  opts: { upcoming?: boolean } = {},
+): Promise<{ rows: AllRow[]; notes: string[]; hasWatch: boolean }> {
+  const settled = await Promise.allSettled(
+    sources.map(async (src) => {
+      const [games, watch, favorites] = await Promise.all([
+        src.games(day),
+        src.watch().catch(() => null),
+        src.favorites().catch(() => new Set<string>()),
+      ]);
+      return { src, games, watch, favorites };
+    }),
+  );
+  const rows: AllRow[] = [];
+  const notes: string[] = [];
+  let hasWatch = false;
+  settled.forEach((r, i) => {
+    if (r.status === "rejected") {
+      const why = r.reason instanceof Error ? r.reason.message : String(r.reason);
+      notes.push(`${sources[i]!.sport.label}: couldn't load (${why})`);
+      return;
+    }
+    const { src, games, watch, favorites } = r.value;
+    if (watch) hasWatch = true;
+    for (const game of games) {
+      if (opts.upcoming && game.state === "post") continue;
+      const w = watch ? watchOf(game, watch) : null;
+      rows.push({
+        sport: src.sport,
+        game,
+        line: gameLine(game, src.periods),
+        cell: watch ? watchCell(game, watch) : "",
+        watch: w ? { watchable: w.watchable, via: w.via, note: w.note } : { watchable: null, via: null, note: "" },
+        favorite: favorites.has(game.home.id) || favorites.has(game.away.id),
+      });
+    }
+  });
+  return { rows: sortAll(rows), notes, hasWatch };
+}
+
+/** Plain-object form of a row for `--json`. */
+export function allJson(r: AllRow, periods?: LeagueConfig["periods"]) {
+  const g = r.game;
+  const text = g.state === "pre" ? g.detail : periods ? periodStatus(g, periods) : g.detail;
+  return {
+    sport: r.sport.key,
+    league: r.sport.label,
+    id: g.id,
+    state: g.state,
+    start: g.date,
+    home: g.home.name,
+    away: g.away.name,
+    scores: { home: g.home.score, away: g.away.score },
+    status: (text || (g.state === "post" ? "Final" : "")) + (isDraw(g) ? " · draw" : ""),
+    watch: r.watch,
+    favorite: r.favorite,
+  };
+}
+
+/** `today --all` / `all` — every game on one local day, every league. */
+export async function allGames(sources: AllSource[], args: string[], footer?: Footer): Promise<void> {
+  const offset = parseOffset(args);
+  const day = addDays(new Date(), offset);
+  const json = args.includes("--json");
+  const { rows, notes, hasWatch } = await loadAll(sources, day, { upcoming: args.includes("--upcoming") });
+
+  if (json) {
+    const periods = new Map(sources.map((s) => [s.sport.key, s.periods]));
+    console.log(JSON.stringify(rows.map((r) => allJson(r, periods.get(r.sport.key))), null, 2));
+    for (const n of notes) console.error(c.dim(n));
+    return;
+  }
+
+  const label = offset === 0 ? "Today" : offset === 1 ? "Tomorrow" : offset === -1 ? "Yesterday" : ymd(day);
+  console.log(c.bold(c.cyan(`All leagues — ${label} (${ymd(day)})`)));
+  for (const n of notes) console.log(c.dim(n));
+  if (rows.length === 0) console.log(c.dim("\nNo games scheduled."));
+  else {
+    const width = tagWidth(rows.map((r) => r.sport));
+    const base = rows.map((r) => (r.favorite ? c.yellow("★") : " ") + " " + tagged(r.sport, r.line, width));
+    const { lines, column } = withWatchColumn(base, rows.map((r) => r.cell));
+    const sections: [GameState, string][] = [["in", "Live"], ["pre", "Upcoming"], ["post", "Final"]];
+    let first = true;
+    for (const [state, name] of sections) {
+      const idx = rows.flatMap((r, i) => (r.game.state === state ? [i] : []));
+      if (idx.length === 0) continue;
+      const head = c.bold(name);
+      console.log("\n" + (first && column !== null ? watchHeading(head, column) : head));
+      first = false;
+      for (const i of idx) console.log("  " + lines[i]);
+    }
+    if (!hasWatch) console.log("\n" + c.dim(SUBSCRIPTIONS_HINT));
+  }
+  printFooter(footer);
+}
+
 /** `next` — each favorite team's next game, soonest first, with countdowns. */
 export async function next(sports: Sport[], footer?: Footer): Promise<void> {
   const loaded = await perSport(sports, (s) => s.favoriteTeams());
@@ -364,8 +522,13 @@ export async function live(sports: Sport[], args: string[]): Promise<void> {
   });
 }
 
+/** True for `sportsing all …` and `sportsing today --all …`. */
+export const isAllRequest = (cmd: string, args: string[]): boolean =>
+  cmd === "all" || ((cmd === "today" || cmd === "t") && args.includes("--all"));
+
 /** Dispatch a bare `sportsing <cmd> …` (no sport prefix). */
 export async function bare(cmd: string, args: string[]): Promise<void> {
+  if (isAllRequest(cmd, args)) return allGames(allSources(), args, daemonFooter);
   if (cmd === "today" || cmd === "t") return today(SPORTS, args, daemonFooter);
   if (cmd === "live") return live(SPORTS, args);
   const run = cmd === "next" || cmd === "n" ? next : cmd === "me" ? me : null;
