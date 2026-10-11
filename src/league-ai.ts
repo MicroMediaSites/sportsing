@@ -275,7 +275,7 @@ export interface FormGame {
   venue: "home" | "away";
   for: number;
   against: number;
-  result: "W" | "L";
+  result: "W" | "D" | "L";
   /** "OT", "2OT", "SO" when the game went past regulation; "" otherwise. */
   extra: string;
 }
@@ -298,9 +298,9 @@ export function teamForm(games: Game[], teamId: string, limit = FORM_GAMES): For
     const opp = venue === "home" ? g.away : g.home;
     const gf = Number(me.score);
     const ga = Number(opp.score);
-    if (me.score === "" || opp.score === "" || Number.isNaN(gf) || Number.isNaN(ga) || gf === ga) continue;
+    if (me.score === "" || opp.score === "" || Number.isNaN(gf) || Number.isNaN(ga)) continue;
     const extra = /\/(\d*OT|SO)\b/.exec(g.detail)?.[1] ?? "";
-    out.push({ date: g.date.slice(0, 10), phase: g.seasonType, opponent: opp.abbreviation || opp.name, venue, for: gf, against: ga, result: gf > ga ? "W" : "L", extra });
+    out.push({ date: g.date.slice(0, 10), phase: g.seasonType, opponent: opp.abbreviation || opp.name, venue, for: gf, against: ga, result: gf > ga ? "W" : gf < ga ? "L" : "D", extra });
   }
   return out.slice(-limit);
 }

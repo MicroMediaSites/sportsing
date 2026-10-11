@@ -24,8 +24,32 @@ export interface StandingsLayout {
   level: StandingsLevel;
   /** ESPN stat a table is ranked by, descending (NBA win%, NHL points). */
   rankBy: string;
+  /** True when `rankBy` is a position (1 = top) rather than a score: sorted
+   *  ascending, ties left in ESPN's order (soccer's `rank` already encodes
+   *  goal difference and head-to-head). */
+  rankIsPosition?: boolean;
+  /** True for a league with one table and no conferences/divisions (soccer):
+   *  `--conference` / `--division` are not accepted. */
+  singleTable?: boolean;
   columns: StandingsColumn[];
 }
+
+const SOCCER_TABLE: StandingsLayout = {
+  level: "conference",
+  rankBy: "rank",
+  rankIsPosition: true,
+  singleTable: true,
+  columns: [
+    { stat: "gamesPlayed", label: "P", width: 4 },
+    { stat: "wins", label: "W", width: 4 },
+    { stat: "ties", label: "D", width: 4 },
+    { stat: "losses", label: "L", width: 4 },
+    { stat: "pointsFor", label: "GF", width: 5 },
+    { stat: "pointsAgainst", label: "GA", width: 5 },
+    { stat: "pointDifferential", label: "GD", width: 5 },
+    { stat: "points", label: "Pts", width: 5 },
+  ],
+};
 
 export const STANDINGS_LAYOUTS: Partial<Record<League, StandingsLayout>> = {
   [LEAGUES.nba]: {
@@ -49,6 +73,11 @@ export const STANDINGS_LAYOUTS: Partial<Record<League, StandingsLayout>> = {
       { stat: "points", label: "PTS", width: 5 },
     ],
   },
+  // Club soccer: one points table, ranked as ESPN ranks it (points, then the
+  // league's own tiebreakers — goal difference in England, head-to-head in Italy).
+  ...Object.fromEntries(
+    [LEAGUES.epl, LEAGUES.seriea, LEAGUES.ligue1].map((league): [League, StandingsLayout] => [league, SOCCER_TABLE]),
+  ),
 };
 
 const num = (v: string | undefined): number => {
@@ -72,7 +101,9 @@ export function hasGames(groups: EspnStandingsGroup[]): boolean {
  *  (it encodes the league's tiebreakers; 0/absent = unseeded, last), then name.
  *  Seed isn't the primary key — after the play-in it no longer follows the
  *  record. ESPN returns entries in no useful order. */
-export function sortEntries(entries: EspnStandingsEntry[], rankBy: string): EspnStandingsEntry[] {
+export function sortEntries(entries: EspnStandingsEntry[], rankBy: string, rankIsPosition = false): EspnStandingsEntry[] {
+  // Position stats (soccer): ascending, and a stable sort keeps ESPN's order for any tie.
+  if (rankIsPosition) return [...entries].sort((a, b) => (num(a.stats[rankBy]) || Infinity) - (num(b.stats[rankBy]) || Infinity));
   const seed = (e: EspnStandingsEntry) => num(e.stats.playoffSeed) || Infinity;
   return [...entries].sort(
     (a, b) => num(b.stats[rankBy]) - num(a.stats[rankBy]) || seed(a) - seed(b) || a.team.localeCompare(b.team),
@@ -120,7 +151,7 @@ export function renderStandingsTable(g: EspnStandingsGroup, layout: StandingsLay
   const TEAM_W = 26;
   const { columns } = layout;
   const header = c.dim(pad("#", 3) + pad("Team", TEAM_W) + columns.map((col) => pad(col.label, col.width, "right")).join(""));
-  const rows = sortEntries(g.entries, layout.rankBy).map((e, i) => {
+  const rows = sortEntries(g.entries, layout.rankBy, layout.rankIsPosition).map((e, i) => {
     const fav = favoriteIds.has(e.teamId);
     const name = fav ? c.bold(c.yellow(`★ ${e.team}`)) : `  ${e.team}`;
     const stats = columns.map((col) => pad(e.stats[col.stat] ?? "-", col.width, "right")).join("");

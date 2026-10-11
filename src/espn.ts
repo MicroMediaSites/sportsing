@@ -19,8 +19,19 @@ export const LEAGUES = {
   fifa: "soccer/fifa.world",
   nba: "basketball/nba",
   nhl: "hockey/nhl",
+  // Club soccer: the English, Italian and French top flights.
+  epl: "soccer/eng.1",
+  seriea: "soccer/ita.1",
+  ligue1: "soccer/fra.1",
 } as const;
 export type League = (typeof LEAGUES)[keyof typeof LEAGUES];
+
+/** Domestic club-soccer leagues. ESPN has no season types for them (their
+ *  `seasonType.type` is a league-specific id like 14308, and `seasontype=1|2|3`
+ *  schedules/standings come back empty or mislabelled), so the schedule and
+ *  standings calls below skip season types for these. */
+const CLUB_SOCCER: readonly League[] = [LEAGUES.epl, LEAGUES.seriea, LEAGUES.ligue1];
+export const isClubSoccer = (league: League): boolean => CLUB_SOCCER.includes(league);
 
 /** The default league — every pre-existing (World Cup) call site uses it. */
 export const FIFA: League = LEAGUES.fifa;
@@ -446,6 +457,26 @@ async function rawTeamSchedule(
   return raw?.events ?? [];
 }
 
+/** A club-soccer team's whole season as `Game`s. ESPN splits it in two: the
+ *  plain schedule is the matches already played, `?fixture=true` the ones still
+ *  to come (matchweeks and international breaks included). Played first, so a
+ *  match in progress keeps the fresher copy when the lists are merged by id. */
+export async function getClubTeamGames(league: League, team: string | number, ttlMs = 5 * 60_000): Promise<Game[]> {
+  const get = async (kind: "played" | "fixtures") => {
+    const qs = kind === "fixtures" ? "?fixture=true" : "";
+    const raw = await fetchEspn(
+      espnUrl(league, `teams/${encodeURIComponent(String(team))}/schedule${qs}`),
+      espnCacheKey(league, `sched_${kind}`, team),
+      ttlMs,
+      "team schedule",
+    );
+    if (looksOff(raw)) warnDriftOnce();
+    return (raw?.events ?? []).map((e: any) => toGame(e));
+  };
+  const [played, fixtures] = await Promise.all([get("played"), get("fixtures")]);
+  return [...played, ...fixtures];
+}
+
 /** One team's schedule for a season type as sport-neutral `Game`s. */
 export async function getTeamGames(
   league: League,
@@ -654,11 +685,13 @@ export interface StandingsQuery {
   level?: "conference" | "division";
 }
 
-/** Standings for `league`, grouped (NBA/NHL conferences or divisions, WC groups). */
+/** Standings for `league`, grouped (NBA/NHL conferences or divisions, WC groups;
+ *  club soccer: one table). */
 export async function getStandings(league: League, query: StandingsQuery = {}, ttlMs = 10 * 60_000): Promise<EspnStandings> {
   const params = new URLSearchParams();
   if (query.season !== undefined) params.set("season", String(query.season));
-  if (query.seasonType !== undefined) params.set("seasontype", String(query.seasonType));
+  // Club soccer is one table with no season types: `seasontype=2` returns nothing.
+  if (query.seasonType !== undefined && !isClubSoccer(league)) params.set("seasontype", String(query.seasonType));
   if (query.level === "division") params.set("level", "3");
   const qs = params.toString();
   const raw = await fetchEspn(

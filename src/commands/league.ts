@@ -9,7 +9,7 @@
 
 import { c } from "../ansi.ts";
 import { getFavorites, getHomeMarket, getStreamProvider, getSubscriptions } from "../config.ts";
-import { getGameSummary, getScoreboardGames, getStandings, getTeamGames, getTeams, SEASON_TYPES, type EspnTeam, type League } from "../espn.ts";
+import { getClubTeamGames, getGameSummary, getScoreboardGames, getStandings, getTeamGames, getTeams, isClubSoccer, SEASON_TYPES, type EspnTeam, type League } from "../espn.ts";
 import { fmtDate, fmtDayHeader, gameLine, relativeTime, type PeriodNaming } from "../format.ts";
 import type { Game } from "../game.ts";
 import { PLAYOFF_FORMATS, renderSeasonSummary, summarizeSeason } from "../season.ts";
@@ -56,6 +56,10 @@ export interface LeagueConfig {
   /** League-specific period names for live/final status (hockey: 1st/2nd/3rd/
    *  OT/SO). Omitted → the source's status text is shown as-is. */
   periods?: PeriodNaming;
+  /** How many days league-wide `next` scans for a game (default
+   *  NEXT_SCAN_DAYS). Soccer needs more: an international break leaves the
+   *  league without a match for up to two weeks. */
+  nextScanDays?: number;
 }
 
 /** How far `schedule` looks ahead / `results` looks back league-wide, and how
@@ -63,6 +67,8 @@ export interface LeagueConfig {
  *  NBA/NHL, so each day is its own (cached) scoreboard request. */
 const WINDOW_DAYS = 7;
 const NEXT_SCAN_DAYS = 14;
+/** Club soccer: a 1–2 week international break plus the matchweek around it. */
+export const SOCCER_NEXT_SCAN_DAYS = 28;
 
 // ── Pure helpers (unit-tested) ───────────────────────────────────────────────
 
@@ -157,8 +163,10 @@ export function liveBoard(games: Game[], today: string): { live: Game[]; upcomin
 
 // ── Data access ──────────────────────────────────────────────────────────────
 
-/** Every game for one team across preseason, regular season, and postseason. */
+/** Every game for one team across preseason, regular season, and postseason
+ *  (club soccer: played + upcoming fixtures, which ESPN lists separately). */
 export async function teamSeason(cfg: LeagueConfig, teamId: string): Promise<Game[]> {
+  if (isClubSoccer(cfg.league)) return mergeGames([await getClubTeamGames(cfg.league, teamId)]);
   const { preseason, regular, postseason } = SEASON_TYPES;
   const lists = await Promise.all([preseason, regular, postseason].map((st) => getTeamGames(cfg.league, teamId, st)));
   return mergeGames(lists);
@@ -185,6 +193,25 @@ async function liveGames(cfg: LeagueConfig): Promise<Game[]> {
   const lists = await Promise.all([-1, 0, 1].map((i) => getScoreboardGames(cfg.league, espnDate(addDays(now, i)), LIVE_TTL_MS)));
   return mergeGames(lists);
 }
+
+/** Walk forward a day at a time (`gamesOn(i)` = day `now + i`, up to `days`)
+ *  until a not-yet-started game turns up. */
+export async function scanForNext(days: number, now: number, gamesOn: (dayOffset: number) => Promise<Game[]>): Promise<Game | null> {
+  for (let i = 0; i < days; i++) {
+    const g = firstUpcoming(await gamesOn(i), now);
+    if (g) return g;
+  }
+  return null;
+}
+
+/** The first game to start after `now` anywhere in the league, within the
+ *  league's scan length. */
+export function nextLeagueGame(cfg: LeagueConfig, now: number): Promise<Game | null> {
+  return scanForNext(scanDays(cfg), now, (i) => gamesOnDays(cfg, addDays(new Date(now), i), 1));
+}
+
+/** Days league-wide `next` scans: the league's own length, else the default. */
+export const scanDays = (cfg: Pick<LeagueConfig, "nextScanDays">): number => cfg.nextScanDays ?? NEXT_SCAN_DAYS;
 
 /** Throws a user-facing error for unknown team input. */
 function unknownTeam(cfg: LeagueConfig, input: string): never {
@@ -317,14 +344,11 @@ async function next(cfg: LeagueConfig, args: string[]): Promise<void> {
   if (scope.kind === "teams") {
     g = firstUpcoming(await scopedSeasons(cfg, scope.ids), now);
   } else {
-    // League-wide: walk forward a day at a time until a game turns up.
-    for (let i = 0; i < NEXT_SCAN_DAYS && !g; i++) {
-      g = firstUpcoming(await gamesOnDays(cfg, addDays(new Date(), i), 1), now);
-    }
+    g = await nextLeagueGame(cfg, now); // league-wide: day by day until a game turns up
   }
 
   if (!g) {
-    const within = scope.kind === "league" ? ` in the next ${NEXT_SCAN_DAYS} days` : "";
+    const within = scope.kind === "league" ? ` in the next ${scanDays(cfg)} days` : "";
     console.log(c.dim(`No upcoming ${cfg.label} games${scope.kind === "teams" ? ` for ${scope.label}` : ""}${within}.`));
     return;
   }
@@ -350,6 +374,9 @@ async function schedule(cfg: LeagueConfig, args: string[]): Promise<void> {
   title(cfg, `Schedule — ${what} (${games.length})`);
   if (games.length === 0) {
     console.log(c.dim("\nNo games to show."));
+    // League-wide and empty (an international break): say when play resumes.
+    const resumes = scope.kind === "league" && scanDays(cfg) > WINDOW_DAYS ? await nextLeagueGame(cfg, Date.now()) : null;
+    if (resumes) console.log(c.dim(`Next ${cfg.label} game: ${fmtDate(resumes.date)} — ${resumes.name}.`));
     return;
   }
   printGames(cfg, games, watch, true);
@@ -387,6 +414,7 @@ async function standings(cfg: LeagueConfig, args: string[]): Promise<void> {
   const division = getFlag(args, "--division");
   if (conference && division) throw new Error("Use --conference or --division, not both.");
   const filter = conference ?? division;
+  if (filter && layout.singleTable) throw new Error(`${cfg.label} has one table; --conference / --division don't apply.`);
   const level: StandingsLevel = conference ? "conference" : division ? "division" : layout.level;
 
   const [view, favs] = await Promise.all([
