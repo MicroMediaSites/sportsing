@@ -151,3 +151,51 @@ test("every openable service maps to a provider with a hub for its sport", () =>
   expect(PROVIDERS[SERVICE_PROVIDER["nba-league-pass"]]!.hubs.nba).toBeTruthy();
   expect(PROVIDERS[SERVICE_PROVIDER["prime-video"]]!.hubs.nba).toBeTruthy();
 });
+
+test("every openable service maps to a provider with a hub for its sport (club soccer)", () => {
+  for (const sport of ["epl", "seriea", "ligue1"]) expect(PROVIDERS[SERVICE_PROVIDER.fubo]!.hubs[sport]).toBeTruthy();
+  expect(PROVIDERS[SERVICE_PROVIDER.peacock]!.hubs.epl).toBeTruthy();
+  expect(PROVIDERS[SERVICE_PROVIDER["paramount-plus"]]!.hubs.seriea).toBeTruthy();
+});
+
+describe("club soccer routing", () => {
+  const SPURS = team("367", "Tottenham Hotspur", "TOT");
+  const ARSENAL = team("359", "Arsenal", "ARS");
+  const soccer = (sport: WatchContext["sport"], subscriptions: WatchContext["subscriptions"]): WatchContext => ({ sport, subscriptions, homeMarket: "utah" });
+  const nat = (name: string): Broadcast[] => [{ name, market: "national" }];
+
+  test("isWatchSport includes the three leagues", () => {
+    for (const s of ["epl", "seriea", "ligue1"]) expect(isWatchSport(s)).toBe(true);
+    expect(isWatchSport("fifa")).toBe(false);
+  });
+
+  test("WATCH cell: service, assumed default, ✗, ?", () => {
+    const ctx = soccer("epl", ["peacock", "paramount-plus"]);
+    expect(strip(watchCell(game(SPURS, ARSENAL, nat("Peacock")), ctx))).toBe("Peacock");
+    expect(strip(watchCell(game(SPURS, ARSENAL, []), ctx))).toBe("Peacock");
+    expect(strip(watchCell(game(SPURS, ARSENAL, nat("NBC")), ctx))).toBe("✗");
+    expect(strip(watchCell(game(SPURS, ARSENAL, nat("Mystery Net")), ctx))).toBe("?");
+    expect(strip(watchCell(game(SPURS, ARSENAL, []), soccer("seriea", ["paramount-plus"])))).toBe("?");
+    expect(watchCell(game(SPURS, ARSENAL, nat("Peacock"), "post"), ctx)).toBe("");
+  });
+
+  test("planWatch maps each new service to its provider", () => {
+    expect(planWatch(watchOf(game(SPURS, ARSENAL, nat("Peacock")), soccer("epl", ["peacock"])), "fubo")).toMatchObject({ kind: "open", provider: "peacock" });
+    expect(planWatch(watchOf(game(SPURS, ARSENAL, nat("Paramount+")), soccer("seriea", ["paramount-plus"])), null)).toMatchObject({
+      kind: "open",
+      provider: "paramount-plus",
+    });
+    expect(planWatch(watchOf(game(SPURS, ARSENAL, nat("beIN Sports")), soccer("ligue1", ["fubo"])), null)).toMatchObject({ kind: "open", provider: "fubo" });
+  });
+
+  test("assumed default is labelled in the summary and plan note", () => {
+    const w = watchOf(game(SPURS, ARSENAL, []), soccer("epl", ["peacock"]));
+    expect(watchSummary(w)).toBe("Peacock — no broadcast listed yet (assumed)");
+    expect(planWatch(w, null)).toEqual({ kind: "open", provider: "peacock", note: "Peacock — no broadcast listed yet (assumed)" });
+  });
+
+  test("unplaceable match falls back to the league's default provider", () => {
+    const w = watchOf(game(SPURS, ARSENAL, []), soccer("seriea", ["paramount-plus"]));
+    expect(planWatch(w, "paramount-plus")).toMatchObject({ kind: "open", provider: "paramount-plus" });
+  });
+});

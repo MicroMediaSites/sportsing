@@ -11,6 +11,24 @@ test("pickProvider: per-sport hubs — Fubo has FIFA, NBA, and NHL hubs", () => 
   expect(pickProvider("fubo", "nhl")).toEqual({ ok: true, key: "fubo", label: "Fubo", hub: "https://www.fubo.tv/p/nhl" });
 });
 
+test("pickProvider: club-soccer hubs — Fubo (all three), Peacock (EPL), Paramount+ (Serie A)", () => {
+  for (const sport of ["epl", "seriea", "ligue1"]) {
+    expect(pickProvider("fubo", sport)).toEqual({ ok: true, key: "fubo", label: "Fubo", hub: "https://www.fubo.tv/p/soccer" });
+  }
+  expect(pickProvider("peacock", "epl")).toEqual({ ok: true, key: "peacock", label: "Peacock", hub: "https://www.peacocktv.com/sports/premier-league" });
+  expect(pickProvider("paramount-plus", "seriea")).toEqual({
+    ok: true,
+    key: "paramount-plus",
+    label: "Paramount+",
+    hub: "https://www.paramountplus.com/shows/serie-a/",
+  });
+  expect(pickProvider("paramount-plus", "epl")).toEqual({
+    ok: false,
+    error: "Paramount+ has no epl hub. Known for epl: peacock, fubo.",
+  });
+  expect(pickProvider("peacock", "ligue1")).toEqual({ ok: false, error: "Peacock has no ligue1 hub. Known for ligue1: fubo." });
+});
+
 test("pickProvider: FIFA keeps both World Cup providers", () => {
   expect(pickProvider("peacock", "fifa").ok).toBe(true);
   const bad = pickProvider("hulu", "fifa");
@@ -39,4 +57,10 @@ test("waitPollMs: 60s normally, 30s inside 15 min, 15s inside 5 min and once pas
 test("profileDir: League Pass opens through Prime Video, so it shares the Prime Video profile", () => {
   expect(profileDir("NBA League Pass")).toBe(profileDir("Prime Video"));
   expect(profileDir("Fubo")).not.toBe(profileDir("Prime Video"));
+});
+
+test("profileDir: Peacock and Paramount+ each get their own profile", () => {
+  const dirs = new Set(["Fubo", "Peacock", "Paramount+", "Prime Video"].map(profileDir));
+  expect(dirs.size).toBe(4);
+  expect(profileDir("Paramount+")).toMatch(/chrome-paramount\+$/);
 });

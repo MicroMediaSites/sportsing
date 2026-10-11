@@ -24,6 +24,7 @@ export const EPL: LeagueConfig = {
   league: LEAGUES.epl,
   label: "Premier League",
   shortLabel: "EPL",
+  watchProvider: "peacock",
   aliases: {
     "Man Utd": "MAN",
     "Man U": "MAN",
@@ -43,6 +44,7 @@ export const SERIEA: LeagueConfig = {
   sport: "seriea",
   league: LEAGUES.seriea,
   label: "Serie A",
+  watchProvider: "paramount-plus",
   aliases: {
     Inter: "INT",
     Internazionale: "INT",
@@ -57,6 +59,7 @@ export const LIGUE1: LeagueConfig = {
   sport: "ligue1",
   league: LEAGUES.ligue1,
   label: "Ligue 1",
+  watchProvider: "fubo",
   aliases: {
     OM: "OLM",
     OL: "LYON",
