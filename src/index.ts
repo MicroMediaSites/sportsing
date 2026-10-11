@@ -14,7 +14,8 @@ const VERSION: string = pkg.version;
 
 // Sport namespaces. Add a new sport by writing src/sports/<sport>.ts and
 // registering it in SPORTS in src/commands/cross.ts (which also makes the bare
-// cross-sport commands include it).
+// cross-sport commands include it). Its LeagueConfig must declare a statProfile
+// (see "Adding a league" in AGENTS.md).
 const SPORTS = Object.fromEntries(REGISTRY.map((s) => [s.key, s.run]));
 
 function help() {

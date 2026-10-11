@@ -509,8 +509,125 @@ export async function getTeamGames(
   team: string | number,
   seasonType: SeasonType,
   ttlMs = 5 * 60_000,
+  season?: number,
 ): Promise<Game[]> {
-  return (await rawTeamSchedule(league, team, seasonType, ttlMs)).map((e) => toGame(e, seasonType));
+  return (await rawTeamSchedule(league, team, seasonType, ttlMs, season)).map((e) => toGame(e, seasonType));
+}
+
+/** A club-soccer team's matches already played in `season` (ESPN year, the year
+ *  the season starts: 2026 = 2026-27). The plain schedule lists only played
+ *  matches, so this is one call, not getClubTeamGames's two. */
+export async function getClubTeamResults(
+  league: League,
+  team: string | number,
+  season?: number,
+  ttlMs = 5 * 60_000,
+): Promise<Game[]> {
+  const raw = await fetchEspn(
+    espnUrl(league, `teams/${encodeURIComponent(String(team))}/schedule${season === undefined ? "" : `?season=${season}`}`),
+    espnCacheKey(league, `sched_played${season === undefined ? "" : `_${season}`}`, team),
+    ttlMs,
+    "team schedule",
+  );
+  if (looksOff(raw)) warnDriftOnce();
+  return (raw?.events ?? []).map((e: any) => toGame(e));
+}
+
+// --- Season team statistics (NBA / NHL) ---
+
+export interface EspnTeamSeasonStats {
+  /** Games the stats cover (`gamesPlayed` / `games`); null when the response has none (preseason). */
+  games: number | null;
+  /** Every stat by ESPN name, flattened across categories (first one wins a name). */
+  values: Record<string, number>;
+}
+
+/** A `teams/{id}/statistics` response → flat stat map. Exported for tests. */
+export function parseTeamStatistics(raw: any): EspnTeamSeasonStats {
+  const values: Record<string, number> = {};
+  for (const cat of raw?.results?.stats?.categories ?? []) {
+    for (const st of cat?.stats ?? []) {
+      const v = typeof st?.value === "number" ? st.value : NaN;
+      if (typeof st?.name === "string" && Number.isFinite(v) && !(st.name in values)) values[st.name] = v;
+    }
+  }
+  const games = values.gamesPlayed ?? values.games;
+  return { games: games !== undefined && games > 0 ? games : null, values };
+}
+
+/** One team's regular-season totals/averages for `season` (ESPN year) in
+ *  `league`. A season that's over never changes, so callers pass a long TTL. */
+export async function getTeamStatistics(
+  league: League,
+  team: string | number,
+  season: number,
+  ttlMs = 30 * 60_000,
+): Promise<EspnTeamSeasonStats> {
+  const raw = await fetchEspn(
+    espnUrl(league, `teams/${encodeURIComponent(String(team))}/statistics?season=${season}&seasontype=${SEASON_TYPES.regular}`),
+    espnCacheKey(league, `tstats_${season}`, team),
+    ttlMs,
+    "team statistics",
+  );
+  return parseTeamStatistics(raw);
+}
+
+// --- Finished-match boxscores (club soccer) ---
+
+export interface MatchBoxscoreSide {
+  /** ESPN team id — unique only within a league. */
+  teamId: string;
+  score: number;
+  /** Boxscore stats by ESPN name (possessionPct, totalShots, …); non-numeric dropped. */
+  stats: Record<string, number>;
+}
+
+/** The trimmed, permanently cached form of a finished match's `summary`. */
+export interface MatchBoxscore {
+  id: string;
+  home: MatchBoxscoreSide;
+  away: MatchBoxscoreSide;
+}
+
+/** Thrown when a boxscore is asked for a match that isn't over (never cached). */
+export class NotFinishedError extends Error {}
+
+/** A `summary?event=` response → MatchBoxscore; null unless the match is over
+ *  and both sides have a boxscore. Exported for tests. */
+export function parseMatchBoxscore(raw: any): MatchBoxscore | null {
+  const comp = raw?.header?.competitions?.[0];
+  if (!comp || comp.status?.type?.state !== "post") return null;
+  const side = (homeAway: "home" | "away"): MatchBoxscoreSide | null => {
+    const entry = (comp.competitors ?? []).find((x: any) => x?.homeAway === homeAway);
+    const teamId = String(entry?.team?.id ?? entry?.id ?? "");
+    const box = (raw?.boxscore?.teams ?? []).find((t: any) => String(t?.team?.id ?? "") === teamId);
+    const shown = scoreOf(entry?.score);
+    const score = shown === "" ? NaN : Number(shown);
+    if (!teamId || !box || !Number.isFinite(score)) return null;
+    const stats: Record<string, number> = {};
+    for (const st of box.statistics ?? []) {
+      const v = Number(st?.value ?? st?.displayValue);
+      if (typeof st?.name === "string" && Number.isFinite(v)) stats[st.name] = v;
+    }
+    return { teamId, score, stats };
+  };
+  const home = side("home");
+  const away = side("away");
+  return home && away ? { id: String(raw?.header?.id ?? comp.id ?? ""), home, away } : null;
+}
+
+/** A finished match's boxscore. A finished match never changes, so the trimmed
+ *  result is cached on disk forever (keyed by league + event id; the raw
+ *  summary is ~400 KB, the cached file ~1 KB). Throws NotFinishedError for a
+ *  match still to play or in progress, caching nothing. */
+export async function getMatchBoxscore(league: League, eventId: string): Promise<MatchBoxscore> {
+  return cached<MatchBoxscore>(espnCacheKey(league, "box", eventId), Infinity, async () => {
+    const res = await fetch(espnUrl(league, `summary?event=${encodeURIComponent(eventId)}`), { headers: HEADERS });
+    if (!res.ok) throw new ApiError(res.status, `ESPN summary request failed (HTTP ${res.status}).`);
+    const box = parseMatchBoxscore(await res.json());
+    if (!box) throw new NotFinishedError(`Match ${eventId} has no final boxscore.`);
+    return box;
+  });
 }
 
 // --- Postseason (bracket) ---
