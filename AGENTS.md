@@ -104,3 +104,22 @@ structural problem regardless of round number — keep iterating until the denia
 addressed or the design is reconsidered.
 
 <!-- stamp:end -->
+
+## Adding a league
+
+A league that sportsing tracks gets stats the moment it is added.
+
+1. Write `src/sports/<sport>.ts` exporting a `LeagueConfig` and its namespace
+   (`leagueNamespace(cfg)`), and register it in `SPORTS` in
+   `src/commands/cross.ts` (see the note in `src/index.ts`).
+2. **Declare a `StatProfile`** on the config (`statProfile`, required — the
+   type checker rejects a league without one). It lists the stats the league
+   offers (`key`, `label`, `short`, `higherIsBetter`, `format`), where they come
+   from (`source`: `"team-stats"` for ESPN's `teams/{id}/statistics`, or
+   `"boxscores"` for aggregating finished matches' summaries) and the `form`
+   letters (`"wdl"`, `"wl"`, `"wl-otl"`). A stat with no `derive` reads the
+   ESPN field of the same `key`; use `derive` for per-game rates and
+   percentages. Check the real field names with `curl -s --compressed` against
+   the ESPN endpoint first. See `src/stats.ts` and the existing profiles.
+3. Add the config to `LEAGUE_CONFIGS` in `src/stat-profiles.test.ts`; that
+   test fails if a registered league has no profile or no stats.

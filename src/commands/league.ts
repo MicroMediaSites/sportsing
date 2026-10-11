@@ -32,6 +32,7 @@ import { fav } from "./fav.ts";
 import { leagueAnalyze, leaguePredict, leagueRecap, type LeagueGames } from "./league-ai.ts";
 import { fmtEta, parseSize, positionalTerms, smokeWatch, waitPollMs } from "./watch.ts";
 import { leagueBracket } from "./league-bracket.ts";
+import type { StatProfile } from "../stats.ts";
 import { LIVE_REFRESH_MS, raise, type Alert, type Alerter } from "../alerts.ts";
 import { selfInvocation } from "../click-to-watch.ts";
 import { isGameSport } from "../game-events.ts";
@@ -63,6 +64,9 @@ export interface LeagueConfig {
    *  NEXT_SCAN_DAYS). Soccer needs more: an international break leaves the
    *  league without a match for up to two weeks. */
   nextScanDays?: number;
+  /** Which stats `stats` offers for this league and where they come from.
+   *  Required: a registry test fails any league without one (src/stats.ts). */
+  statProfile: StatProfile;
 }
 
 /** How far `schedule` looks ahead / `results` looks back league-wide, and how

@@ -1,0 +1,576 @@
+[
+ {
+  "header": {
+   "id": "401874757",
+   "competitions": [
+    {
+     "id": "401874757",
+     "status": {
+      "type": {
+       "id": "28",
+       "name": "STATUS_FULL_TIME",
+       "state": "post",
+       "completed": true,
+       "description": "Full Time",
+       "detail": "FT",
+       "shortDetail": "FT"
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "id": "111",
+       "score": "2",
+       "team": {
+        "id": "111",
+        "abbreviation": "JUV",
+        "displayName": "Juventus"
+       }
+      },
+      {
+       "homeAway": "away",
+       "id": "105",
+       "score": "0",
+       "team": {
+        "id": "105",
+        "abbreviation": "ATA",
+        "displayName": "Atalanta"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  "boxscore": {
+   "teams": [
+    {
+     "team": {
+      "id": "111",
+      "abbreviation": "JUV"
+     },
+     "statistics": [
+      {
+       "name": "foulsCommitted",
+       "displayValue": "10"
+      },
+      {
+       "name": "yellowCards",
+       "displayValue": "1"
+      },
+      {
+       "name": "redCards",
+       "displayValue": "0"
+      },
+      {
+       "name": "offsides",
+       "displayValue": "4"
+      },
+      {
+       "name": "wonCorners",
+       "displayValue": "4"
+      },
+      {
+       "name": "saves",
+       "displayValue": "1"
+      },
+      {
+       "name": "possessionPct",
+       "displayValue": "52.1"
+      },
+      {
+       "name": "totalShots",
+       "displayValue": "14"
+      },
+      {
+       "name": "shotsOnTarget",
+       "displayValue": "5"
+      },
+      {
+       "name": "shotPct",
+       "displayValue": "0.4"
+      },
+      {
+       "name": "penaltyKickGoals",
+       "displayValue": "0"
+      },
+      {
+       "name": "penaltyKickShots",
+       "displayValue": "0"
+      },
+      {
+       "name": "accuratePasses",
+       "displayValue": "462"
+      },
+      {
+       "name": "totalPasses",
+       "displayValue": "522"
+      },
+      {
+       "name": "passPct",
+       "displayValue": "0.9"
+      },
+      {
+       "name": "accurateCrosses",
+       "displayValue": "7"
+      },
+      {
+       "name": "totalCrosses",
+       "displayValue": "17"
+      },
+      {
+       "name": "crossPct",
+       "displayValue": "0.4"
+      },
+      {
+       "name": "totalLongBalls",
+       "displayValue": "36"
+      },
+      {
+       "name": "accurateLongBalls",
+       "displayValue": "21"
+      },
+      {
+       "name": "longballPct",
+       "displayValue": "0.6"
+      },
+      {
+       "name": "blockedShots",
+       "displayValue": "5"
+      },
+      {
+       "name": "effectiveTackles",
+       "displayValue": "8"
+      },
+      {
+       "name": "totalTackles",
+       "displayValue": "11"
+      },
+      {
+       "name": "tacklePct",
+       "displayValue": "0.7"
+      },
+      {
+       "name": "interceptions",
+       "displayValue": "8"
+      },
+      {
+       "name": "effectiveClearance",
+       "displayValue": "18"
+      },
+      {
+       "name": "totalClearance",
+       "displayValue": "18"
+      }
+     ]
+    },
+    {
+     "team": {
+      "id": "105",
+      "abbreviation": "ATA"
+     },
+     "statistics": [
+      {
+       "name": "foulsCommitted",
+       "displayValue": "10"
+      },
+      {
+       "name": "yellowCards",
+       "displayValue": "2"
+      },
+      {
+       "name": "redCards",
+       "displayValue": "0"
+      },
+      {
+       "name": "offsides",
+       "displayValue": "0"
+      },
+      {
+       "name": "wonCorners",
+       "displayValue": "5"
+      },
+      {
+       "name": "saves",
+       "displayValue": "3"
+      },
+      {
+       "name": "possessionPct",
+       "displayValue": "47.9"
+      },
+      {
+       "name": "totalShots",
+       "displayValue": "11"
+      },
+      {
+       "name": "shotsOnTarget",
+       "displayValue": "2"
+      },
+      {
+       "name": "shotPct",
+       "displayValue": "0.2"
+      },
+      {
+       "name": "penaltyKickGoals",
+       "displayValue": "0"
+      },
+      {
+       "name": "penaltyKickShots",
+       "displayValue": "0"
+      },
+      {
+       "name": "accuratePasses",
+       "displayValue": "431"
+      },
+      {
+       "name": "totalPasses",
+       "displayValue": "475"
+      },
+      {
+       "name": "passPct",
+       "displayValue": "0.9"
+      },
+      {
+       "name": "accurateCrosses",
+       "displayValue": "3"
+      },
+      {
+       "name": "totalCrosses",
+       "displayValue": "22"
+      },
+      {
+       "name": "crossPct",
+       "displayValue": "0.1"
+      },
+      {
+       "name": "totalLongBalls",
+       "displayValue": "27"
+      },
+      {
+       "name": "accurateLongBalls",
+       "displayValue": "15"
+      },
+      {
+       "name": "longballPct",
+       "displayValue": "0.6"
+      },
+      {
+       "name": "blockedShots",
+       "displayValue": "3"
+      },
+      {
+       "name": "effectiveTackles",
+       "displayValue": "6"
+      },
+      {
+       "name": "totalTackles",
+       "displayValue": "9"
+      },
+      {
+       "name": "tacklePct",
+       "displayValue": "0.7"
+      },
+      {
+       "name": "interceptions",
+       "displayValue": "12"
+      },
+      {
+       "name": "effectiveClearance",
+       "displayValue": "28"
+      },
+      {
+       "name": "totalClearance",
+       "displayValue": "28"
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "header": {
+   "id": "401874979",
+   "competitions": [
+    {
+     "id": "401874979",
+     "status": {
+      "type": {
+       "id": "28",
+       "name": "STATUS_FULL_TIME",
+       "state": "post",
+       "completed": true,
+       "description": "Full Time",
+       "detail": "FT",
+       "shortDetail": "FT"
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "id": "105",
+       "score": "1",
+       "team": {
+        "id": "105",
+        "abbreviation": "ATA",
+        "displayName": "Atalanta"
+       }
+      },
+      {
+       "homeAway": "away",
+       "id": "2925",
+       "score": "2",
+       "team": {
+        "id": "2925",
+        "abbreviation": "CAG",
+        "displayName": "Cagliari"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  "boxscore": {
+   "teams": [
+    {
+     "team": {
+      "id": "105",
+      "abbreviation": "ATA"
+     },
+     "statistics": [
+      {
+       "name": "foulsCommitted",
+       "displayValue": "9"
+      },
+      {
+       "name": "yellowCards",
+       "displayValue": "0"
+      },
+      {
+       "name": "redCards",
+       "displayValue": "0"
+      },
+      {
+       "name": "offsides",
+       "displayValue": "1"
+      },
+      {
+       "name": "wonCorners",
+       "displayValue": "3"
+      },
+      {
+       "name": "saves",
+       "displayValue": "3"
+      },
+      {
+       "name": "possessionPct",
+       "displayValue": "61.6"
+      },
+      {
+       "name": "totalShots",
+       "displayValue": "22"
+      },
+      {
+       "name": "shotsOnTarget",
+       "displayValue": "4"
+      },
+      {
+       "name": "shotPct",
+       "displayValue": "0.2"
+      },
+      {
+       "name": "penaltyKickGoals",
+       "displayValue": "0"
+      },
+      {
+       "name": "penaltyKickShots",
+       "displayValue": "0"
+      },
+      {
+       "name": "accuratePasses",
+       "displayValue": "636"
+      },
+      {
+       "name": "totalPasses",
+       "displayValue": "696"
+      },
+      {
+       "name": "passPct",
+       "displayValue": "0.9"
+      },
+      {
+       "name": "accurateCrosses",
+       "displayValue": "3"
+      },
+      {
+       "name": "totalCrosses",
+       "displayValue": "25"
+      },
+      {
+       "name": "crossPct",
+       "displayValue": "0.1"
+      },
+      {
+       "name": "totalLongBalls",
+       "displayValue": "12"
+      },
+      {
+       "name": "accurateLongBalls",
+       "displayValue": "4"
+      },
+      {
+       "name": "longballPct",
+       "displayValue": "0.3"
+      },
+      {
+       "name": "blockedShots",
+       "displayValue": "8"
+      },
+      {
+       "name": "effectiveTackles",
+       "displayValue": "10"
+      },
+      {
+       "name": "totalTackles",
+       "displayValue": "17"
+      },
+      {
+       "name": "tacklePct",
+       "displayValue": "0.6"
+      },
+      {
+       "name": "interceptions",
+       "displayValue": "3"
+      },
+      {
+       "name": "effectiveClearance",
+       "displayValue": "9"
+      },
+      {
+       "name": "totalClearance",
+       "displayValue": "9"
+      }
+     ]
+    },
+    {
+     "team": {
+      "id": "2925",
+      "abbreviation": "CAG"
+     },
+     "statistics": [
+      {
+       "name": "foulsCommitted",
+       "displayValue": "8"
+      },
+      {
+       "name": "yellowCards",
+       "displayValue": "0"
+      },
+      {
+       "name": "redCards",
+       "displayValue": "0"
+      },
+      {
+       "name": "offsides",
+       "displayValue": "2"
+      },
+      {
+       "name": "wonCorners",
+       "displayValue": "2"
+      },
+      {
+       "name": "saves",
+       "displayValue": "3"
+      },
+      {
+       "name": "possessionPct",
+       "displayValue": "38.4"
+      },
+      {
+       "name": "totalShots",
+       "displayValue": "5"
+      },
+      {
+       "name": "shotsOnTarget",
+       "displayValue": "5"
+      },
+      {
+       "name": "shotPct",
+       "displayValue": "1.0"
+      },
+      {
+       "name": "penaltyKickGoals",
+       "displayValue": "0"
+      },
+      {
+       "name": "penaltyKickShots",
+       "displayValue": "1"
+      },
+      {
+       "name": "accuratePasses",
+       "displayValue": "375"
+      },
+      {
+       "name": "totalPasses",
+       "displayValue": "440"
+      },
+      {
+       "name": "passPct",
+       "displayValue": "0.9"
+      },
+      {
+       "name": "accurateCrosses",
+       "displayValue": "1"
+      },
+      {
+       "name": "totalCrosses",
+       "displayValue": "4"
+      },
+      {
+       "name": "crossPct",
+       "displayValue": "0.3"
+      },
+      {
+       "name": "totalLongBalls",
+       "displayValue": "44"
+      },
+      {
+       "name": "accurateLongBalls",
+       "displayValue": "21"
+      },
+      {
+       "name": "longballPct",
+       "displayValue": "0.5"
+      },
+      {
+       "name": "blockedShots",
+       "displayValue": "0"
+      },
+      {
+       "name": "effectiveTackles",
+       "displayValue": "11"
+      },
+      {
+       "name": "totalTackles",
+       "displayValue": "22"
+      },
+      {
+       "name": "tacklePct",
+       "displayValue": "0.5"
+      },
+      {
+       "name": "interceptions",
+       "displayValue": "14"
+      },
+      {
+       "name": "effectiveClearance",
+       "displayValue": "25"
+      },
+      {
+       "name": "totalClearance",
+       "displayValue": "25"
+      }
+     ]
+    }
+   ]
+  }
+ }
+]

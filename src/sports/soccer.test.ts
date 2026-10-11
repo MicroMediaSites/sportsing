@@ -9,6 +9,7 @@ import { LEAGUES, isClubSoccer, parseStandingsResponse, toGame } from "../espn.t
 import { SOCCER_PERIODS, gameLine, isDraw, periodLabel, periodStatus, soccerStatus } from "../format.ts";
 import type { Game } from "../game.ts";
 import { teamForm } from "../league-ai.ts";
+import { EPL as REAL_EPL } from "./soccer.ts";
 import { STANDINGS_LAYOUTS, hasGames, renderStandingsTable } from "../standings.ts";
 
 const raw = (name: string): any =>
@@ -23,6 +24,7 @@ const EPL: LeagueConfig = {
   aliases: {},
   periods: SOCCER_PERIODS,
   nextScanDays: SOCCER_NEXT_SCAN_DAYS,
+  statProfile: REAL_EPL.statProfile,
 };
 
 const board = raw("soccer-scoreboard-matchday.json").events.map((e: any) => toGame(e)) as Game[];

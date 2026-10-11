@@ -11,11 +11,37 @@
 import { LEAGUES } from "../espn.ts";
 import { SOCCER_PERIODS } from "../format.ts";
 import { leagueNamespace, SOCCER_NEXT_SCAN_DAYS, type LeagueConfig } from "../commands/league.ts";
+import { CONCEDED, SCORED, type StatProfile } from "../stats.ts";
+
+// Per-match means of ESPN's summary boxscore, aggregated over the season (club
+// soccer's team statistics endpoint is empty). Goals come from the scores. No xG.
+const SOCCER_STATS: StatProfile = {
+  source: "boxscores",
+  form: "wdl",
+  stats: [
+    { key: "goalsFor", label: "Goals for", short: "GF", higherIsBetter: true, format: "avg2", derive: { kind: "perGame", of: SCORED } },
+    { key: "goalsAgainst", label: "Goals against", short: "GA", higherIsBetter: false, format: "avg2", derive: { kind: "perGame", of: CONCEDED } },
+    { key: "possessionPct", label: "Possession", short: "Poss", higherIsBetter: true, format: "pct" },
+    { key: "totalShots", label: "Shots", short: "Sh", higherIsBetter: true, format: "avg" },
+    { key: "shotsOnTarget", label: "Shots on target", short: "SoT", higherIsBetter: true, format: "avg" },
+    { key: "passAccuracy", label: "Pass accuracy", short: "Pass%", higherIsBetter: true, format: "pct", derive: { kind: "ratio", num: "accuratePasses", den: "totalPasses", scale: 100 } },
+    { key: "totalPasses", label: "Passes", short: "Pass", higherIsBetter: true, format: "int" },
+    { key: "wonCorners", label: "Corners", short: "Crn", higherIsBetter: true, format: "avg" },
+    { key: "effectiveTackles", label: "Tackles won", short: "Tkl", higherIsBetter: true, format: "avg" },
+    { key: "interceptions", label: "Interceptions", short: "Int", higherIsBetter: true, format: "avg" },
+    { key: "saves", label: "Saves", short: "Sv", higherIsBetter: true, format: "avg" },
+    { key: "foulsCommitted", label: "Fouls", short: "Fls", higherIsBetter: false, format: "avg" },
+    { key: "offsides", label: "Offsides", short: "Off", higherIsBetter: false, format: "avg" },
+    { key: "yellowCards", label: "Yellow cards", short: "YC", higherIsBetter: false, format: "avg2" },
+    { key: "redCards", label: "Red cards", short: "RC", higherIsBetter: false, format: "avg2" },
+  ],
+};
 
 const SOCCER = {
   icon: "⚽",
   periods: SOCCER_PERIODS,
   nextScanDays: SOCCER_NEXT_SCAN_DAYS,
+  statProfile: SOCCER_STATS,
 } as const;
 
 export const EPL: LeagueConfig = {
