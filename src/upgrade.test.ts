@@ -8,6 +8,7 @@ import {
   manualUpgradeHint,
   parseRegistryLatest,
   parseVersionOutput,
+  staleInstallMessage,
 } from "./upgrade.ts";
 
 const NVM = "/Users/me/.nvm/versions/node/v24.11.0";
@@ -53,22 +54,22 @@ test("manualUpgradeHint covers every non-self-upgradable kind", () => {
 
 test("installCommand: npm prefers the prefix's own node + npm and pins --prefix", () => {
   const all = () => true;
-  expect(installCommand({ kind: "npm-global", prefix: NVM }, all)).toEqual({
-    cmd: [`${NVM}/bin/node`, `${NVM}/bin/npm`, "install", "-g", "--prefix", NVM, "sportsing@latest"],
+  expect(installCommand({ kind: "npm-global", prefix: NVM }, all, "0.3.2")).toEqual({
+    cmd: [`${NVM}/bin/node`, `${NVM}/bin/npm`, "install", "-g", "--prefix", NVM, "sportsing@0.3.2", "--prefer-online"],
     bin: `${NVM}/bin/sportsing`,
   });
   const npmOnly = (p: string) => p.endsWith("/npm");
-  expect(installCommand({ kind: "npm-global", prefix: NVM }, npmOnly).cmd.slice(0, 2)).toEqual([`${NVM}/bin/npm`, "install"]);
+  expect(installCommand({ kind: "npm-global", prefix: NVM }, npmOnly, "0.3.2").cmd.slice(0, 2)).toEqual([`${NVM}/bin/npm`, "install"]);
   const none = () => false;
-  expect(installCommand({ kind: "npm-global", prefix: "/opt" }, none).cmd).toEqual(["npm", "install", "-g", "--prefix", "/opt", "sportsing@latest"]);
+  expect(installCommand({ kind: "npm-global", prefix: "/opt" }, none, "0.3.2").cmd).toEqual(["npm", "install", "-g", "--prefix", "/opt", "sportsing@0.3.2", "--prefer-online"]);
 });
 
 test("installCommand: bun global", () => {
-  expect(installCommand({ kind: "bun-global", bunInstall: "/h/.bun" }, () => false)).toEqual({
-    cmd: ["bun", "add", "-g", "sportsing@latest"],
+  expect(installCommand({ kind: "bun-global", bunInstall: "/h/.bun" }, () => false, "0.3.2")).toEqual({
+    cmd: ["bun", "add", "-g", "--no-cache", "sportsing@0.3.2"],
     bin: "/h/.bun/bin/sportsing",
   });
-  expect(installCommand({ kind: "bun-global", bunInstall: "/h/.bun" }, () => true).cmd[0]).toBe("/h/.bun/bin/bun");
+  expect(installCommand({ kind: "bun-global", bunInstall: "/h/.bun" }, () => true, "0.3.2").cmd[0]).toBe("/h/.bun/bin/bun");
 });
 
 test("compareVersions: numeric, not lexical", () => {
@@ -104,4 +105,32 @@ test("parseVersionOutput", () => {
   expect(parseVersionOutput("sportsing 0.3.0\n")).toBe("0.3.0");
   expect(parseVersionOutput("sportsing 1.0.0-rc.1")).toBe("1.0.0-rc.1");
   expect(parseVersionOutput("command not found")).toBeNull();
+});
+
+test("installCommand: never installs @latest, always the exact version", () => {
+  for (const m of [{ kind: "npm-global", prefix: NVM }, { kind: "bun-global", bunInstall: "/h/.bun" }] as const) {
+    const { cmd } = installCommand(m, () => false, "0.3.2");
+    expect(cmd).toContain("sportsing@0.3.2");
+    expect(cmd.join(" ")).not.toContain("@latest");
+  }
+});
+
+test("staleInstallMessage: null when the expected version landed", () => {
+  expect(staleInstallMessage("/b/sportsing", "0.3.2", "0.3.1", "0.3.2")).toBeNull();
+});
+
+test("staleInstallMessage: reports a stale install clearly", () => {
+  const msg = staleInstallMessage("/b/sportsing", "0.3.1", "0.3.1", "0.3.2");
+  expect(msg).toContain("still reports 0.3.1");
+  expect(msg).toContain("expected 0.3.2");
+  expect(msg).toContain("npm i -g sportsing@0.3.2 --prefer-online");
+});
+
+test("staleInstallMessage: the retry hint matches the package manager", () => {
+  expect(staleInstallMessage("/b/sportsing", "0.3.1", "0.3.1", "0.3.2", "bun")).toContain("bun add -g sportsing@0.3.2 --no-cache");
+  expect(staleInstallMessage("/b/sportsing", "0.3.1", "0.3.1", "0.3.2", "npm")).toContain("npm i -g sportsing@0.3.2 --prefer-online");
+});
+
+test("staleInstallMessage: partial upgrade is flagged", () => {
+  expect(staleInstallMessage("/b/sportsing", "0.3.2", "0.3.0", "0.3.3")).toContain("not the expected 0.3.3");
 });
