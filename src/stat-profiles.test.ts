@@ -29,4 +29,7 @@ test.each(Object.entries(LEAGUE_CONFIGS))("%s declares a StatProfile with stats"
   const keys = p.stats.map((s) => s.key);
   expect(new Set(keys).size).toBe(keys.length);
   for (const s of p.stats) expect(s.label && s.short).toBeTruthy();
+  expect(keys).toContain(p.scatter.x);
+  expect(keys).toContain(p.scatter.y);
+  expect(p.scatter.x).not.toBe(p.scatter.y);
 });

@@ -18,6 +18,7 @@ import { CONCEDED, SCORED, type StatProfile } from "../stats.ts";
 const SOCCER_STATS: StatProfile = {
   source: "boxscores",
   form: "wdl",
+  scatter: { x: "possessionPct", y: "totalShots" },
   stats: [
     { key: "goalsFor", label: "Goals for", short: "GF", higherIsBetter: true, format: "avg2", derive: { kind: "perGame", of: SCORED } },
     { key: "goalsAgainst", label: "Goals against", short: "GA", higherIsBetter: false, format: "avg2", derive: { kind: "perGame", of: CONCEDED } },

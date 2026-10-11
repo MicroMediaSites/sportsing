@@ -9,17 +9,27 @@ import { formatStat, rankBy, type LeagueStats, type Outcome, type StatDef, type 
 
 // ── Arguments ────────────────────────────────────────────────────────────────
 
-export type StatsRequest =
+/** `html` is present (true) only with `--html`: the chart page instead of text. */
+export type StatsRequest = (
   | { mode: "form"; json: boolean }
   | { mode: "list"; json: boolean }
   | { mode: "by"; stat: string; json: boolean }
   | { mode: "compare"; a: string; b: string; json: boolean }
-  | { mode: "ahead"; team: string | null; json: boolean };
+  | { mode: "ahead"; team: string | null; json: boolean }
+) & { html?: true };
 
 /** Parse `stats` arguments. `--by` takes the words up to the next flag (labels
  *  have spaces: `--by shots on target`); two bare words are a comparison;
  *  `--ahead` takes an optional team. Throws a usage message on anything else. */
 export function parseStatsArgs(args: string[]): StatsRequest {
+  const req = parseStatsMode(args);
+  if (!args.includes("--html")) return req;
+  if (req.json) throw new Error("Use --html or --json, not both.");
+  if (req.mode === "list") throw new Error("--html doesn't combine with --list.");
+  return { ...req, html: true };
+}
+
+function parseStatsMode(args: string[]): StatsRequest {
   const json = args.includes("--json");
   const rest: string[] = [];
   let by: string | null = null;
@@ -27,7 +37,7 @@ export function parseStatsArgs(args: string[]): StatsRequest {
   let list = false;
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
-    if (a === "--json") continue;
+    if (a === "--json" || a === "--html") continue;
     if (a === "--list") list = true;
     else if (a === "--ahead") ahead = true;
     else if (a === "--by") {
@@ -48,7 +58,7 @@ export function parseStatsArgs(args: string[]): StatsRequest {
   }
   if (rest.length === 0) return { mode: "form", json };
   if (rest.length === 2) return { mode: "compare", a: rest[0]!, b: rest[1]!, json };
-  throw new Error("Usage: stats [--by <stat> | --list | --ahead [team] | <team> <team>] [--json]");
+  throw new Error("Usage: stats [--by <stat> | --list | --ahead [team] | <team> <team>] [--json | --html]");
 }
 
 function noPositionals<T extends StatsRequest>(req: T, rest: string[]): T {

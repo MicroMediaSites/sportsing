@@ -7,14 +7,17 @@
 // by endpoint (the Mammoth are UTAH in /teams but UTA on schedules). User input
 // (`--team`, favorites) is resolved to a team via the league's /teams list.
 
+import { mkdir } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
 import { c } from "../ansi.ts";
-import { getFavorites, getHomeMarket, getStreamProvider, getSubscriptions } from "../config.ts";
+import { CACHE_DIR, getFavorites, getHomeMarket, getStreamProvider, getSubscriptions } from "../config.ts";
 import { getClubTeamGames, getGameSummary, getScoreboardGames, getStandings, getTeamGames, getTeams, isClubSoccer, SEASON_TYPES, type EspnTeam, type League } from "../espn.ts";
 import { fmtDate, fmtDayHeader, gameLine, relativeTime, type PeriodNaming } from "../format.ts";
 import type { Game } from "../game.ts";
 import { PLAYOFF_FORMATS, renderSeasonSummary, summarizeSeason } from "../season.ts";
 import { STANDINGS_LAYOUTS, groupMatches, loadStandingsView, renderStandingsTable, type StandingsLevel } from "../standings.ts";
-import { launchStream, pickProvider } from "../stream.ts";
+import { launchStream, openInBrowser, pickProvider } from "../stream.ts";
+import { renderStatsHtml, statsHtmlPath } from "../stats-html.ts";
 import {
   SUBSCRIPTIONS_HINT,
   isWatchSport,
@@ -467,7 +470,7 @@ async function standings(cfg: LeagueConfig, args: string[]): Promise<void> {
   for (const g of groups) console.log("\n" + renderStandingsTable(g, layout, ids));
 }
 
-/** `stats [--by <stat> | --list | --ahead [team] | <team> <team>] [--json]` —
+/** `stats [--by <stat> | --list | --ahead [team] | <team> <team>] [--json | --html]` —
  *  the league's form table (default), one stat ranked, or the stats on offer;
  *  two teams compare and `--ahead` is fixture difficulty (src/stats-compare.ts).
  *  Favorites starred. Before the regular season, last season's figures,
@@ -475,6 +478,11 @@ async function standings(cfg: LeagueConfig, args: string[]): Promise<void> {
 async function stats(cfg: LeagueConfig, args: string[]): Promise<void> {
   const req = parseStatsArgs(args);
   const json = req.json;
+  if (req.html && (req.mode === "compare" || req.mode === "ahead")) {
+    console.error(c.red(`--html isn't supported yet for ${req.mode === "compare" ? "team comparisons" : "--ahead"}.`));
+    process.exitCode = 1;
+    return;
+  }
   if (req.mode === "compare") return compareCommand(cfg, req.a, req.b, { json });
   if (req.mode === "ahead") return aheadCommand(cfg, req.team, { json });
 
@@ -498,9 +506,19 @@ async function stats(cfg: LeagueConfig, args: string[]): Promise<void> {
   }
 
   const [data, favs] = await Promise.all([loadLeagueStats(cfg), getFavorites(cfg.sport)]);
+  const fetchedAt = new Date();
   const ids = favs.length > 0 && data.teams.length > 0 ? favoriteIds(cfg, await getTeams(cfg.league), favs) : new Set<string>();
   if (json) {
     return console.log(JSON.stringify(def ? rankingJson(data, def, ids) : formJson(data, ids), null, 2));
+  }
+
+  if (req.html && data.kind !== "not-started") {
+    const file = statsHtmlPath(cfg.sport);
+    await mkdir(CACHE_DIR, { recursive: true });
+    await Bun.write(file, renderStatsHtml(data, { favoriteIds: ids, by: def, fetchedAt }));
+    console.log(file);
+    openInBrowser(pathToFileURL(file).href);
+    return;
   }
 
   const what = def ? `${def.label} by team` : "Form";
@@ -951,7 +969,7 @@ ${b("COMMANDS")}
   ${c.green("schedule")}           A team's whole season, by day ${c.dim(`(league-wide: next ${WINDOW_DAYS} days)`)}
   ${c.green("results")}            Finished games, newest first ${c.dim(`(league-wide: last ${WINDOW_DAYS} days)`)}
 ${standingsLine}
-  ${c.green("stats")}              Form table + team stats ${c.dim("(--by <stat>, --list, <team> <team>, --ahead [team], --json)")}
+  ${c.green("stats")}              Form table + team stats ${c.dim("(--by <stat>, --list, <team> <team>, --ahead [team], --json, --html)")}
 ${nonSoccer(`  ${c.green("season")} ${c.dim("[team]")}      Favorites' season: record, splits, playoff race
   ${c.green("bracket")}            Playoff bracket ${c.dim("(projected before the postseason; --season YYYY for a past one)")}
 `)}  ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
