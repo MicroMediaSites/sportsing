@@ -75,7 +75,7 @@ test("espnUrl builds per-league site/v2 URLs; FIFA is the default league", () =>
 
 test("cache keys include the league, so the same id never collides across leagues", () => {
   const keys = Object.values(LEAGUES).map((l) => espnCacheKey(l, "sched2", "UTAH"));
-  expect(new Set(keys).size).toBe(3);
+  expect(new Set(keys).size).toBe(Object.values(LEAGUES).length);
   expect(espnCacheKey(LEAGUES.nba, "sched2", "UTAH")).toBe("espn_basketball_nba_sched2_UTAH");
   expect(espnCacheKey(LEAGUES.fifa, "sb", "20260611-20260719")).toBe("espn_soccer_fifa_world_sb_20260611-20260719");
 });

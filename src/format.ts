@@ -195,7 +195,14 @@ export interface PeriodNaming {
   /** True if a regular-season/preseason tie after one OT goes to a shootout
    *  (NHL). Postseason overtime never ends in one. */
   shootout: boolean;
+  /** "halves" for soccer: two timed halves, then extra time (periods 3-4) and
+   *  penalties (5), with a count-up match minute instead of a count-down clock.
+   *  Omitted = hockey/basketball-style periods. */
+  style?: "halves";
 }
+
+/** Soccer: 2 halves; ET and penalties follow. Leagues opt in via `periods`. */
+export const SOCCER_PERIODS: PeriodNaming = { regulation: 2, shootout: true, style: "halves" };
 
 const ordinal = (n: number): string => {
   const tens = n % 100;
@@ -204,10 +211,12 @@ const ordinal = (n: number): string => {
 };
 
 /** Name of period `g.period` under `naming`: "1st".."3rd", then "OT" (playoff
- *  multi-OT: "2OT", "3OT", …), or "SO" for a shootout. "" before the game. */
+ *  multi-OT: "2OT", "3OT", …), or "SO" for a shootout. "" before the game.
+ *  Soccer ("halves"): "1st half", "2nd half", "1st ET", "2nd ET", "Pens". */
 export function periodLabel(g: Pick<Game, "period" | "seasonType">, naming: PeriodNaming): string {
   const p = g.period;
   if (p <= 0) return "";
+  if (naming.style === "halves") return p <= 2 ? `${ordinal(p)} half` : p <= 4 ? `${ordinal(p - 2)} ET` : "Pens";
   if (p <= naming.regulation) return ordinal(p);
   const ot = p - naming.regulation;
   if (naming.shootout && g.seasonType !== "postseason" && ot > 1) return "SO";
@@ -219,12 +228,33 @@ export function periodLabel(g: Pick<Game, "period" | "seasonType">, naming: Peri
  *  game with no clock at all falls back to the source's text — only an
  *  explicit "0:00" means the period has ended. */
 export function periodStatus(g: Game, naming: PeriodNaming): string {
+  if (naming.style === "halves") return soccerStatus(g);
   const label = periodLabel(g, naming);
   if (g.state === "post") return g.period > naming.regulation ? `Final/${label}` : "Final";
   if (!label) return g.detail;
   if (label === "SO") return "SO";
   if (!g.clock) return g.detail || label;
   return g.clock !== "0:00" ? `${g.clock} - ${label}` : `End of ${label}`;
+}
+
+/** Soccer status from period + match minute: "67' - 2nd half", "HT", "Pens",
+ *  "FT", "AET", "FT/Pens". ESPN's shortDetail marks a break ("HT", or a
+ *  "Break"/"End of …" between extra-time periods); a live game with no minute
+ *  falls back to the source's text. */
+export function soccerStatus(g: Game): string {
+  const label = periodLabel(g, SOCCER_PERIODS);
+  if (g.state === "post") return g.period >= 5 ? "FT/Pens" : g.period > 2 ? "AET" : "FT";
+  if (!label) return g.detail;
+  if (label === "Pens") return "Pens";
+  if (/^(HT|half-?time|break|end of)\b/i.test(g.detail.trim())) return g.period <= 1 ? "HT" : "Break";
+  if (!g.clock) return g.detail || label;
+  return `${g.clock} - ${label}`;
+}
+
+/** A finished game that ended level — a draw (soccer; NBA/NHL games always
+ *  produce a winner, a shootout/OT included). */
+export function isDraw(g: Pick<Game, "state" | "home" | "away">): boolean {
+  return g.state === "post" && g.home.score !== "" && g.away.score !== "" && scoreNum(g.home.score) === scoreNum(g.away.score);
 }
 
 /** Status column: local start time before the game, a LIVE badge + the clock
@@ -234,7 +264,7 @@ function gameStatus(g: Game, naming?: PeriodNaming): string {
   if (g.state === "pre") return c.cyan(fmtTimeOnly(g.date));
   const text = naming ? periodStatus(g, naming) : g.detail;
   if (g.state === "in") return c.bgGreen(c.bold(" LIVE ")) + (text ? c.green(" " + text) : "");
-  return c.dim(text || "Final");
+  return c.dim((text || "Final") + (isDraw(g) ? " · draw" : ""));
 }
 
 /** Score as a number for comparison; NaN when not yet scored. */
