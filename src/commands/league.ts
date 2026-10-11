@@ -51,6 +51,7 @@ import {
 } from "../stats-views.ts";
 import { loadLeagueStats, type StatProfile } from "../stats.ts";
 import { LIVE_REFRESH_MS, raise, type Alert, type Alerter } from "../alerts.ts";
+import { warnIfNoGuiSession } from "../gui-session.ts";
 import { selfInvocation } from "../click-to-watch.ts";
 import { isGameSport } from "../game-events.ts";
 import { leagueFeed } from "../league-alerts.ts";
@@ -740,6 +741,9 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
   let pick = pickOrReport(key, cfg.sport);
   if (!pick) return;
   const overlay = args.includes("--overlay");
+
+  // Before anything opens (and before --wait waits): tell the user now if no window can appear.
+  if (!args.includes("--supervised")) warnIfNoGuiSession();
 
   if (args.includes("--smoke")) {
     const target = url ?? pick.hub;
