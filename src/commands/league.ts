@@ -485,7 +485,11 @@ async function stats(cfg: LeagueConfig, args: string[]): Promise<void> {
     process.exitCode = 1;
     return;
   }
-  if (req.mode === "list" && !json) {
+  if (req.mode === "list" && json) {
+    // Static profile data: no fetch needed.
+    return console.log(JSON.stringify(statListJson({ sport: cfg.sport, label: cfg.label, profile: cfg.statProfile }), null, 2));
+  }
+  if (req.mode === "list") {
     title(cfg, "Stats");
     console.log("\n" + renderStatList(cfg.statProfile));
     if (isClubSoccer(cfg.league)) console.log(c.dim("\nNo xG (ESPN doesn't publish it)."));
@@ -494,7 +498,6 @@ async function stats(cfg: LeagueConfig, args: string[]): Promise<void> {
   }
 
   const [data, favs] = await Promise.all([loadLeagueStats(cfg), getFavorites(cfg.sport)]);
-  if (req.mode === "list") return console.log(JSON.stringify(statListJson(data), null, 2));
   const ids = favs.length > 0 && data.teams.length > 0 ? favoriteIds(cfg, await getTeams(cfg.league), favs) : new Set<string>();
   if (json) {
     return console.log(JSON.stringify(def ? rankingJson(data, def, ids) : formJson(data, ids), null, 2));

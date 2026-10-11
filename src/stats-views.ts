@@ -87,8 +87,8 @@ export function renderStatList(profile: StatProfile): string {
   return [c.dim(`  ${pad("SHORT", 7)}${pad("STAT", labelW)}${pad("KEY", keyW)}BETTER`), ...rows].join("\n");
 }
 
-export function statListJson(stats: LeagueStats) {
-  return { sport: stats.sport, label: stats.label, stats: stats.profile.stats.map(statJson) };
+export function statListJson(league: { sport: string; label: string; profile: StatProfile }) {
+  return { sport: league.sport, label: league.label, stats: league.profile.stats.map(statJson) };
 }
 
 const statJson = (s: StatDef) => ({ key: s.key, label: s.label, short: s.short, higherIsBetter: s.higherIsBetter, format: s.format });
