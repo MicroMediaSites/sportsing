@@ -29,7 +29,7 @@ import { deepLinkGame, leagueTileTerms, type DeepLinkGame } from "./deep-link.ts
  *  PLACE: it holds the provider's login cookies, and moving/copying a live Chrome
  *  profile is unsafe (Singleton locks) and would force re-authentication. */
 export function profileDir(provider: string): string {
-  const key = provider.trim().toLowerCase();
+  const key = profileKey(provider);
   const current = join(homedir(), ".config", "sportsing", "chrome-" + key);
   const legacy = join(homedir(), ".config", "sportsball", "chrome-" + key);
   if (!existsSync(current) && existsSync(legacy)) return legacy;
@@ -53,6 +53,10 @@ export function openInBrowser(url: string): void {
 
 export interface Provider {
   label: string;
+  /** Chrome profile to share with another provider (its label), when both sit
+   *  behind the same login — League Pass opens through Prime Video, so it
+   *  reuses the Prime Video profile instead of asking for a second sign-in. */
+  profile?: string;
   /** Hub page per sport namespace (`fifa`, `nba`, …). A provider without a hub
    *  for a sport can't be picked for that sport's `watch`. */
   hubs: Partial<Record<string, string>>;
@@ -79,13 +83,30 @@ export const PROVIDERS: Record<string, Provider> = {
       nhl: "https://www.fubo.tv/p/nhl",
     },
   },
+  // Amazon's national NBA games (Prime's own package, not League Pass). The
+  // sports storefront: Prime has no stable NBA-only page.
+  "prime-video": {
+    label: "Prime Video",
+    hubs: { nba: "https://www.amazon.com/gp/video/sports" },
+  },
   // Out-of-market NBA games — the provider key matches the `nba-league-pass`
-  // subscription id the watchability resolver routes to.
+  // subscription id the watchability resolver routes to. Opened as the Prime
+  // Video Channels add-on (the NBA League Pass channel page), so it shares the
+  // Prime Video login.
   "nba-league-pass": {
     label: "NBA League Pass",
-    hubs: { nba: "https://www.nba.com/watch/league-pass-stream" },
+    profile: "Prime Video",
+    hubs: { nba: "https://www.amazon.com/gp/video/channel/7a36cb2b-40e6-40c7-809f-a6cf9b9f0859" },
   },
 };
+
+/** Profile key for a provider label: a provider that shares another's profile
+ *  (`Provider.profile`) maps to that one's key. */
+function profileKey(label: string): string {
+  const k = label.trim().toLowerCase();
+  const shared = Object.values(PROVIDERS).find((p) => p.label.toLowerCase() === k)?.profile;
+  return (shared ?? label).trim().toLowerCase();
+}
 
 export type ProviderPick = { ok: true; key: string; label: string; hub: string } | { ok: false; error: string };
 

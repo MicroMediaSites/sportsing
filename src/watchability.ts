@@ -10,11 +10,12 @@ import type { Broadcast, Game, GameCompetitor } from "./game.ts";
 
 /** Services / reception the user can have. Order is the routing preference:
  *  an openable service beats a channel you have to tune an antenna to. */
-export const SUBSCRIPTIONS = ["fubo", "nba-league-pass", "local-ota"] as const;
+export const SUBSCRIPTIONS = ["fubo", "prime-video", "nba-league-pass", "local-ota"] as const;
 export type Subscription = (typeof SUBSCRIPTIONS)[number];
 
 export const SUBSCRIPTION_LABELS: Record<Subscription, string> = {
   fubo: "Fubo",
+  "prime-video": "Prime Video",
   "nba-league-pass": "NBA League Pass",
   "local-ota": "over the air",
 };
@@ -77,7 +78,9 @@ const NATIONAL: Record<string, Subscription[]> = {
   trutv: [],
   "hbo max": [],
   max: [],
-  "prime video": [],
+  // Amazon's own national NBA package (2025–26 on) — not League Pass.
+  "prime video": ["prime-video"],
+  "amazon prime video": ["prime-video"],
   peacock: [],
   "disney+": [],
   hulu: [],
@@ -110,7 +113,9 @@ const key = (name: string) => name.trim().toLowerCase();
  *   only when that team is a home-market team (other markets' regional feeds
  *   are geo-locked and ignored).
  * - NBA League Pass covers out-of-market games, blacked out when a home-market
- *   team plays or the game has any national broadcast.
+ *   team plays or the game has any national broadcast. An out-of-market game
+ *   with no broadcasts listed at all (common in preseason) is assumed to be on
+ *   League Pass — the one guess, since nearly every such game is.
  * - Any relevant broadcaster not in the catalog makes the answer "unknown"
  *   unless a known route already works — never a false yes.
  */
@@ -149,13 +154,14 @@ export function resolveWatch(
   }
 
   // League Pass: out-of-market NBA only, and only when the listing shows no
-  // national broadcast (national games are blacked out; unlisted can't be ruled out).
+  // national broadcast (national games are blacked out). An empty listing
+  // counts as League Pass: such games almost always are, and a wrong guess
+  // just opens the League Pass hub.
   const blackedOut = sport === "nba" && has.has("nba-league-pass") && localTeam !== null;
   if (
     sport === "nba" &&
     has.has("nba-league-pass") &&
     localTeam === null &&
-    game.broadcasts.length > 0 &&
     !listed.some((b) => b.market === "national")
   ) {
     routes.push({ service: "nba-league-pass", channel: SUBSCRIPTION_LABELS["nba-league-pass"] });
@@ -164,7 +170,10 @@ export function resolveWatch(
   if (routes.length) {
     const best = routes.sort((a, b) => SUBSCRIPTIONS.indexOf(a.service) - SUBSCRIPTIONS.indexOf(b.service))[0]!;
     if (best.service === "local-ota") return { watchable: true, via: best.channel, service: best.service, note: `${best.channel} — over the air` };
-    if (best.service === "nba-league-pass") return { watchable: true, via: best.channel, service: best.service, note: "out-of-market on League Pass" };
+    if (best.service === "nba-league-pass") {
+      const note = game.broadcasts.length ? "out-of-market on League Pass" : "no broadcast listed yet (assumed)";
+      return { watchable: true, via: best.channel, service: best.service, note };
+    }
     return { watchable: true, via: SUBSCRIPTION_LABELS[best.service], service: best.service, note: `on ${best.channel}` };
   }
 
