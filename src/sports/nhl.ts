@@ -12,6 +12,7 @@ import type { StatProfile } from "../stats.ts";
 const NHL_STATS: StatProfile = {
   source: "team-stats",
   form: "wl-otl",
+  scatter: { x: "goalsPerGame", y: "avgGoalsAgainst" },
   stats: [
     { key: "goalsPerGame", label: "Goals for", short: "GF/G", higherIsBetter: true, format: "avg2", derive: { kind: "perGame", of: "goals" } },
     { key: "avgGoalsAgainst", label: "Goals against", short: "GA/G", higherIsBetter: false, format: "avg2" },

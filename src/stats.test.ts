@@ -123,6 +123,7 @@ test("assignRanks: best first, ties share a rank, nulls unranked", () => {
 const PROFILE: StatProfile = {
   source: "boxscores",
   form: "wdl",
+  scatter: { x: "good", y: "bad" },
   stats: [
     { key: "good", label: "Good", short: "G", higherIsBetter: true, format: "avg" },
     { key: "bad", label: "Bad", short: "B", higherIsBetter: false, format: "int" },

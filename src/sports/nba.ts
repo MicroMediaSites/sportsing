@@ -11,6 +11,7 @@ import { CONCEDED, type StatProfile } from "../stats.ts";
 const NBA_STATS: StatProfile = {
   source: "team-stats",
   form: "wl",
+  scatter: { x: "avgPoints", y: "pointsAllowed" },
   stats: [
     { key: "avgPoints", label: "Points", short: "PTS", higherIsBetter: true, format: "avg" },
     { key: "pointsAllowed", label: "Points allowed", short: "OPP", higherIsBetter: false, format: "avg", derive: { kind: "perGame", of: CONCEDED } },

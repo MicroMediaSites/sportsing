@@ -66,6 +66,9 @@ export interface StatProfile {
   /** Result letters for form: W/D/L (soccer), W/L (NBA), W/L/OTL (NHL). */
   form: "wdl" | "wl" | "wl-otl";
   stats: StatDef[];
+  /** The two stat keys the `stats --html` scatter plots (x, y): the sport's
+   *  classic style-of-play pair. Both must be keys of `stats`. */
+  scatter: { x: string; y: string };
 }
 
 /** Pseudo-fields the engine adds to every source's fields: goals/points scored
