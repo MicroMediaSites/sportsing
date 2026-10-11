@@ -94,6 +94,7 @@ through playoffs. Times are local; preseason games are tagged `PRE`, postseason
 | `schedule` | A team's whole season by day (league-wide: next 7 days) |
 | `results` | Finished games, newest first (league-wide: last 7 days) |
 | `standings [--conference X] [--division X]` | Regular-season standings, favorites marked ★ |
+| `teams [--json]` | Every team: the code `--team` accepts, name, aliases; favorites marked ★ |
 | `season [team]` | Your favorites' season: record, home/away splits, playoff race |
 | `bracket [--season YYYY]` | Playoff bracket (projected before the postseason) |
 | `fav [add\|rm\|list]` | Manage NBA favorites (`fav add UTAH`, `fav add Jazz`) |
