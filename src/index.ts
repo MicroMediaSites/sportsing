@@ -37,7 +37,7 @@ ${b("SPORTS")}
 
 ${b("YOUR TEAMS")} ${c.dim("(favorites across every sport, each row tagged with its sport)")}
   ${c.green("today")}              Your teams' games today ${c.dim("(--tomorrow, --yesterday, --offset N)")}
-  ${c.green("today --all")}        Every game today, every league + where to watch ${c.dim("(alias: all; --upcoming, --json)")}
+  ${c.green("today --all")}        Every NBA/NHL/EPL/Serie A/Ligue 1 game today + where to watch ${c.dim("(alias: all · --upcoming, --json, --tomorrow; not FIFA)")}
   ${c.green("next")}               Each team's next game + countdown
   ${c.green("me")}                 Dashboard: last result + next game per team
   ${c.green("live --notify")}      OS alerts for every sport with a favorite ${c.dim("(--quiet: no log; run with &)")}

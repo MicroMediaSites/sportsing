@@ -404,7 +404,7 @@ export function allJson(r: AllRow, periods?: LeagueConfig["periods"]) {
   };
 }
 
-/** `today --all` / `all` — every game on one local day, every league. */
+/** `today --all` / `all` — every game on one local day across the ESPN leagues (not FIFA). */
 export async function allGames(sources: AllSource[], args: string[], footer?: Footer): Promise<void> {
   const offset = parseOffset(args);
   const day = addDays(new Date(), offset);
