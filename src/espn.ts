@@ -10,6 +10,7 @@
 // the league so leagues never collide.
 
 import { cached, ApiError } from "./api.ts";
+import { fetchWithRetry } from "./retry.ts";
 import { c } from "./ansi.ts";
 import type { Broadcast, BroadcastMarket, Game, GameCompetitor, Incident, SeasonPhase } from "./game.ts";
 
@@ -65,7 +66,7 @@ const HEADERS = { "User-Agent": "sportsing" };
 /** GET + JSON through the disk cache; non-2xx becomes an ApiError. */
 function fetchEspn<T = any>(url: string, key: string, ttlMs: number, what: string): Promise<T> {
   return cached<T>(key, ttlMs, async () => {
-    const res = await fetch(url, { headers: HEADERS });
+    const res = await fetchWithRetry(url, { headers: HEADERS });
     if (!res.ok) throw new ApiError(res.status, `ESPN ${what} request failed (HTTP ${res.status}).`);
     return res.json() as Promise<T>;
   });
@@ -622,7 +623,7 @@ export function parseMatchBoxscore(raw: any): MatchBoxscore | null {
  *  match still to play or in progress, caching nothing. */
 export async function getMatchBoxscore(league: League, eventId: string): Promise<MatchBoxscore> {
   return cached<MatchBoxscore>(espnCacheKey(league, "box", eventId), Infinity, async () => {
-    const res = await fetch(espnUrl(league, `summary?event=${encodeURIComponent(eventId)}`), { headers: HEADERS });
+    const res = await fetchWithRetry(espnUrl(league, `summary?event=${encodeURIComponent(eventId)}`), { headers: HEADERS });
     if (!res.ok) throw new ApiError(res.status, `ESPN summary request failed (HTTP ${res.status}).`);
     const box = parseMatchBoxscore(await res.json());
     if (!box) throw new NotFinishedError(`Match ${eventId} has no final boxscore.`);
