@@ -123,3 +123,18 @@ A league that sportsing tracks gets stats the moment it is added.
    the ESPN endpoint first. See `src/stats.ts` and the existing profiles.
 3. Add the config to `LEAGUE_CONFIGS` in `src/stat-profiles.test.ts`; that
    test fails if a registered league has no profile or no stats.
+4. **Declare a `PlayerStatProfile`** on the config (`playerStatProfile`,
+   required) for teams, rosters and player stats (`src/squad.ts`). It sets
+   the `source` (`"roster"` when each roster athlete carries `statistics`, as
+   in soccer; `"athlete-statistics"` for ESPN's per-team
+   `athletes/statistics` call, joined by athlete id), the `positionGroups`
+   a roster is split into (ESPN position abbreviations, in display order), the
+   per-player `stats` (`key` = the ESPN stat name unless `field`/`derive` says
+   otherwise; `higherIsBetter`, `format`) and, where the sport has one, a
+   `goalie` variant. Check the real field names with `curl -s --compressed`
+   against `.../teams/{id}/roster` (and `athletes/statistics`) first. Add a
+   recorded, trimmed roster fixture under `fixtures/espn/`. A league that is
+   not a `LeagueConfig` (FIFA) still needs a `SquadLeague` entry (see
+   `FIFA_SQUAD` in `src/sports/fifa.ts`). Register it in `SQUAD_LEAGUES` in
+   `src/stat-profiles.test.ts`, which fails any registered sport without a
+   valid `PlayerStatProfile`.

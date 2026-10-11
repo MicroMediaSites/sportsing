@@ -1,0 +1,1071 @@
+{
+ "season": {
+  "year": 2027,
+  "type": 1,
+  "name": "Preseason",
+  "displayName": "2026-27"
+ },
+ "requestedSeason": {
+  "year": 2026,
+  "type": 2,
+  "name": "Regular Season",
+  "displayName": "2025-26",
+  "qualifiedPostSeason": false
+ },
+ "results": [
+  {
+   "name": "game",
+   "displayName": "Game Statistics",
+   "leaders": [
+    {
+     "value": 26.738094,
+     "displayValue": "26.7",
+     "athlete": {
+      "id": "4066336",
+      "displayName": "Lauri Markkanen",
+      "shortName": "L. Markkanen",
+      "position": {
+       "id": "7",
+       "name": "Forward",
+       "displayName": "Forward",
+       "abbreviation": "F"
+      }
+     },
+     "statistics": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "avgRebounds",
+         "value": 6.8809524,
+         "displayValue": "6.9"
+        },
+        {
+         "name": "assistTurnoverRatio",
+         "value": 1.4126984,
+         "displayValue": "1.4"
+        },
+        {
+         "name": "avgFouls",
+         "value": 1.8333334,
+         "displayValue": "1.8"
+        },
+        {
+         "name": "gamesPlayed",
+         "value": 42.0,
+         "displayValue": "42"
+        },
+        {
+         "name": "gamesStarted",
+         "value": 42.0,
+         "displayValue": "42"
+        },
+        {
+         "name": "minutes",
+         "value": 1443.0,
+         "displayValue": "1443"
+        },
+        {
+         "name": "avgMinutes",
+         "value": 34.357143,
+         "displayValue": "34.4"
+        },
+        {
+         "name": "totalRebounds",
+         "value": 289.0,
+         "displayValue": "289"
+        },
+        {
+         "name": "rebounds",
+         "value": 289.0,
+         "displayValue": "289"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "freeThrowPct",
+         "value": 89.552001953125,
+         "displayValue": "89.6"
+        },
+        {
+         "name": "threePointPct",
+         "value": 35.49399948120117,
+         "displayValue": "35.5"
+        },
+        {
+         "name": "avgFieldGoalsMade",
+         "value": 9.142858,
+         "displayValue": "9.1"
+        },
+        {
+         "name": "avgFieldGoalsAttempted",
+         "value": 19.166666,
+         "displayValue": "19.2"
+        },
+        {
+         "name": "avgThreePointFieldGoalsMade",
+         "value": 2.7380953,
+         "displayValue": "2.7"
+        },
+        {
+         "name": "avgThreePointFieldGoalsAttempted",
+         "value": 7.714286,
+         "displayValue": "7.7"
+        },
+        {
+         "name": "avgFreeThrowsMade",
+         "value": 5.714286,
+         "displayValue": "5.7"
+        },
+        {
+         "name": "avgFreeThrowsAttempted",
+         "value": 6.3809524,
+         "displayValue": "6.4"
+        },
+        {
+         "name": "avgPoints",
+         "value": 26.738094,
+         "displayValue": "26.7"
+        },
+        {
+         "name": "avgOffensiveRebounds",
+         "value": 2.0,
+         "displayValue": "2.0"
+        },
+        {
+         "name": "avgAssists",
+         "value": 2.1190476,
+         "displayValue": "2.1"
+        },
+        {
+         "name": "avgTurnovers",
+         "value": 1.5,
+         "displayValue": "1.5"
+        },
+        {
+         "name": "twoPointFieldGoalPct",
+         "value": 55.92515468597412,
+         "displayValue": "55.9"
+        },
+        {
+         "name": "scoringEfficiency",
+         "value": 1.3950311,
+         "displayValue": "1.395"
+        },
+        {
+         "name": "shootingEfficiency",
+         "value": 0.5484472,
+         "displayValue": "0.55"
+        },
+        {
+         "name": "fieldGoalPct",
+         "value": 47.70199966430664,
+         "displayValue": "47.7"
+        },
+        {
+         "name": "twoPointFieldGoalsMade",
+         "value": 269.0,
+         "displayValue": "269.0"
+        },
+        {
+         "name": "twoPointFieldGoalsAttempted",
+         "value": 481.0,
+         "displayValue": "481.0"
+        },
+        {
+         "name": "points",
+         "value": 1123.0,
+         "displayValue": "1123"
+        },
+        {
+         "name": "offensiveRebounds",
+         "value": 84.0,
+         "displayValue": "84"
+        },
+        {
+         "name": "assists",
+         "value": 89.0,
+         "displayValue": "89"
+        },
+        {
+         "name": "turnovers",
+         "value": 63.0,
+         "displayValue": "63"
+        },
+        {
+         "name": "fieldGoalsMade",
+         "value": 384.0,
+         "displayValue": "384"
+        },
+        {
+         "name": "fieldGoalsAttempted",
+         "value": 805.0,
+         "displayValue": "805"
+        },
+        {
+         "name": "freeThrowsMade",
+         "value": 240.0,
+         "displayValue": "240"
+        },
+        {
+         "name": "freeThrowsAttempted",
+         "value": 268.0,
+         "displayValue": "268"
+        },
+        {
+         "name": "threePointFieldGoalsMade",
+         "value": 115.0,
+         "displayValue": "115"
+        },
+        {
+         "name": "threePointFieldGoalsAttempted",
+         "value": 324.0,
+         "displayValue": "324"
+        },
+        {
+         "name": "threePointFieldGoalPct",
+         "value": 35.4938268661499,
+         "displayValue": "35.5"
+        },
+        {
+         "name": "avgTwoPointFieldGoalsMade",
+         "value": 6.404762,
+         "displayValue": "6.4"
+        },
+        {
+         "name": "avgTwoPointFieldGoalsAttempted",
+         "value": 11.452381,
+         "displayValue": "11.5"
+        }
+       ]
+      },
+      {
+       "name": "defensive",
+       "stats": [
+        {
+         "name": "avgDefensiveRebounds",
+         "value": 4.8809524,
+         "displayValue": "4.9"
+        },
+        {
+         "name": "avgBlocks",
+         "value": 0.5,
+         "displayValue": "0.5"
+        },
+        {
+         "name": "avgSteals",
+         "value": 1.0,
+         "displayValue": "1.0"
+        },
+        {
+         "name": "defensiveRebounds",
+         "value": 205.0,
+         "displayValue": "205"
+        },
+        {
+         "name": "steals",
+         "value": 42.0,
+         "displayValue": "42"
+        },
+        {
+         "name": "blocks",
+         "value": 21.0,
+         "displayValue": "21"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "value": 23.61111,
+     "displayValue": "23.6",
+     "athlete": {
+      "id": "4433627",
+      "displayName": "Keyonte George",
+      "shortName": "K. George",
+      "position": {
+       "id": "3",
+       "name": "Guard",
+       "displayName": "Guard",
+       "abbreviation": "G"
+      }
+     },
+     "statistics": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "avgRebounds",
+         "value": 3.6851852,
+         "displayValue": "3.7"
+        },
+        {
+         "name": "assistTurnoverRatio",
+         "value": 2.0,
+         "displayValue": "2.0"
+        },
+        {
+         "name": "avgFouls",
+         "value": 2.2222223,
+         "displayValue": "2.2"
+        },
+        {
+         "name": "gamesPlayed",
+         "value": 54.0,
+         "displayValue": "54"
+        },
+        {
+         "name": "gamesStarted",
+         "value": 54.0,
+         "displayValue": "54"
+        },
+        {
+         "name": "minutes",
+         "value": 1786.0,
+         "displayValue": "1786"
+        },
+        {
+         "name": "avgMinutes",
+         "value": 33.074074,
+         "displayValue": "33.1"
+        },
+        {
+         "name": "totalRebounds",
+         "value": 199.0,
+         "displayValue": "199"
+        },
+        {
+         "name": "rebounds",
+         "value": 199.0,
+         "displayValue": "199"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "freeThrowPct",
+         "value": 89.15299987792969,
+         "displayValue": "89.2"
+        },
+        {
+         "name": "threePointPct",
+         "value": 37.11899948120117,
+         "displayValue": "37.1"
+        },
+        {
+         "name": "avgFieldGoalsMade",
+         "value": 7.4444447,
+         "displayValue": "7.4"
+        },
+        {
+         "name": "avgFieldGoalsAttempted",
+         "value": 16.314816,
+         "displayValue": "16.3"
+        },
+        {
+         "name": "avgThreePointFieldGoalsMade",
+         "value": 2.4814816,
+         "displayValue": "2.5"
+        },
+        {
+         "name": "avgThreePointFieldGoalsAttempted",
+         "value": 6.685185,
+         "displayValue": "6.7"
+        },
+        {
+         "name": "avgFreeThrowsMade",
+         "value": 6.240741,
+         "displayValue": "6.2"
+        },
+        {
+         "name": "avgFreeThrowsAttempted",
+         "value": 7.0,
+         "displayValue": "7.0"
+        },
+        {
+         "name": "avgPoints",
+         "value": 23.61111,
+         "displayValue": "23.6"
+        },
+        {
+         "name": "avgOffensiveRebounds",
+         "value": 0.42592594,
+         "displayValue": "0.4"
+        },
+        {
+         "name": "avgAssists",
+         "value": 6.148148,
+         "displayValue": "6.1"
+        },
+        {
+         "name": "avgTurnovers",
+         "value": 3.074074,
+         "displayValue": "3.1"
+        },
+        {
+         "name": "twoPointFieldGoalPct",
+         "value": 51.538461446762085,
+         "displayValue": "51.5"
+        },
+        {
+         "name": "scoringEfficiency",
+         "value": 1.447219,
+         "displayValue": "1.447"
+        },
+        {
+         "name": "shootingEfficiency",
+         "value": 0.5323496,
+         "displayValue": "0.53"
+        },
+        {
+         "name": "fieldGoalPct",
+         "value": 45.630001068115234,
+         "displayValue": "45.6"
+        },
+        {
+         "name": "twoPointFieldGoalsMade",
+         "value": 268.0,
+         "displayValue": "268.0"
+        },
+        {
+         "name": "twoPointFieldGoalsAttempted",
+         "value": 520.0,
+         "displayValue": "520.0"
+        },
+        {
+         "name": "points",
+         "value": 1275.0,
+         "displayValue": "1275"
+        },
+        {
+         "name": "offensiveRebounds",
+         "value": 23.0,
+         "displayValue": "23"
+        },
+        {
+         "name": "assists",
+         "value": 332.0,
+         "displayValue": "332"
+        },
+        {
+         "name": "turnovers",
+         "value": 166.0,
+         "displayValue": "166"
+        },
+        {
+         "name": "fieldGoalsMade",
+         "value": 402.0,
+         "displayValue": "402"
+        },
+        {
+         "name": "fieldGoalsAttempted",
+         "value": 881.0,
+         "displayValue": "881"
+        },
+        {
+         "name": "freeThrowsMade",
+         "value": 337.0,
+         "displayValue": "337"
+        },
+        {
+         "name": "freeThrowsAttempted",
+         "value": 378.0,
+         "displayValue": "378"
+        },
+        {
+         "name": "threePointFieldGoalsMade",
+         "value": 134.0,
+         "displayValue": "134"
+        },
+        {
+         "name": "threePointFieldGoalsAttempted",
+         "value": 361.0,
+         "displayValue": "361"
+        },
+        {
+         "name": "threePointFieldGoalPct",
+         "value": 37.1191143989563,
+         "displayValue": "37.1"
+        },
+        {
+         "name": "avgTwoPointFieldGoalsMade",
+         "value": 4.962963,
+         "displayValue": "5.0"
+        },
+        {
+         "name": "avgTwoPointFieldGoalsAttempted",
+         "value": 9.62963,
+         "displayValue": "9.6"
+        }
+       ]
+      },
+      {
+       "name": "defensive",
+       "stats": [
+        {
+         "name": "avgDefensiveRebounds",
+         "value": 3.2592592,
+         "displayValue": "3.3"
+        },
+        {
+         "name": "avgBlocks",
+         "value": 0.25925925,
+         "displayValue": "0.3"
+        },
+        {
+         "name": "avgSteals",
+         "value": 1.074074,
+         "displayValue": "1.1"
+        },
+        {
+         "name": "defensiveRebounds",
+         "value": 176.0,
+         "displayValue": "176"
+        },
+        {
+         "name": "steals",
+         "value": 58.0,
+         "displayValue": "58"
+        },
+        {
+         "name": "blocks",
+         "value": 14.0,
+         "displayValue": "14"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "value": 11.661017,
+     "displayValue": "11.7",
+     "athlete": {
+      "id": "4683766",
+      "displayName": "Isaiah Collier",
+      "shortName": "I. Collier",
+      "position": {
+       "id": "3",
+       "name": "Guard",
+       "displayName": "Guard",
+       "abbreviation": "G"
+      }
+     },
+     "statistics": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "avgRebounds",
+         "value": 2.542373,
+         "displayValue": "2.5"
+        },
+        {
+         "name": "assistTurnoverRatio",
+         "value": 2.858108,
+         "displayValue": "2.9"
+        },
+        {
+         "name": "avgFouls",
+         "value": 2.338983,
+         "displayValue": "2.3"
+        },
+        {
+         "name": "gamesPlayed",
+         "value": 59.0,
+         "displayValue": "59"
+        },
+        {
+         "name": "gamesStarted",
+         "value": 19.0,
+         "displayValue": "19"
+        },
+        {
+         "name": "minutes",
+         "value": 1517.0,
+         "displayValue": "1517"
+        },
+        {
+         "name": "avgMinutes",
+         "value": 25.711864,
+         "displayValue": "25.7"
+        },
+        {
+         "name": "totalRebounds",
+         "value": 150.0,
+         "displayValue": "150"
+        },
+        {
+         "name": "rebounds",
+         "value": 150.0,
+         "displayValue": "150"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "freeThrowPct",
+         "value": 72.2490005493164,
+         "displayValue": "72.2"
+        },
+        {
+         "name": "threePointPct",
+         "value": 27.0,
+         "displayValue": "27.0"
+        },
+        {
+         "name": "avgFieldGoalsMade",
+         "value": 4.322034,
+         "displayValue": "4.3"
+        },
+        {
+         "name": "avgFieldGoalsAttempted",
+         "value": 8.728813,
+         "displayValue": "8.7"
+        },
+        {
+         "name": "avgThreePointFieldGoalsMade",
+         "value": 0.45762712,
+         "displayValue": "0.5"
+        },
+        {
+         "name": "avgThreePointFieldGoalsAttempted",
+         "value": 1.6949153,
+         "displayValue": "1.7"
+        },
+        {
+         "name": "avgFreeThrowsMade",
+         "value": 2.559322,
+         "displayValue": "2.6"
+        },
+        {
+         "name": "avgFreeThrowsAttempted",
+         "value": 3.542373,
+         "displayValue": "3.5"
+        },
+        {
+         "name": "avgPoints",
+         "value": 11.661017,
+         "displayValue": "11.7"
+        },
+        {
+         "name": "avgOffensiveRebounds",
+         "value": 0.3559322,
+         "displayValue": "0.4"
+        },
+        {
+         "name": "avgAssists",
+         "value": 7.1694913,
+         "displayValue": "7.2"
+        },
+        {
+         "name": "avgTurnovers",
+         "value": 2.5084746,
+         "displayValue": "2.5"
+        },
+        {
+         "name": "twoPointFieldGoalPct",
+         "value": 54.93975877761841,
+         "displayValue": "54.9"
+        },
+        {
+         "name": "scoringEfficiency",
+         "value": 1.3359224,
+         "displayValue": "1.336"
+        },
+        {
+         "name": "shootingEfficiency",
+         "value": 0.5213592,
+         "displayValue": "0.52"
+        },
+        {
+         "name": "fieldGoalPct",
+         "value": 49.51499938964844,
+         "displayValue": "49.5"
+        },
+        {
+         "name": "twoPointFieldGoalsMade",
+         "value": 228.0,
+         "displayValue": "228.0"
+        },
+        {
+         "name": "twoPointFieldGoalsAttempted",
+         "value": 415.0,
+         "displayValue": "415.0"
+        },
+        {
+         "name": "points",
+         "value": 688.0,
+         "displayValue": "688"
+        },
+        {
+         "name": "offensiveRebounds",
+         "value": 21.0,
+         "displayValue": "21"
+        },
+        {
+         "name": "assists",
+         "value": 423.0,
+         "displayValue": "423"
+        },
+        {
+         "name": "turnovers",
+         "value": 148.0,
+         "displayValue": "148"
+        },
+        {
+         "name": "fieldGoalsMade",
+         "value": 255.0,
+         "displayValue": "255"
+        },
+        {
+         "name": "fieldGoalsAttempted",
+         "value": 515.0,
+         "displayValue": "515"
+        },
+        {
+         "name": "freeThrowsMade",
+         "value": 151.0,
+         "displayValue": "151"
+        },
+        {
+         "name": "freeThrowsAttempted",
+         "value": 209.0,
+         "displayValue": "209"
+        },
+        {
+         "name": "threePointFieldGoalsMade",
+         "value": 27.0,
+         "displayValue": "27"
+        },
+        {
+         "name": "threePointFieldGoalsAttempted",
+         "value": 100.0,
+         "displayValue": "100"
+        },
+        {
+         "name": "threePointFieldGoalPct",
+         "value": 27.000001072883606,
+         "displayValue": "27.0"
+        },
+        {
+         "name": "avgTwoPointFieldGoalsMade",
+         "value": 3.8644068,
+         "displayValue": "3.9"
+        },
+        {
+         "name": "avgTwoPointFieldGoalsAttempted",
+         "value": 7.0338984,
+         "displayValue": "7.0"
+        }
+       ]
+      },
+      {
+       "name": "defensive",
+       "stats": [
+        {
+         "name": "avgDefensiveRebounds",
+         "value": 2.1864407,
+         "displayValue": "2.2"
+        },
+        {
+         "name": "avgBlocks",
+         "value": 0.33898306,
+         "displayValue": "0.3"
+        },
+        {
+         "name": "avgSteals",
+         "value": 1.1186441,
+         "displayValue": "1.1"
+        },
+        {
+         "name": "defensiveRebounds",
+         "value": 129.0,
+         "displayValue": "129"
+        },
+        {
+         "name": "steals",
+         "value": 66.0,
+         "displayValue": "66"
+        },
+        {
+         "name": "blocks",
+         "value": 20.0,
+         "displayValue": "20"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "value": 11.415585,
+     "displayValue": "11.4",
+     "athlete": {
+      "id": "4684793",
+      "displayName": "Kyle Filipowski",
+      "shortName": "K. Filipowski",
+      "position": {
+       "id": "7",
+       "name": "Forward",
+       "displayName": "Forward",
+       "abbreviation": "F"
+      }
+     },
+     "statistics": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "avgRebounds",
+         "value": 7.1688313,
+         "displayValue": "7.2"
+        },
+        {
+         "name": "assistTurnoverRatio",
+         "value": 1.584,
+         "displayValue": "1.6"
+        },
+        {
+         "name": "avgFouls",
+         "value": 3.012987,
+         "displayValue": "3.0"
+        },
+        {
+         "name": "gamesPlayed",
+         "value": 77.0,
+         "displayValue": "77"
+        },
+        {
+         "name": "gamesStarted",
+         "value": 41.0,
+         "displayValue": "41"
+        },
+        {
+         "name": "minutes",
+         "value": 1801.0,
+         "displayValue": "1801"
+        },
+        {
+         "name": "avgMinutes",
+         "value": 23.38961,
+         "displayValue": "23.4"
+        },
+        {
+         "name": "totalRebounds",
+         "value": 552.0,
+         "displayValue": "552"
+        },
+        {
+         "name": "rebounds",
+         "value": 552.0,
+         "displayValue": "552"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "freeThrowPct",
+         "value": 75.0,
+         "displayValue": "75.0"
+        },
+        {
+         "name": "threePointPct",
+         "value": 32.45600128173828,
+         "displayValue": "32.5"
+        },
+        {
+         "name": "avgFieldGoalsMade",
+         "value": 4.194805,
+         "displayValue": "4.2"
+        },
+        {
+         "name": "avgFieldGoalsAttempted",
+         "value": 8.532468,
+         "displayValue": "8.5"
+        },
+        {
+         "name": "avgThreePointFieldGoalsMade",
+         "value": 0.96103895,
+         "displayValue": "1.0"
+        },
+        {
+         "name": "avgThreePointFieldGoalsAttempted",
+         "value": 2.961039,
+         "displayValue": "3.0"
+        },
+        {
+         "name": "avgFreeThrowsMade",
+         "value": 2.064935,
+         "displayValue": "2.1"
+        },
+        {
+         "name": "avgFreeThrowsAttempted",
+         "value": 2.7532468,
+         "displayValue": "2.8"
+        },
+        {
+         "name": "avgPoints",
+         "value": 11.415585,
+         "displayValue": "11.4"
+        },
+        {
+         "name": "avgOffensiveRebounds",
+         "value": 1.8701298,
+         "displayValue": "1.9"
+        },
+        {
+         "name": "avgAssists",
+         "value": 2.5714285,
+         "displayValue": "2.6"
+        },
+        {
+         "name": "avgTurnovers",
+         "value": 1.6233766,
+         "displayValue": "1.6"
+        },
+        {
+         "name": "twoPointFieldGoalPct",
+         "value": 58.04196000099182,
+         "displayValue": "58.0"
+        },
+        {
+         "name": "scoringEfficiency",
+         "value": 1.3378996,
+         "displayValue": "1.338"
+        },
+        {
+         "name": "shootingEfficiency",
+         "value": 0.5479452,
+         "displayValue": "0.55"
+        },
+        {
+         "name": "fieldGoalPct",
+         "value": 49.16299819946289,
+         "displayValue": "49.2"
+        },
+        {
+         "name": "twoPointFieldGoalsMade",
+         "value": 249.0,
+         "displayValue": "249.0"
+        },
+        {
+         "name": "twoPointFieldGoalsAttempted",
+         "value": 429.0,
+         "displayValue": "429.0"
+        },
+        {
+         "name": "points",
+         "value": 879.0,
+         "displayValue": "879"
+        },
+        {
+         "name": "offensiveRebounds",
+         "value": 144.0,
+         "displayValue": "144"
+        },
+        {
+         "name": "assists",
+         "value": 198.0,
+         "displayValue": "198"
+        },
+        {
+         "name": "turnovers",
+         "value": 125.0,
+         "displayValue": "125"
+        },
+        {
+         "name": "fieldGoalsMade",
+         "value": 323.0,
+         "displayValue": "323"
+        },
+        {
+         "name": "fieldGoalsAttempted",
+         "value": 657.0,
+         "displayValue": "657"
+        },
+        {
+         "name": "freeThrowsMade",
+         "value": 159.0,
+         "displayValue": "159"
+        },
+        {
+         "name": "freeThrowsAttempted",
+         "value": 212.0,
+         "displayValue": "212"
+        },
+        {
+         "name": "threePointFieldGoalsMade",
+         "value": 74.0,
+         "displayValue": "74"
+        },
+        {
+         "name": "threePointFieldGoalsAttempted",
+         "value": 228.0,
+         "displayValue": "228"
+        },
+        {
+         "name": "threePointFieldGoalPct",
+         "value": 32.45614171028137,
+         "displayValue": "32.5"
+        },
+        {
+         "name": "avgTwoPointFieldGoalsMade",
+         "value": 3.2337663,
+         "displayValue": "3.2"
+        },
+        {
+         "name": "avgTwoPointFieldGoalsAttempted",
+         "value": 5.571429,
+         "displayValue": "5.6"
+        }
+       ]
+      },
+      {
+       "name": "defensive",
+       "stats": [
+        {
+         "name": "avgDefensiveRebounds",
+         "value": 5.2987013,
+         "displayValue": "5.3"
+        },
+        {
+         "name": "avgBlocks",
+         "value": 0.5064935,
+         "displayValue": "0.5"
+        },
+        {
+         "name": "avgSteals",
+         "value": 0.9480519,
+         "displayValue": "0.9"
+        },
+        {
+         "name": "defensiveRebounds",
+         "value": 408.0,
+         "displayValue": "408"
+        },
+        {
+         "name": "steals",
+         "value": 73.0,
+         "displayValue": "73"
+        },
+        {
+         "name": "blocks",
+         "value": 39.0,
+         "displayValue": "39"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

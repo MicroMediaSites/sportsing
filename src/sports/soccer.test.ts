@@ -25,6 +25,7 @@ const EPL: LeagueConfig = {
   periods: SOCCER_PERIODS,
   nextScanDays: SOCCER_NEXT_SCAN_DAYS,
   statProfile: REAL_EPL.statProfile,
+  playerStatProfile: REAL_EPL.playerStatProfile,
 };
 
 const board = raw("soccer-scoreboard-matchday.json").events.map((e: any) => toGame(e)) as Game[];

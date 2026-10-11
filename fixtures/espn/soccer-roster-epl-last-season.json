@@ -1,0 +1,503 @@
+{
+ "season": {
+  "year": 2025,
+  "displayName": "2025-26 English Premier League",
+  "type": 13481,
+  "name": "2025-26 English Premier League"
+ },
+ "team": {
+  "id": "359",
+  "abbreviation": "ARS",
+  "displayName": "Arsenal"
+ },
+ "athletes": [
+  {
+   "id": "169532",
+   "displayName": "Kepa Arrizabalaga",
+   "fullName": "Kepa Arrizabalaga",
+   "shortName": "K. Arrizabalaga",
+   "jersey": "13",
+   "age": 32,
+   "citizenship": "Spain",
+   "birthPlace": {},
+   "position": {
+    "id": "1",
+    "name": "Goalkeeper",
+    "displayName": "Goalkeeper",
+    "abbreviation": "G",
+    "leaf": false
+   },
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   },
+   "injuries": [],
+   "statistics": {
+    "splits": {
+     "name": "Total",
+     "type": "total",
+     "categories": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "foulsCommitted",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "foulsSuffered",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "redCards",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "yellowCards",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "ownGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "appearances",
+         "value": 1.0,
+         "displayValue": "1"
+        },
+        {
+         "name": "subIns",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "goalAssists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "offsides",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shotsOnTarget",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "totalShots",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "totalGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      },
+      {
+       "name": "goalKeeping",
+       "stats": [
+        {
+         "name": "saves",
+         "value": 2.0,
+         "displayValue": "2"
+        },
+        {
+         "name": "shotsFaced",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "goalsConceded",
+         "value": 1.0,
+         "displayValue": "1"
+        }
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "196176",
+   "displayName": "David Raya",
+   "fullName": "David Raya",
+   "shortName": "D. Raya",
+   "jersey": "1",
+   "age": 31,
+   "citizenship": "Spain",
+   "birthPlace": {},
+   "position": {
+    "id": "1",
+    "name": "Goalkeeper",
+    "displayName": "Goalkeeper",
+    "abbreviation": "G",
+    "leaf": false
+   },
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   },
+   "injuries": [],
+   "statistics": {
+    "splits": {
+     "name": "Total",
+     "type": "total",
+     "categories": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "foulsCommitted",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "foulsSuffered",
+         "value": 14.0,
+         "displayValue": "14"
+        },
+        {
+         "name": "redCards",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "yellowCards",
+         "value": 1.0,
+         "displayValue": "1"
+        },
+        {
+         "name": "ownGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "appearances",
+         "value": 37.0,
+         "displayValue": "37"
+        },
+        {
+         "name": "subIns",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "goalAssists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "offsides",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shotsOnTarget",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "totalShots",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "totalGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      },
+      {
+       "name": "goalKeeping",
+       "stats": [
+        {
+         "name": "saves",
+         "value": 60.0,
+         "displayValue": "60"
+        },
+        {
+         "name": "shotsFaced",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "goalsConceded",
+         "value": 26.0,
+         "displayValue": "26"
+        }
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "277385",
+   "displayName": "William Saliba",
+   "fullName": "William Saliba",
+   "shortName": "W. Saliba",
+   "jersey": "2",
+   "age": 25,
+   "citizenship": "France",
+   "birthPlace": {},
+   "position": {
+    "id": "2",
+    "name": "Defender",
+    "displayName": "Defender",
+    "abbreviation": "D",
+    "leaf": false
+   },
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   },
+   "injuries": [],
+   "statistics": {
+    "splits": {
+     "name": "Total",
+     "type": "total",
+     "categories": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "foulsCommitted",
+         "value": 22.0,
+         "displayValue": "22"
+        },
+        {
+         "name": "foulsSuffered",
+         "value": 16.0,
+         "displayValue": "16"
+        },
+        {
+         "name": "redCards",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "yellowCards",
+         "value": 2.0,
+         "displayValue": "2"
+        },
+        {
+         "name": "ownGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "appearances",
+         "value": 31.0,
+         "displayValue": "31"
+        },
+        {
+         "name": "subIns",
+         "value": 1.0,
+         "displayValue": "1"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "goalAssists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "offsides",
+         "value": 1.0,
+         "displayValue": "1"
+        },
+        {
+         "name": "shotsOnTarget",
+         "value": 1.0,
+         "displayValue": "1"
+        },
+        {
+         "name": "totalShots",
+         "value": 5.0,
+         "displayValue": "5"
+        },
+        {
+         "name": "totalGoals",
+         "value": 1.0,
+         "displayValue": "1"
+        }
+       ]
+      },
+      {
+       "name": "goalKeeping",
+       "stats": [
+        {
+         "name": "saves",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shotsFaced",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "goalsConceded",
+         "value": 20.0,
+         "displayValue": "20"
+        }
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "280555",
+   "displayName": "Bukayo Saka",
+   "fullName": "Bukayo Saka",
+   "shortName": "B. Saka",
+   "jersey": "7",
+   "age": 25,
+   "citizenship": "England",
+   "birthPlace": {},
+   "position": {
+    "id": "19",
+    "name": "Forward",
+    "displayName": "Forward",
+    "abbreviation": "F",
+    "leaf": false
+   },
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   },
+   "injuries": [],
+   "statistics": {
+    "splits": {
+     "name": "Total",
+     "type": "total",
+     "categories": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "foulsCommitted",
+         "value": 33.0,
+         "displayValue": "33"
+        },
+        {
+         "name": "foulsSuffered",
+         "value": 54.0,
+         "displayValue": "54"
+        },
+        {
+         "name": "redCards",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "yellowCards",
+         "value": 2.0,
+         "displayValue": "2"
+        },
+        {
+         "name": "ownGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "appearances",
+         "value": 32.0,
+         "displayValue": "32"
+        },
+        {
+         "name": "subIns",
+         "value": 6.0,
+         "displayValue": "6"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "goalAssists",
+         "value": 5.0,
+         "displayValue": "5"
+        },
+        {
+         "name": "offsides",
+         "value": 14.0,
+         "displayValue": "14"
+        },
+        {
+         "name": "shotsOnTarget",
+         "value": 27.0,
+         "displayValue": "27"
+        },
+        {
+         "name": "totalShots",
+         "value": 71.0,
+         "displayValue": "71"
+        },
+        {
+         "name": "totalGoals",
+         "value": 7.0,
+         "displayValue": "7"
+        }
+       ]
+      },
+      {
+       "name": "goalKeeping",
+       "stats": [
+        {
+         "name": "saves",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shotsFaced",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "goalsConceded",
+         "value": 16.0,
+         "displayValue": "16"
+        }
+       ]
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

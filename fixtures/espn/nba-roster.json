@@ -1,0 +1,186 @@
+{
+ "season": {
+  "year": 2027,
+  "displayName": "2026-27",
+  "type": 1,
+  "name": "Preseason"
+ },
+ "team": {
+  "id": "26",
+  "abbreviation": "UTAH",
+  "displayName": "Utah Jazz"
+ },
+ "athletes": [
+  {
+   "id": "4683766",
+   "displayName": "Isaiah Collier",
+   "fullName": "Isaiah Collier",
+   "shortName": "I. Collier",
+   "jersey": "8",
+   "age": 22,
+   "birthPlace": {
+    "city": "Atlanta",
+    "state": "GA",
+    "country": "USA"
+   },
+   "position": {
+    "id": "3",
+    "name": "Guard",
+    "displayName": "Guard",
+    "abbreviation": "G",
+    "leaf": false
+   },
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   },
+   "injuries": []
+  },
+  {
+   "id": "4684793",
+   "displayName": "Kyle Filipowski",
+   "fullName": "Kyle Filipowski",
+   "shortName": "K. Filipowski",
+   "jersey": "2",
+   "age": 22,
+   "birthPlace": {
+    "city": "Westtown",
+    "state": "NY",
+    "country": "USA"
+   },
+   "position": {
+    "id": "7",
+    "name": "Forward",
+    "displayName": "Forward",
+    "abbreviation": "F",
+    "leaf": false
+   },
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   },
+   "injuries": [
+    {
+     "status": "Day-To-Day",
+     "date": "2026-10-10T20:12Z"
+    }
+   ]
+  },
+  {
+   "id": "4433627",
+   "displayName": "Keyonte George",
+   "fullName": "Keyonte George",
+   "shortName": "K. George",
+   "jersey": "3",
+   "age": 22,
+   "birthPlace": {
+    "city": "Lewisville",
+    "state": "TX",
+    "country": "USA"
+   },
+   "position": {
+    "id": "3",
+    "name": "Guard",
+    "displayName": "Guard",
+    "abbreviation": "G",
+    "leaf": false
+   },
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   },
+   "injuries": []
+  },
+  {
+   "id": "4066336",
+   "displayName": "Lauri Markkanen",
+   "fullName": "Lauri Markkanen",
+   "shortName": "L. Markkanen",
+   "jersey": "23",
+   "age": 29,
+   "birthPlace": {
+    "city": "Jyvaskyla",
+    "country": "Finland"
+   },
+   "position": {
+    "id": "7",
+    "name": "Forward",
+    "displayName": "Forward",
+    "abbreviation": "F",
+    "leaf": false
+   },
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   },
+   "injuries": [
+    {
+     "status": "Day-To-Day",
+     "date": "2026-10-07T00:50Z"
+    }
+   ]
+  },
+  {
+   "id": "4065663",
+   "displayName": "Josh Okogie",
+   "fullName": "Josh Okogie",
+   "shortName": "J. Okogie",
+   "jersey": "21",
+   "age": 28,
+   "citizenship": "Nigeria",
+   "birthPlace": {
+    "city": "Lagos",
+    "country": "Nigeria"
+   },
+   "position": {
+    "id": "3",
+    "name": "Guard",
+    "displayName": "Guard",
+    "abbreviation": "G",
+    "leaf": false
+   },
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   },
+   "injuries": []
+  },
+  {
+   "id": "5041955",
+   "displayName": "Darryn Peterson",
+   "fullName": "Darryn Peterson",
+   "shortName": "D. Peterson",
+   "jersey": "22",
+   "age": 19,
+   "birthPlace": {
+    "city": "Canton",
+    "state": "OH",
+    "country": "USA"
+   },
+   "position": {
+    "id": "3",
+    "name": "Guard",
+    "displayName": "Guard",
+    "abbreviation": "G",
+    "leaf": false
+   },
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   },
+   "injuries": []
+  }
+ ]
+}

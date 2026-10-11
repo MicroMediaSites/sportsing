@@ -50,6 +50,7 @@ import {
   statListJson,
 } from "../stats-views.ts";
 import { loadLeagueStats, type StatProfile } from "../stats.ts";
+import type { PlayerStatProfile } from "../squad.ts";
 import { LIVE_REFRESH_MS, raise, type Alert, type Alerter } from "../alerts.ts";
 import { warnIfNoGuiSession } from "../gui-session.ts";
 import { selfInvocation } from "../click-to-watch.ts";
@@ -85,6 +86,10 @@ export interface LeagueConfig {
   /** Which stats `stats` offers for this league and where they come from.
    *  Required: a registry test fails any league without one (src/stats.ts). */
   statProfile: StatProfile;
+  /** Which player stats `roster --stats` offers, how a squad is grouped by
+   *  position, and where the stats come from (src/squad.ts). Required: a
+   *  registry test fails any league without one. */
+  playerStatProfile: PlayerStatProfile;
 }
 
 /** How far `schedule` looks ahead / `results` looks back league-wide, and how

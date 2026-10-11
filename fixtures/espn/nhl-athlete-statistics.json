@@ -1,0 +1,902 @@
+{
+ "season": {
+  "year": 2027,
+  "type": 2,
+  "name": "Regular Season",
+  "displayName": "2026-27"
+ },
+ "requestedSeason": {
+  "year": 2027,
+  "type": 2,
+  "name": "Regular Season",
+  "displayName": "2026-27",
+  "qualifiedPostSeason": false
+ },
+ "results": [
+  {
+   "name": "team",
+   "displayName": "Team Statistics",
+   "leaders": [
+    {
+     "value": 6.0,
+     "displayValue": "6",
+     "athlete": {
+      "id": "4874723",
+      "displayName": "Dylan Guenther",
+      "shortName": "D. Guenther",
+      "position": {
+       "id": "3",
+       "name": "Right Wing",
+       "displayName": "Right Wing",
+       "abbreviation": "RW"
+      }
+     },
+     "statistics": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "games",
+         "value": 6.0,
+         "displayValue": "6"
+        },
+        {
+         "name": "timeOnIce",
+         "value": 6030.0,
+         "displayValue": "100:30"
+        },
+        {
+         "name": "timeOnIcePerGame",
+         "value": 1005.0,
+         "displayValue": "16:45"
+        },
+        {
+         "name": "plusMinus",
+         "value": -1.0,
+         "displayValue": "-1"
+        },
+        {
+         "name": "production",
+         "value": 1005.0,
+         "displayValue": "16:45"
+        },
+        {
+         "name": "shifts",
+         "value": 123.0,
+         "displayValue": "123"
+        },
+        {
+         "name": "losses",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "wins",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "goals",
+         "value": 3.0,
+         "displayValue": "3"
+        },
+        {
+         "name": "assists",
+         "value": 3.0,
+         "displayValue": "3"
+        },
+        {
+         "name": "faceoffsWon",
+         "value": 1.0,
+         "displayValue": "1"
+        },
+        {
+         "name": "faceoffsLost",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "gameWinningGoals",
+         "value": 1.0,
+         "displayValue": "1"
+        },
+        {
+         "name": "points",
+         "value": 6.0,
+         "displayValue": "6"
+        },
+        {
+         "name": "powerPlayGoals",
+         "value": 3.0,
+         "displayValue": "3"
+        },
+        {
+         "name": "powerPlayAssists",
+         "value": 3.0,
+         "displayValue": "3"
+        },
+        {
+         "name": "shortHandedGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shortHandedAssists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shotsTotal",
+         "value": 22.0,
+         "displayValue": "22"
+        },
+        {
+         "name": "shootoutAttempts",
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutGoals",
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutShotPct",
+         "value": 0.0,
+         "displayValue": "0.0"
+        },
+        {
+         "name": "shootingPct",
+         "value": 13.636,
+         "displayValue": "13.6"
+        },
+        {
+         "name": "faceoffPercent",
+         "value": 100.0,
+         "displayValue": "100.0"
+        }
+       ]
+      },
+      {
+       "name": "penalties",
+       "stats": [
+        {
+         "name": "penaltyMinutes",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "value": 5.0,
+     "displayValue": "5",
+     "athlete": {
+      "id": "5080143",
+      "displayName": "Logan Cooley",
+      "shortName": "L. Cooley",
+      "position": {
+       "id": "1",
+       "name": "Center",
+       "displayName": "Center",
+       "abbreviation": "C"
+      }
+     },
+     "statistics": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "games",
+         "value": 6.0,
+         "displayValue": "6"
+        },
+        {
+         "name": "timeOnIce",
+         "value": 6652.0,
+         "displayValue": "110:52"
+        },
+        {
+         "name": "timeOnIcePerGame",
+         "value": 1108.667,
+         "displayValue": "18:28"
+        },
+        {
+         "name": "plusMinus",
+         "value": -1.0,
+         "displayValue": "-1"
+        },
+        {
+         "name": "production",
+         "value": 1330.4,
+         "displayValue": "22:10"
+        },
+        {
+         "name": "shifts",
+         "value": 135.0,
+         "displayValue": "135"
+        },
+        {
+         "name": "losses",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "wins",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "goals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "assists",
+         "value": 5.0,
+         "displayValue": "5"
+        },
+        {
+         "name": "faceoffsWon",
+         "value": 38.0,
+         "displayValue": "38"
+        },
+        {
+         "name": "faceoffsLost",
+         "value": 37.0,
+         "displayValue": "37"
+        },
+        {
+         "name": "gameWinningGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "points",
+         "value": 5.0,
+         "displayValue": "5"
+        },
+        {
+         "name": "powerPlayGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "powerPlayAssists",
+         "value": 5.0,
+         "displayValue": "5"
+        },
+        {
+         "name": "shortHandedGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shortHandedAssists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shotsTotal",
+         "value": 2.0,
+         "displayValue": "2"
+        },
+        {
+         "name": "shootoutAttempts",
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutGoals",
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutShotPct",
+         "value": 0.0,
+         "displayValue": "0.0"
+        },
+        {
+         "name": "shootingPct",
+         "value": 0.0,
+         "displayValue": "0.0"
+        },
+        {
+         "name": "faceoffPercent",
+         "value": 50.667,
+         "displayValue": "50.7"
+        }
+       ]
+      },
+      {
+       "name": "penalties",
+       "stats": [
+        {
+         "name": "penaltyMinutes",
+         "value": 2.0,
+         "displayValue": "2"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "value": 1.0,
+     "displayValue": "1",
+     "athlete": {
+      "id": "5149183",
+      "displayName": "Daniil But",
+      "shortName": "D. But",
+      "position": {
+       "id": "2",
+       "name": "Left Wing",
+       "displayName": "Left Wing",
+       "abbreviation": "LW"
+      }
+     },
+     "statistics": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "games",
+         "value": 6.0,
+         "displayValue": "6"
+        },
+        {
+         "name": "timeOnIce",
+         "value": 3911.0,
+         "displayValue": "65:11"
+        },
+        {
+         "name": "timeOnIcePerGame",
+         "value": 651.833,
+         "displayValue": "10:51"
+        },
+        {
+         "name": "plusMinus",
+         "value": 1.0,
+         "displayValue": "1"
+        },
+        {
+         "name": "production",
+         "value": 3911.0,
+         "displayValue": "65:11"
+        },
+        {
+         "name": "shifts",
+         "value": 90.0,
+         "displayValue": "90"
+        },
+        {
+         "name": "losses",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "wins",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "goals",
+         "value": 1.0,
+         "displayValue": "1"
+        },
+        {
+         "name": "assists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "faceoffsWon",
+         "value": 1.0,
+         "displayValue": "1"
+        },
+        {
+         "name": "faceoffsLost",
+         "value": 2.0,
+         "displayValue": "2"
+        },
+        {
+         "name": "gameWinningGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "points",
+         "value": 1.0,
+         "displayValue": "1"
+        },
+        {
+         "name": "powerPlayGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "powerPlayAssists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shortHandedGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shortHandedAssists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shotsTotal",
+         "value": 6.0,
+         "displayValue": "6"
+        },
+        {
+         "name": "shootoutAttempts",
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutGoals",
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutShotPct",
+         "value": 0.0,
+         "displayValue": "0.0"
+        },
+        {
+         "name": "shootingPct",
+         "value": 16.667,
+         "displayValue": "16.7"
+        },
+        {
+         "name": "faceoffPercent",
+         "value": 33.333,
+         "displayValue": "33.3"
+        }
+       ]
+      },
+      {
+       "name": "penalties",
+       "stats": [
+        {
+         "name": "penaltyMinutes",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "goalkeeping",
+   "displayName": "Goalkeeping Statistics",
+   "leaders": [
+    {
+     "value": 5.0,
+     "displayValue": "5",
+     "athlete": {
+      "id": "3942065",
+      "displayName": "Karel Vejmelka",
+      "shortName": "K. Vejmelka",
+      "position": {
+       "id": "5",
+       "name": "Goaltender",
+       "displayName": "Goaltender",
+       "abbreviation": "G"
+      }
+     },
+     "statistics": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "games",
+         "value": 5.0,
+         "displayValue": "5"
+        },
+        {
+         "name": "timeOnIce",
+         "value": 16929.0,
+         "displayValue": "282:09"
+        },
+        {
+         "name": "timeOnIcePerGame",
+         "value": 3385.8,
+         "displayValue": "56:25"
+        },
+        {
+         "name": "plusMinus",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "production",
+         "value": 0.0,
+         "displayValue": "0:00"
+        },
+        {
+         "name": "shifts",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "losses",
+         "value": 1.0,
+         "displayValue": "1"
+        },
+        {
+         "name": "wins",
+         "value": 3.0,
+         "displayValue": "3"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "goals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "assists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "faceoffsWon",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "faceoffsLost",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "gameWinningGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "points",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "powerPlayGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "powerPlayAssists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shortHandedGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shortHandedAssists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shotsTotal",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutAttempts",
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutGoals",
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutShotPct",
+         "value": 0.0,
+         "displayValue": "0.0"
+        },
+        {
+         "name": "shootingPct",
+         "value": 0.0,
+         "displayValue": "0.0"
+        },
+        {
+         "name": "faceoffPercent",
+         "value": 0.0,
+         "displayValue": "0.0"
+        }
+       ]
+      },
+      {
+       "name": "defensive",
+       "stats": [
+        {
+         "name": "avgGoalsAgainst",
+         "value": 2.127,
+         "displayValue": "2.13"
+        },
+        {
+         "name": "saves",
+         "value": 97.0,
+         "displayValue": "97"
+        },
+        {
+         "name": "savePct",
+         "value": 0.907,
+         "displayValue": ".907"
+        },
+        {
+         "name": "goalsAgainst",
+         "value": 10.0,
+         "displayValue": "10"
+        },
+        {
+         "name": "shotsAgainst",
+         "value": 107.0,
+         "displayValue": "107"
+        },
+        {
+         "name": "overtimeLosses",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutSaves",
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutShotsAgainst",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutSavePct",
+         "value": 0.0,
+         "displayValue": ".000"
+        }
+       ]
+      },
+      {
+       "name": "penalties",
+       "stats": [
+        {
+         "name": "penaltyMinutes",
+         "value": 10.0,
+         "displayValue": "10"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "value": 2.0,
+     "displayValue": "2",
+     "athlete": {
+      "id": "4874732",
+      "displayName": "Sebastian Cossa",
+      "shortName": "S. Cossa",
+      "position": {
+       "id": "5",
+       "name": "Goaltender",
+       "displayName": "Goaltender",
+       "abbreviation": "G"
+      }
+     },
+     "statistics": [
+      {
+       "name": "general",
+       "stats": [
+        {
+         "name": "games",
+         "value": 2.0,
+         "displayValue": "2"
+        },
+        {
+         "name": "timeOnIce",
+         "value": 4551.0,
+         "displayValue": "75:51"
+        },
+        {
+         "name": "timeOnIcePerGame",
+         "value": 2275.5,
+         "displayValue": "37:55"
+        },
+        {
+         "name": "plusMinus",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "production",
+         "value": 0.0,
+         "displayValue": "0:00"
+        },
+        {
+         "name": "shifts",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "losses",
+         "value": 1.0,
+         "displayValue": "1"
+        },
+        {
+         "name": "wins",
+         "value": 1.0,
+         "displayValue": "1"
+        }
+       ]
+      },
+      {
+       "name": "offensive",
+       "stats": [
+        {
+         "name": "goals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "assists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "faceoffsWon",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "faceoffsLost",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "gameWinningGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "points",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "powerPlayGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "powerPlayAssists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shortHandedGoals",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shortHandedAssists",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shotsTotal",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutAttempts",
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutGoals",
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutShotPct",
+         "value": 0.0,
+         "displayValue": "0.0"
+        },
+        {
+         "name": "shootingPct",
+         "value": 0.0,
+         "displayValue": "0.0"
+        },
+        {
+         "name": "faceoffPercent",
+         "value": 0.0,
+         "displayValue": "0.0"
+        }
+       ]
+      },
+      {
+       "name": "defensive",
+       "stats": [
+        {
+         "name": "avgGoalsAgainst",
+         "value": 3.164,
+         "displayValue": "3.16"
+        },
+        {
+         "name": "saves",
+         "value": 23.0,
+         "displayValue": "23"
+        },
+        {
+         "name": "savePct",
+         "value": 0.852,
+         "displayValue": ".852"
+        },
+        {
+         "name": "goalsAgainst",
+         "value": 4.0,
+         "displayValue": "4"
+        },
+        {
+         "name": "shotsAgainst",
+         "value": 27.0,
+         "displayValue": "27"
+        },
+        {
+         "name": "overtimeLosses",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutSaves",
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutShotsAgainst",
+         "value": 0.0,
+         "displayValue": "0"
+        },
+        {
+         "name": "shootoutSavePct",
+         "value": 0.0,
+         "displayValue": ".000"
+        }
+       ]
+      },
+      {
+       "name": "penalties",
+       "stats": [
+        {
+         "name": "penaltyMinutes",
+         "value": 0.0,
+         "displayValue": "0"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -24,6 +24,20 @@ import { agentSetup } from "../commands/agent-setup.ts";
 import { setup } from "../commands/setup.ts";
 import { fav } from "../commands/fav.ts";
 import { me } from "../commands/me.ts";
+import { LEAGUES } from "../espn.ts";
+import type { SquadLeague } from "../squad.ts";
+import { SOCCER_PLAYER_STATS } from "./soccer.ts";
+
+/** FIFA is not a LeagueConfig (its commands are the football-data/World Cup
+ *  path), but its squads come from the same ESPN roster endpoint. This is its
+ *  entry for the shared squad engine (src/squad.ts); the player stats are the
+ *  club-soccer profile. */
+export const FIFA_SQUAD: SquadLeague = {
+  sport: "fifa",
+  label: "FIFA World Cup",
+  league: LEAGUES.fifa,
+  playerStatProfile: SOCCER_PLAYER_STATS,
+};
 
 const ROUTES: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   today,
