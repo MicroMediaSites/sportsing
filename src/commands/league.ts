@@ -590,6 +590,18 @@ async function leagueFav(cfg: LeagueConfig, args: string[]): Promise<void> {
   return fav(args, cfg.sport);
 }
 
+/**
+ * What `watch` does at entry. With a team or favorites it follows games
+ * ("normal"). With neither, an explicit --provider/--url means "open that
+ * service" ("hub": no target game, no deep-link); --smoke needs no team
+ * ("normal"); otherwise the friendly "no favorites" message.
+ */
+export function watchEntry(o: { teamGiven: boolean; favCount: number; provider: boolean; url: boolean; smoke: boolean }): "normal" | "hub" | "no-favorites" {
+  if (o.teamGiven || o.favCount > 0) return "normal";
+  if (o.provider || o.url) return "hub";
+  return o.smoke ? "normal" : "no-favorites";
+}
+
 /** Who/what `watch` follows: a positional team, else the league's favorites. */
 async function watchScope(cfg: LeagueConfig, args: string[]): Promise<{ ids: Set<string>; label: string } | null> {
   const input = positionalTerms(args).join(" ").trim();
@@ -706,9 +718,12 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
     console.warn(c.yellow(`Ignoring --size "${sizeFlag}" — expected WxH, e.g. 660x500. Opening at the default size.`));
   }
 
-  // No team named and no favorites: say so before anything provider-related.
-  // (--smoke and --url need no team.)
-  if (!url && !args.includes("--smoke") && positionalTerms(args).length === 0 && (await getFavorites(cfg.sport)).length === 0) {
+  // No team named and no favorites: with --provider/--url, just open that
+  // hub/link; otherwise say so before anything provider-related.
+  const teamGiven = positionalTerms(args).length > 0;
+  const favCount = teamGiven ? 0 : (await getFavorites(cfg.sport)).length;
+  const entry = watchEntry({ teamGiven, favCount, provider: !!providerFlag, url: !!url, smoke: args.includes("--smoke") });
+  if (entry === "no-favorites") {
     console.error(c.red(`No ${cfg.label} favorites — add one with `) + c.bold(`sportsing ${cfg.sport} fav add ${EXAMPLE_TEAM[cfg.sport] ?? "<team>"}`) + c.red(", or name a team:"));
     console.error(c.dim(`  sportsing ${cfg.sport} watch <team>`));
     process.exitCode = 1;
@@ -757,6 +772,15 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
     console.error(c.dim(`Run it in a terminal, or use \`sportsing ${cfg.sport} watch --smoke\` to just confirm the window opens.`));
     process.exitCode = 1;
     return;
+  }
+
+  if (entry === "hub") {
+    console.log(url ? c.dim("Opening your link.") : c.dim(`Opening ${pick.label}'s ${cfg.label} page.`));
+    if (overlay) {
+      const gamesNow = () => gamesOnDays(cfg, addDays(new Date(), -1), 2);
+      return runLeagueOverlay(cfg, { url: url ?? pick.hub, provider: pick, game: null, gamesNow, windowSize, deepLink: false });
+    }
+    return launchStream(url ?? pick.hub, pick.label, { windowSize, icon: cfg.icon, deepLink: undefined });
   }
 
   if (scope === undefined) scope = await watchScope(cfg, args);
