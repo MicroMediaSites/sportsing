@@ -32,7 +32,21 @@ import { fav } from "./fav.ts";
 import { leagueAnalyze, leaguePredict, leagueRecap, type LeagueGames } from "./league-ai.ts";
 import { fmtEta, parseSize, positionalTerms, smokeWatch, waitPollMs } from "./watch.ts";
 import { leagueBracket } from "./league-bracket.ts";
-import type { StatProfile } from "../stats.ts";
+import { aheadCommand, compareCommand } from "../stats-compare.ts";
+import {
+  NOT_STARTED,
+  formJson,
+  parseStatsArgs,
+  rankingJson,
+  renderFormTable,
+  renderRanking,
+  renderStatList,
+  resolveStat,
+  seasonNotice,
+  seasonSuffix,
+  statListJson,
+} from "../stats-views.ts";
+import { loadLeagueStats, type StatProfile } from "../stats.ts";
 import { LIVE_REFRESH_MS, raise, type Alert, type Alerter } from "../alerts.ts";
 import { selfInvocation } from "../click-to-watch.ts";
 import { isGameSport } from "../game-events.ts";
@@ -453,6 +467,53 @@ async function standings(cfg: LeagueConfig, args: string[]): Promise<void> {
   for (const g of groups) console.log("\n" + renderStandingsTable(g, layout, ids));
 }
 
+/** `stats [--by <stat> | --list | --ahead [team] | <team> <team>] [--json]` —
+ *  the league's form table (default), one stat ranked, or the stats on offer;
+ *  two teams compare and `--ahead` is fixture difficulty (src/stats-compare.ts).
+ *  Favorites starred. Before the regular season, last season's figures,
+ *  labelled as such. */
+async function stats(cfg: LeagueConfig, args: string[]): Promise<void> {
+  const req = parseStatsArgs(args);
+  const json = req.json;
+  if (req.mode === "compare") return compareCommand(cfg, req.a, req.b, { json });
+  if (req.mode === "ahead") return aheadCommand(cfg, req.team, { json });
+
+  const def = req.mode === "by" ? resolveStat(cfg.statProfile, req.stat) : null;
+  if (req.mode === "by" && !def) {
+    console.error(c.red(`Unknown ${cfg.label} stat "${req.stat}". Valid stats:`));
+    console.error(renderStatList(cfg.statProfile));
+    process.exitCode = 1;
+    return;
+  }
+  if (req.mode === "list" && !json) {
+    title(cfg, "Stats");
+    console.log("\n" + renderStatList(cfg.statProfile));
+    if (isClubSoccer(cfg.league)) console.log(c.dim("\nNo xG (ESPN doesn't publish it)."));
+    console.log(c.dim(`\nsportsing ${cfg.sport} stats --by <short|key|label>`));
+    return;
+  }
+
+  const [data, favs] = await Promise.all([loadLeagueStats(cfg), getFavorites(cfg.sport)]);
+  if (req.mode === "list") return console.log(JSON.stringify(statListJson(data), null, 2));
+  const ids = favs.length > 0 && data.teams.length > 0 ? favoriteIds(cfg, await getTeams(cfg.league), favs) : new Set<string>();
+  if (json) {
+    return console.log(JSON.stringify(def ? rankingJson(data, def, ids) : formJson(data, ids), null, 2));
+  }
+
+  const what = def ? `${def.label} by team` : "Form";
+  if (data.kind === "not-started") {
+    title(cfg, `${what}${data.upcoming ? ` ${data.upcoming}` : ""}`);
+    console.log(c.dim("\n" + NOT_STARTED));
+    return;
+  }
+  // Club soccer's season name is the league's own ("2026-27 Italian Serie A"), so it isn't repeated.
+  title(cfg, isClubSoccer(cfg.league) ? `${what}${data.kind === "last-season" ? " (final)" : ""}` : `${what} ${seasonSuffix(data)}`);
+  if (isClubSoccer(cfg.league) && data.seasonName) console.log(c.dim(data.seasonName));
+  const notice = seasonNotice(data);
+  if (notice) console.log(notice);
+  console.log("\n" + (def ? renderRanking(data, def, ids) : renderFormTable(data, ids)));
+}
+
 /** `season [team]` — each favorite's (or the named team's) season at a glance:
  *  record, splits, conference/division position, playoff race. Before the
  *  regular season, last season's final standing, labelled as such. */
@@ -847,6 +908,7 @@ const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<vo
   schedule,
   results,
   standings,
+  stats,
   season,
   bracket: (cfg, args) => leagueBracket(cfg, args, favoriteIds),
   fav: leagueFav,
@@ -886,6 +948,7 @@ ${b("COMMANDS")}
   ${c.green("schedule")}           A team's whole season, by day ${c.dim(`(league-wide: next ${WINDOW_DAYS} days)`)}
   ${c.green("results")}            Finished games, newest first ${c.dim(`(league-wide: last ${WINDOW_DAYS} days)`)}
 ${standingsLine}
+  ${c.green("stats")}              Form table + team stats ${c.dim("(--by <stat>, --list, <team> <team>, --ahead [team], --json)")}
 ${nonSoccer(`  ${c.green("season")} ${c.dim("[team]")}      Favorites' season: record, splits, playoff race
   ${c.green("bracket")}            Playoff bracket ${c.dim("(projected before the postseason; --season YYYY for a past one)")}
 `)}  ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
@@ -900,6 +963,10 @@ ${b("FILTER")}
   ${c.dim("--mine")} on today/next/schedule/results limits output to your ${cfg.label} favorites.
 ${nonSoccer(`  ${c.dim("--conference X")} / ${c.dim("--division X")} on standings shows one table (e.g. West, Pacific).
 `)}
+${b("STATS")}
+  ${c.dim("stats")}: last 5, points per game or win%, home/away, scored/conceded per game${soccer ? ", clean sheets" : ""}.
+  ${c.dim("--by <stat>")} ranks the league by one stat (key, short or full name); ${c.dim("--list")} shows them.
+${soccer ? "  No xG (ESPN doesn't publish it).\n" : ""}
 ${b("TAGS")}
 ${soccer ? "  Times are local. Draws are shown as such." : `  ${c.yellow("PRE")} preseason · ${c.magenta("POST")} postseason. Times are local.`}
   WATCH: the service or channel · ${c.red("✗")} can't watch · ${c.dim("?")} unknown ${c.dim("(from `sportsing subscriptions`)")}
@@ -915,6 +982,7 @@ ${b("EXAMPLES")}
   sportsing ${s} schedule --team ${ex}
   sportsing ${s} results --mine
   sportsing ${s} standings${soccer ? "" : " --conference West"}
+  sportsing ${s} stats --by ${soccer ? "possession" : "3p"}
   sportsing ${s} recap ${ex} --prompt
 `);
 }
