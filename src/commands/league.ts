@@ -438,7 +438,10 @@ async function standings(cfg: LeagueConfig, args: string[]): Promise<void> {
   }
   const ids = favs.length > 0 ? favoriteIds(cfg, await getTeams(cfg.league), favs) : new Set<string>();
 
-  title(cfg, `Standings ${data.seasonName}${view.kind === "last-season" ? " (final)" : ""}`);
+  // Club soccer's one table is already headed by the season ("2026-2027 Italian
+  // Serie A"), so the title doesn't repeat it.
+  const season = isClubSoccer(cfg.league) ? "" : ` ${data.seasonName}`;
+  title(cfg, `Standings${season}${view.kind === "last-season" ? " (final)" : ""}`);
   if (view.kind === "last-season") {
     const upcoming = view.upcoming ? `The ${view.upcoming} regular season` : "The regular season";
     console.log(c.yellow(`${upcoming} hasn't started — showing last season's final standings.`));

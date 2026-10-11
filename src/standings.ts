@@ -150,7 +150,7 @@ export function groupMatches(g: { name: string; abbreviation: string }, input: s
 export function renderStandingsTable(g: EspnStandingsGroup, layout: StandingsLayout, favoriteIds: ReadonlySet<string>): string {
   const TEAM_W = 26;
   const { columns } = layout;
-  const header = c.dim(pad("#", 3) + pad("Team", TEAM_W) + columns.map((col) => pad(col.label, col.width, "right")).join(""));
+  const header = c.dim(pad("#", 3) + pad("  Team", TEAM_W) + columns.map((col) => pad(col.label, col.width, "right")).join(""));
   const rows = sortEntries(g.entries, layout.rankBy, layout.rankIsPosition).map((e, i) => {
     const fav = favoriteIds.has(e.teamId);
     const name = fav ? c.bold(c.yellow(`★ ${e.team}`)) : `  ${e.team}`;
