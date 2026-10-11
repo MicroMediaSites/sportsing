@@ -11,6 +11,7 @@ import {
   manualUpgradeHint,
   parseRegistryLatest,
   parseVersionOutput,
+  staleInstallMessage,
 } from "../upgrade.ts";
 
 const FETCH_TIMEOUT_MS = 10_000;
@@ -18,7 +19,7 @@ const FETCH_TIMEOUT_MS = 10_000;
 function usage(): void {
   console.log(`${c.bold("sportsing upgrade")} — install the latest npm release
 
-  sportsing upgrade            reinstall sportsing@latest with the package manager that installed it
+  sportsing upgrade            install the latest release (freshly resolved, exact version) with the package manager that installed it
   sportsing upgrade --check    just report current vs latest; installs nothing`);
 }
 
@@ -31,7 +32,9 @@ async function fetchLatest(): Promise<string> {
   let res: Response;
   try {
     res = await fetch(REGISTRY_LATEST_URL, {
-      headers: { "User-Agent": "sportsing", Accept: "application/json" },
+      // Always revalidate: a just-published release must not be hidden by an intermediate cache.
+      headers: { "User-Agent": "sportsing", Accept: "application/json", "Cache-Control": "no-cache" },
+      cache: "no-store",
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
   } catch (e) {
@@ -112,7 +115,7 @@ export async function upgrade(args: string[], current: string, launchd: Launchd 
   }
   if (!canSelfUpgrade(install)) return; // narrowed above; keeps the type checker honest
 
-  const { cmd, bin } = installCommand(install, existsSync);
+  const { cmd, bin } = installCommand(install, existsSync, latest);
   console.log(c.dim(`Upgrading sportsing ${current} → ${latest} via: ${cmd.join(" ")}`));
   let code: number;
   try {
@@ -131,9 +134,8 @@ export async function upgrade(args: string[], current: string, launchd: Launchd 
     process.exitCode = 1;
     return;
   }
-  if (compareVersions(now, current) <= 0) {
-    return fail(`Install finished, but ${bin} still reports ${now}. Check which sportsing is on your PATH.`);
-  }
+  const stale = staleInstallMessage(bin, now, current, latest);
+  if (stale) return fail(stale);
   console.log(c.green(`✓ sportsing ${current} → ${now}`));
 
   // A loaded daemon is still running the old code: restart it onto the new.

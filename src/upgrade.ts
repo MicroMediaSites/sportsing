@@ -103,16 +103,22 @@ export interface Command {
  * node + npm sitting in that prefix (nvm's *active* node may be a different
  * version) and pin `--prefix` so the package lands back where it came from.
  * `exists` is injected so this stays pure.
+ *
+ * `version` is the exact release freshly resolved from the registry. Installing
+ * `@latest` instead lets the package manager's cached metadata pick an older
+ * release right after a publish (AGT-1707), so we pin the version and force a
+ * revalidation of the cache (`--prefer-online` for npm, `--no-cache` for bun).
  */
 export function installCommand(
   m: Extract<InstallMethod, { kind: "npm-global" | "bun-global" }>,
   exists: (path: string) => boolean,
+  version: string,
 ): Command {
-  const spec = `${PACKAGE}@latest`;
+  const spec = `${PACKAGE}@${version}`;
   if (m.kind === "bun-global") {
     const localBun = `${m.bunInstall}/bin/bun`;
     return {
-      cmd: [exists(localBun) ? localBun : "bun", "add", "-g", spec],
+      cmd: [exists(localBun) ? localBun : "bun", "add", "-g", "--no-cache", spec],
       bin: `${m.bunInstall}/bin/${PACKAGE}`,
     };
   }
@@ -120,7 +126,7 @@ export function installCommand(
   const npm = `${m.prefix}/bin/npm`;
   const runner = exists(npm) ? (exists(node) ? [node, npm] : [npm]) : ["npm"];
   return {
-    cmd: [...runner, "install", "-g", "--prefix", m.prefix, spec],
+    cmd: [...runner, "install", "-g", "--prefix", m.prefix, spec, "--prefer-online"],
     bin: `${m.prefix}/bin/${PACKAGE}`,
   };
 }
@@ -179,4 +185,17 @@ export function parseRegistryLatest(body: unknown): string {
 export function parseVersionOutput(out: string): string | null {
   const m = out.match(/sportsing\s+v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)/);
   return m ? m[1]! : null;
+}
+
+/**
+ * Judge the post-install version check. Returns an error message when the
+ * install did not land `expected` (e.g. stale registry metadata kept the old
+ * release), or null when it did.
+ */
+export function staleInstallMessage(bin: string, now: string, current: string, expected: string): string | null {
+  if (compareVersions(now, expected) >= 0) return null;
+  if (compareVersions(now, current) <= 0) {
+    return `Install finished, but ${bin} still reports ${now} (expected ${expected}). The package manager may have used stale cached metadata; retry with: npm i -g ${PACKAGE}@${expected} --prefer-online`;
+  }
+  return `Install finished, but ${bin} reports ${now}, not the expected ${expected}. Check which sportsing is on your PATH.`;
 }
