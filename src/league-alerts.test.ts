@@ -162,3 +162,50 @@ describe("leagueFeed", () => {
     expect(nba([g({ home: 10, away: 12 })]).map((a) => a.title)).toEqual(["🏀 Lead change — UTAH"]);
   });
 });
+
+describe("club soccer alerts", () => {
+  const EPL: AlertLeague = { sport: "epl", icon: "⚽", periods: { regulation: 2, shootout: true, style: "halves" } };
+  const base = { fixture: "UTAH @ LAL", home: "PSG", away: "LYON", detail: "FT" };
+  const sev = (kind: GameEvent["kind"], over: Partial<GameEvent> = {}) => ev(kind, { ...base, score: { home: 2, away: 1 }, ...over });
+  const fmt = (e: GameEvent) => formatGameEvent(e, "regular", EPL);
+
+  test("kickoff, half time, full time", () => {
+    expect(fmt(sev("kickoff", { score: { home: 0, away: 0 } }))).toEqual({ title: "⚽ Kickoff", body: "PSG v LYON has kicked off", sound: false });
+    expect(fmt(sev("halftime"))).toEqual({ title: "⚽ Half time", body: "PSG 2–1 LYON", sound: false });
+    expect(fmt(sev("full-time"))).toEqual({ title: "⚽ Full time", body: "PSG 2–1 LYON", sound: false });
+  });
+
+  test("full time says draw when level", () => {
+    expect(fmt(sev("full-time", { score: { home: 1, away: 1 } })).title).toBe("⚽ Full time — draw");
+  });
+
+  test("goal names scorer and minute when known, else just the score", () => {
+    const goal = fmt(sev("goal", { scoringSide: "home", player: "Ousmane Dembélé", minute: "41'" }));
+    expect(goal).toEqual({ title: "⚽ GOAL — PSG", body: "PSG 2–1 LYON · Ousmane Dembélé 41'", sound: true });
+    expect(fmt(sev("goal", { scoringSide: "away" }))).toEqual({ title: "⚽ GOAL — LYON", body: "PSG 2–1 LYON", sound: true });
+    expect(fmt(sev("goal", { scoringSide: "home", player: "P. Diop", minute: "45'+2'", ownGoal: true })).body).toBe("PSG 2–1 LYON · P. Diop 45'+2' (own goal)");
+    expect(fmt(sev("goal", { scoringSide: "home", player: "Kane", minute: "9'", penalty: true })).body).toContain("(pen)");
+  });
+
+  test("red card names the team, player and minute", () => {
+    expect(fmt(sev("red-card", { cardSide: "away", player: "Ryan Gravenberch", minute: "62'" }))).toEqual({
+      title: "⚽ RED CARD — LYON (Ryan Gravenberch 62')",
+      body: "PSG 2–1 LYON",
+      sound: true,
+    });
+    expect(fmt(sev("red-card", { cardSide: "home" })).title).toBe("⚽ RED CARD — PSG");
+  });
+
+  test("the feed sets a baseline, then alerts a kickoff clickable only when there is somewhere to watch", () => {
+    const soccer = (state: GameState, home = 0, away = 0): Game => ({ ...g({ state, home, away, homeId: "160", awayId: "167" }), detail: state === "in" ? "1'" : "" });
+    const mk = (fallback: string | null) => leagueFeed({ league: EPL, favIds: new Set(["160"]), watch: null, fallback, exe: EXE });
+    const watching = mk("fubo");
+    expect(watching([soccer("pre")])).toEqual([]);
+    const [kick] = watching([soccer("in")]);
+    expect(kick!.title).toBe("⚽ Kickoff");
+    expect(kick!.options.onClick).toBeDefined();
+    const bare = mk(null);
+    bare([soccer("pre")]);
+    expect(bare([soccer("in")])[0]!.options.onClick).toBeUndefined();
+  });
+});

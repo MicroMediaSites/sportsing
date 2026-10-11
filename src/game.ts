@@ -31,6 +31,22 @@ export interface GameCompetitor {
   score: string;
 }
 
+/** A soccer match incident the scoreboard lists in `details`: a goal or a red card. */
+export interface Incident {
+  /** Stable within a match (type, minute, player) — how a diff tells new from seen. */
+  key: string;
+  kind: "goal" | "red-card";
+  /** Source team id credited with the goal (an own goal: the team that benefits)
+   *  or whose player was sent off. */
+  teamId: string;
+  /** Player's display name; "" when the feed omits it. */
+  player: string;
+  /** Match minute as displayed, e.g. "41'", "45'+2'"; "" when absent. */
+  minute: string;
+  ownGoal?: boolean;
+  penalty?: boolean;
+}
+
 export interface Game {
   id: string;
   /** ISO start time. */
@@ -48,4 +64,7 @@ export interface Game {
   home: GameCompetitor;
   away: GameCompetitor;
   broadcasts: Broadcast[];
+  /** Soccer: goals and red cards so far, chronological. Absent for sports
+   *  without them (and for feeds that don't list any). */
+  incidents?: Incident[];
 }

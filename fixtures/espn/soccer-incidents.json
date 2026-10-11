@@ -1,0 +1,408 @@
+{
+ "events": [
+  {
+   "id": "401879264",
+   "date": "2026-10-11T15:30Z",
+   "name": "Manchester City at Liverpool",
+   "season": {
+    "type": 1
+   },
+   "competitions": [
+    {
+     "status": {
+      "period": 2,
+      "displayClock": "90'+3'",
+      "type": {
+       "name": "STATUS_FULL_TIME",
+       "state": "post",
+       "shortDetail": "FT"
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "score": "0",
+       "team": {
+        "id": "364",
+        "abbreviation": "LIV",
+        "displayName": "Liverpool"
+       }
+      },
+      {
+       "homeAway": "away",
+       "score": "3",
+       "team": {
+        "id": "382",
+        "abbreviation": "MNC",
+        "displayName": "Manchester City"
+       }
+      }
+     ],
+     "details": [
+      {
+       "type": {
+        "id": "93",
+        "text": "Red Card"
+       },
+       "clock": {
+        "value": 3702.0,
+        "displayValue": "62'"
+       },
+       "team": {
+        "id": "364"
+       },
+       "scoringPlay": false,
+       "redCard": true,
+       "yellowCard": false,
+       "penaltyKick": false,
+       "ownGoal": false,
+       "shootout": false,
+       "athletesInvolved": [
+        {
+         "id": "274632",
+         "displayName": "Ryan Gravenberch"
+        }
+       ]
+      },
+      {
+       "type": {
+        "id": "70",
+        "text": "Goal"
+       },
+       "clock": {
+        "value": 3859.0,
+        "displayValue": "65'"
+       },
+       "team": {
+        "id": "382"
+       },
+       "scoringPlay": true,
+       "redCard": false,
+       "yellowCard": false,
+       "penaltyKick": false,
+       "ownGoal": false,
+       "shootout": false,
+       "athletesInvolved": [
+        {
+         "id": "253989",
+         "displayName": "Erling Haaland"
+        }
+       ]
+      },
+      {
+       "type": {
+        "id": "70",
+        "text": "Goal"
+       },
+       "clock": {
+        "value": 4058.0,
+        "displayValue": "68'"
+       },
+       "team": {
+        "id": "382"
+       },
+       "scoringPlay": true,
+       "redCard": false,
+       "yellowCard": false,
+       "penaltyKick": false,
+       "ownGoal": false,
+       "shootout": false,
+       "athletesInvolved": [
+        {
+         "id": "283672",
+         "displayName": "Jérémy Doku"
+        }
+       ]
+      },
+      {
+       "type": {
+        "id": "70",
+        "text": "Goal"
+       },
+       "clock": {
+        "value": 4662.0,
+        "displayValue": "78'"
+       },
+       "team": {
+        "id": "382"
+       },
+       "scoringPlay": true,
+       "redCard": false,
+       "yellowCard": false,
+       "penaltyKick": false,
+       "ownGoal": false,
+       "shootout": false,
+       "athletesInvolved": [
+        {
+         "id": "298008",
+         "displayName": "Rayan Cherki"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401878774",
+   "date": "2026-10-11T13:00Z",
+   "name": "Everton at Hull City",
+   "season": {
+    "type": 1
+   },
+   "competitions": [
+    {
+     "status": {
+      "period": 2,
+      "displayClock": "90'+6'",
+      "type": {
+       "name": "STATUS_FULL_TIME",
+       "state": "post",
+       "shortDetail": "FT"
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "score": "2",
+       "team": {
+        "id": "306",
+        "abbreviation": "HUL",
+        "displayName": "Hull City"
+       }
+      },
+      {
+       "homeAway": "away",
+       "score": "2",
+       "team": {
+        "id": "368",
+        "abbreviation": "EVE",
+        "displayName": "Everton"
+       }
+      }
+     ],
+     "details": [
+      {
+       "type": {
+        "id": "70",
+        "text": "Goal"
+       },
+       "clock": {
+        "value": 2874.0,
+        "displayValue": "48'"
+       },
+       "team": {
+        "id": "306"
+       },
+       "scoringPlay": true,
+       "redCard": false,
+       "yellowCard": false,
+       "penaltyKick": false,
+       "ownGoal": false,
+       "shootout": false,
+       "athletesInvolved": [
+        {
+         "id": "277531",
+         "displayName": "Joe Gelhardt"
+        }
+       ]
+      },
+      {
+       "type": {
+        "id": "137",
+        "text": "Goal - Header"
+       },
+       "clock": {
+        "value": 3268.0,
+        "displayValue": "55'"
+       },
+       "team": {
+        "id": "368"
+       },
+       "scoringPlay": true,
+       "redCard": false,
+       "yellowCard": false,
+       "penaltyKick": false,
+       "ownGoal": false,
+       "shootout": false,
+       "athletesInvolved": [
+        {
+         "id": "252389",
+         "displayName": "Kiernan Dewsbury-Hall"
+        }
+       ]
+      },
+      {
+       "type": {
+        "id": "70",
+        "text": "Goal"
+       },
+       "clock": {
+        "value": 4050.0,
+        "displayValue": "68'"
+       },
+       "team": {
+        "id": "368"
+       },
+       "scoringPlay": true,
+       "redCard": false,
+       "yellowCard": false,
+       "penaltyKick": false,
+       "ownGoal": false,
+       "shootout": false,
+       "athletesInvolved": [
+        {
+         "id": "301166",
+         "displayName": "Thierno Barry"
+        }
+       ]
+      },
+      {
+       "type": {
+        "id": "70",
+        "text": "Goal"
+       },
+       "clock": {
+        "value": 4400.0,
+        "displayValue": "74'"
+       },
+       "team": {
+        "id": "306"
+       },
+       "scoringPlay": true,
+       "redCard": false,
+       "yellowCard": false,
+       "penaltyKick": false,
+       "ownGoal": false,
+       "shootout": false,
+       "athletesInvolved": [
+        {
+         "id": "320417",
+         "displayName": "Mohamed Belloumi"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401876443",
+   "date": "2026-10-11T13:00Z",
+   "name": "Strasbourg at Nice",
+   "season": {
+    "type": 1
+   },
+   "competitions": [
+    {
+     "status": {
+      "period": 2,
+      "displayClock": "90'+4'",
+      "type": {
+       "name": "STATUS_FULL_TIME",
+       "state": "post",
+       "shortDetail": "FT"
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "score": "2",
+       "team": {
+        "id": "2502",
+        "abbreviation": "NICE",
+        "displayName": "Nice"
+       }
+      },
+      {
+       "homeAway": "away",
+       "score": "1",
+       "team": {
+        "id": "180",
+        "abbreviation": "STR",
+        "displayName": "Strasbourg"
+       }
+      }
+     ],
+     "details": [
+      {
+       "type": {
+        "id": "70",
+        "text": "Goal"
+       },
+       "clock": {
+        "value": 2430.0,
+        "displayValue": "41'"
+       },
+       "team": {
+        "id": "180"
+       },
+       "scoringPlay": true,
+       "redCard": false,
+       "yellowCard": false,
+       "penaltyKick": false,
+       "ownGoal": false,
+       "shootout": false,
+       "athletesInvolved": [
+        {
+         "id": "316560",
+         "displayName": "Dário Essugo"
+        }
+       ]
+      },
+      {
+       "type": {
+        "id": "97",
+        "text": "Own Goal"
+       },
+       "clock": {
+        "value": 2700.0,
+        "displayValue": "45'+2'"
+       },
+       "team": {
+        "id": "2502"
+       },
+       "scoringPlay": true,
+       "redCard": false,
+       "yellowCard": false,
+       "penaltyKick": false,
+       "ownGoal": true,
+       "shootout": false,
+       "athletesInvolved": [
+        {
+         "id": "353378",
+         "displayName": "Pape Diop"
+        }
+       ]
+      },
+      {
+       "type": {
+        "id": "70",
+        "text": "Goal"
+       },
+       "clock": {
+        "value": 4824.0,
+        "displayValue": "81'"
+       },
+       "team": {
+        "id": "2502"
+       },
+       "scoringPlay": true,
+       "redCard": false,
+       "yellowCard": false,
+       "penaltyKick": false,
+       "ownGoal": false,
+       "shootout": false,
+       "athletesInvolved": [
+        {
+         "id": "232089",
+         "displayName": "Jonathan Clauss"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,4 +1,4 @@
-// Favorite-team alerts for the ESPN-backed leagues (NBA, NHL): successive
+// Favorite-team alerts for the ESPN-backed leagues (NBA, NHL, club soccer): successive
 // scoreboard polls → game-events.ts rules → notifications. Pure — the live
 // command (league.ts) does the fetching, config reads, and notify() calls.
 //
@@ -10,7 +10,7 @@
 import type { Alert } from "./alerts.ts";
 import { inTerminal, watchCommand } from "./click-to-watch.ts";
 import { periodLabel, type PeriodNaming } from "./format.ts";
-import { diffGames, type GameEvent, type GameMemory, type GameSport } from "./game-events.ts";
+import { diffGames, isSoccerSport, type GameEvent, type GameMemory, type GameSport } from "./game-events.ts";
 import type { Game, SeasonPhase } from "./game.ts";
 import { planWatch, watchOf, type WatchContext } from "./watch-route.ts";
 
@@ -27,6 +27,39 @@ function scoreline(e: GameEvent): string {
   return `${e.away} ${e.score.away}–${e.score.home} ${e.home}`;
 }
 
+/** Soccer reads home first ("PSG 2–1 Lyon"), as the FIFA alerts do. */
+function soccerScoreline(e: GameEvent): string {
+  return `${e.home} ${e.score.home}–${e.score.away} ${e.away}`;
+}
+
+/** Club-soccer notification text. Goals name the scorer and minute when the
+ *  scoreboard lists them, else just the score; full time says so on a draw. */
+function formatSoccerEvent(e: GameEvent, t: (text: string) => string): { title: string; body: string; sound: boolean } {
+  const line = soccerScoreline(e);
+  const team = (side?: "home" | "away") => (side === "home" ? e.home : e.away);
+  switch (e.kind) {
+    case "kickoff":
+      return { title: t("Kickoff"), body: `${e.home} v ${e.away} has kicked off`, sound: false };
+    case "goal": {
+      const how = e.ownGoal ? " (own goal)" : e.penalty ? " (pen)" : "";
+      const who = e.player ? `${e.player} ${e.minute}${how}` : "";
+      return { title: t(`GOAL — ${team(e.scoringSide)}`), body: who ? `${line} · ${who}` : line, sound: true };
+    }
+    case "red-card": {
+      const who = e.player ? ` (${[e.player, e.minute].filter(Boolean).join(" ")})` : "";
+      return { title: t(`RED CARD — ${team(e.cardSide)}${who}`), body: line, sound: true };
+    }
+    case "halftime":
+      return { title: t("Half time"), body: line, sound: false };
+    case "full-time": {
+      const draw = e.score.home === e.score.away;
+      return { title: t(draw ? "Full time — draw" : "Full time"), body: line, sound: false };
+    }
+    default:
+      return { title: t(e.detail), body: line, sound: false };
+  }
+}
+
 /** Name of the event's period ("2nd", "OT", "2OT"), else the source's text. */
 function periodName(e: GameEvent, seasonType: SeasonPhase, periods?: PeriodNaming): string {
   return periods ? periodLabel({ period: e.period, seasonType }, periods) : e.detail;
@@ -36,10 +69,11 @@ function periodName(e: GameEvent, seasonType: SeasonPhase, periods?: PeriodNamin
 export function formatGameEvent(
   e: GameEvent,
   seasonType: SeasonPhase,
-  league: Pick<AlertLeague, "icon" | "periods">,
+  league: Pick<AlertLeague, "icon" | "periods"> & Partial<Pick<AlertLeague, "sport">>,
 ): { title: string; body: string; sound: boolean } {
   const t = (text: string) => `${league.icon} ${text}`;
   const line = scoreline(e);
+  if (league.sport && isSoccerSport(league.sport)) return formatSoccerEvent(e, t);
   switch (e.kind) {
     case "tip-off":
       return { title: t("Tip-off"), body: `${e.fixture} is under way`, sound: false };
@@ -57,6 +91,11 @@ export function formatGameEvent(
       return { title: t(`Lead change — ${e.leader === "home" ? e.home : e.away}`), body: `${line} · ${e.detail}`, sound: false };
     case "close-late":
       return { title: t("Close game late"), body: `${line} · ${e.detail}`, sound: true };
+    case "kickoff":
+    case "halftime":
+    case "red-card":
+    case "full-time":
+      return formatSoccerEvent(e, t);
     case "final":
       return { title: t(e.detail.startsWith("Final") ? e.detail : "Final"), body: line, sound: false };
   }
@@ -122,7 +161,7 @@ export function leagueFeed(o: LeagueFeedOptions): (games: Game[]) => Alert[] {
     return events.map((e) => {
       const g = cur.find((x) => x.id === e.gameId)!;
       const { title, body, sound } = formatGameEvent(e, g.seasonType, o.league);
-      const start = e.kind === "tip-off" || e.kind === "puck-drop";
+      const start = e.kind === "tip-off" || e.kind === "puck-drop" || e.kind === "kickoff";
       const click = start ? startWatch(g, o.favIds, o.league.sport, o.watch, o.fallback, o.exe) : {};
       return {
         title,

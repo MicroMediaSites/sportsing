@@ -784,7 +784,8 @@ function renderLiveBoard(cfg: LeagueConfig, games: Game[]): void {
  * `live [--notify [--quiet]]` — auto-refreshing live board. `--notify` raises
  * OS notifications for favorites' games (game-events.ts rules: NHL puck drop,
  * goals, period ends, OT/shootout, final; NBA tip-off, lead changes, close
- * late, final); start alerts are click-to-watch. `--quiet` drops the board so
+ * late, final; club soccer kickoff, goals with scorer, red cards, half time,
+ * full time); start alerts are click-to-watch. `--quiet` drops the board so
  * it can run backgrounded as a pure alerter.
  */
 async function live(cfg: LeagueConfig, args: string[]): Promise<void> {

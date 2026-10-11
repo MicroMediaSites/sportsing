@@ -1,4 +1,5 @@
-// Per-sport live event diffing over sport-neutral `Game` snapshots (NBA, NHL).
+// Per-sport live event diffing over sport-neutral `Game` snapshots (NBA, NHL,
+// club soccer).
 //
 // The World Cup path keeps its own football-data `Match` differ (events.ts);
 // this is the ESPN-backed sibling. Each sport gets a rule set, because what is
@@ -12,11 +13,16 @@
 // game" — so they remember per-game facts in that map. Diffing a snapshot
 // against itself yields nothing, with or without memory.
 
-import type { Game } from "./game.ts";
+import { soccerStatus } from "./format.ts";
+import type { Game, Incident } from "./game.ts";
 
 export type GameEventKind =
   | "puck-drop"
   | "tip-off"
+  | "kickoff"
+  | "halftime"
+  | "red-card"
+  | "full-time"
   | "goal"
   | "period-end"
   | "overtime"
@@ -42,6 +48,15 @@ export interface GameEvent {
   detail: string;
   /** `goal`: which side scored. */
   scoringSide?: Side;
+  /** Soccer `goal` / `red-card`: the player and match minute ("41'"), when the
+   *  scoreboard lists the incident yet. */
+  player?: string;
+  minute?: string;
+  /** Soccer `goal`: how it was scored. */
+  ownGoal?: boolean;
+  penalty?: boolean;
+  /** Soccer `red-card`: the side of the player sent off. */
+  cardSide?: Side;
   /** `lead-change`: which side now leads. */
   leader?: Side;
 }
@@ -52,6 +67,8 @@ export interface GameMemo {
   leader?: Side;
   /** NBA: close-late already fired (or was already true at baseline). */
   closeLate?: boolean;
+  /** Soccer: keys of the incidents already seen, so each goal / card alerts once. */
+  incidents?: Set<string>;
 }
 
 /** Caller-owned, keyed by game id; one map per sport. Entries are tiny and
@@ -59,7 +76,8 @@ export interface GameMemo {
 export type GameMemory = Map<string, GameMemo>;
 
 /** What a rule emits; `diffGames` stamps on the shared game fields. */
-type Emit = Pick<GameEvent, "kind" | "period"> & Partial<Pick<GameEvent, "scoringSide" | "leader">>;
+type Emit = Pick<GameEvent, "kind" | "period"> &
+  Partial<Pick<GameEvent, "scoringSide" | "leader" | "player" | "minute" | "ownGoal" | "penalty" | "cardSide">>;
 
 /** One alert rule: the events for a single game moving `before` → `after`. */
 type Rule = (before: Game, after: Game, memo: GameMemo) => Emit[];
@@ -93,7 +111,7 @@ const atPeriodEnd = (g: Game): boolean => g.state === "in" && clockSeconds(g.clo
 // Shared rules.
 
 const start =
-  (kind: "puck-drop" | "tip-off"): Rule =>
+  (kind: "puck-drop" | "tip-off" | "kickoff"): Rule =>
   (b, a) =>
     b.state === "pre" && a.state === "in" ? [{ kind, period: a.period }] : [];
 
@@ -187,12 +205,82 @@ const nbaCloseLate: Rule = (b, a, memo) => {
   return [{ kind: "close-late", period: a.period }];
 };
 
+// ── Club soccer ─────────────────────────────────────────────────────────────
+
+const sideOf = (g: Game, teamId: string): Side | undefined =>
+  teamId && g.home.id === teamId ? "home" : teamId && g.away.id === teamId ? "away" : undefined;
+
+/** Soccer's half-time break (not the break before extra time). */
+const atHalfTime = (g: Game): boolean => g.state === "in" && soccerStatus(g) === "HT";
+
+/**
+ * One goal event per side whose score rose (a burst between polls collapses
+ * into one event with the resulting score). The scorer and minute come from
+ * the newest unseen goal the scoreboard lists for that side; the score can
+ * move a poll before the incident is listed, so they're optional.
+ */
+const soccerGoals: Rule = (b, a, memo) => {
+  const was = scoreOf(b);
+  const now = scoreOf(a);
+  const fresh = newIncidents(a, memo, "goal");
+  const out: Emit[] = [];
+  for (const side of ["home", "away"] as const) {
+    if (now[side] <= was[side]) continue;
+    const inc = fresh.filter((i) => sideOf(a, i.teamId) === side).at(-1);
+    out.push({
+      kind: "goal",
+      period: a.period,
+      scoringSide: side,
+      ...(inc && { player: inc.player, minute: inc.minute, ownGoal: inc.ownGoal, penalty: inc.penalty }),
+    });
+  }
+  return out;
+};
+
+/** Red cards the scoreboard lists that we haven't seen. */
+const soccerRedCards: Rule = (_b, a, memo) =>
+  newIncidents(a, memo, "red-card").map((i) => ({
+    kind: "red-card" as const,
+    period: a.period,
+    cardSide: sideOf(a, i.teamId),
+    player: i.player,
+    minute: i.minute,
+  }));
+
+/**
+ * `after`'s incidents of `kind` not yet in the memory, marking them seen. The
+ * first sight of a game seeds the memory from the earlier snapshot, so what
+ * was already on the board when we started watching never alerts.
+ */
+function newIncidents(after: Game, memo: GameMemo, kind: Incident["kind"]): Incident[] {
+  const seen = (memo.incidents ??= new Set());
+  const fresh = (after.incidents ?? []).filter((i) => i.kind === kind && !seen.has(i.key));
+  for (const i of fresh) seen.add(i.key);
+  return fresh;
+}
+
+/** Seeds the incident memory from the earlier snapshot; must run first. */
+const soccerBaseline: Rule = (b, _a, memo) => {
+  if (!memo.incidents) memo.incidents = new Set((b.incidents ?? []).map((i) => i.key));
+  return [];
+};
+
+const soccerHalfTime: Rule = (b, a) => (!atHalfTime(b) && atHalfTime(a) ? [{ kind: "halftime", period: a.period }] : []);
+
+const soccerFullTime: Rule = (b, a) =>
+  b.state === "in" && a.state === "post" ? [{ kind: "full-time", period: a.period }] : [];
+
 // ── rule sets + differ ──────────────────────────────────────────────────────
 
 /** Alert rules per ESPN-backed sport, in emission order. */
+const soccer: Rule[] = [start("kickoff"), soccerBaseline, soccerGoals, soccerRedCards, soccerHalfTime, soccerFullTime];
+
 export const GAME_RULES = {
   nhl: [start("puck-drop"), nhlGoals, nhlPeriodEnd, nhlOvertime, final],
   nba: [start("tip-off"), nbaLeadChange, nbaCloseLate, final],
+  epl: soccer,
+  seriea: soccer,
+  ligue1: soccer,
 } satisfies Record<string, Rule[]>;
 
 export type GameSport = keyof typeof GAME_RULES;
@@ -201,6 +289,9 @@ export type GameSport = keyof typeof GAME_RULES;
 export function isGameSport(sport: string): sport is GameSport {
   return Object.hasOwn(GAME_RULES, sport);
 }
+
+/** True if `sport` is one of the club-soccer leagues. */
+export const isSoccerSport = (sport: string): boolean => GAME_RULES[sport as GameSport] === soccer;
 
 /**
  * Diff two `Game` snapshots into events using `sport`'s rule set.
