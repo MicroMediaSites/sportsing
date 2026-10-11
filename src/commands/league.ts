@@ -512,7 +512,12 @@ async function stats(cfg: LeagueConfig, args: string[]): Promise<void> {
     return console.log(JSON.stringify(def ? rankingJson(data, def, ids) : formJson(data, ids), null, 2));
   }
 
-  if (req.html && data.kind !== "not-started") {
+  if (req.html && data.kind === "not-started") {
+    console.error(c.red(`--html isn't available yet: the ${cfg.label} season hasn't started and there's no earlier season to show.`));
+    process.exitCode = 1;
+    return;
+  }
+  if (req.html) {
     const file = statsHtmlPath(cfg.sport);
     await mkdir(CACHE_DIR, { recursive: true });
     await Bun.write(file, renderStatsHtml(data, { favoriteIds: ids, by: def, fetchedAt }));
