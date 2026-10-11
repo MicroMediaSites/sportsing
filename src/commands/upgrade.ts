@@ -19,7 +19,7 @@ const FETCH_TIMEOUT_MS = 10_000;
 function usage(): void {
   console.log(`${c.bold("sportsing upgrade")} — install the latest npm release
 
-  sportsing upgrade            install the latest release (freshly resolved, exact version) with the package manager that installed it
+  sportsing upgrade            install the latest release with the package manager that installed it
   sportsing upgrade --check    just report current vs latest; installs nothing`);
 }
 
@@ -134,7 +134,7 @@ export async function upgrade(args: string[], current: string, launchd: Launchd 
     process.exitCode = 1;
     return;
   }
-  const stale = staleInstallMessage(bin, now, current, latest);
+  const stale = staleInstallMessage(bin, now, current, latest, install.kind === "bun-global" ? "bun" : "npm");
   if (stale) return fail(stale);
   console.log(c.green(`✓ sportsing ${current} → ${now}`));
 

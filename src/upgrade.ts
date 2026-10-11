@@ -192,10 +192,17 @@ export function parseVersionOutput(out: string): string | null {
  * install did not land `expected` (e.g. stale registry metadata kept the old
  * release), or null when it did.
  */
-export function staleInstallMessage(bin: string, now: string, current: string, expected: string): string | null {
+export function staleInstallMessage(
+  bin: string,
+  now: string,
+  current: string,
+  expected: string,
+  manager: "npm" | "bun" = "npm",
+): string | null {
   if (compareVersions(now, expected) >= 0) return null;
   if (compareVersions(now, current) <= 0) {
-    return `Install finished, but ${bin} still reports ${now} (expected ${expected}). The package manager may have used stale cached metadata; retry with: npm i -g ${PACKAGE}@${expected} --prefer-online`;
+    const retry = manager === "bun" ? `bun add -g ${PACKAGE}@${expected} --no-cache` : `npm i -g ${PACKAGE}@${expected} --prefer-online`;
+    return `Install finished, but ${bin} still reports ${now} (expected ${expected}). The package manager may have used stale cached metadata; retry with: ${retry}`;
   }
   return `Install finished, but ${bin} reports ${now}, not the expected ${expected}. Check which sportsing is on your PATH.`;
 }

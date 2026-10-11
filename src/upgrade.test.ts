@@ -126,6 +126,11 @@ test("staleInstallMessage: reports a stale install clearly", () => {
   expect(msg).toContain("npm i -g sportsing@0.3.2 --prefer-online");
 });
 
+test("staleInstallMessage: the retry hint matches the package manager", () => {
+  expect(staleInstallMessage("/b/sportsing", "0.3.1", "0.3.1", "0.3.2", "bun")).toContain("bun add -g sportsing@0.3.2 --no-cache");
+  expect(staleInstallMessage("/b/sportsing", "0.3.1", "0.3.1", "0.3.2", "npm")).toContain("npm i -g sportsing@0.3.2 --prefer-online");
+});
+
 test("staleInstallMessage: partial upgrade is flagged", () => {
   expect(staleInstallMessage("/b/sportsing", "0.3.2", "0.3.0", "0.3.3")).toContain("not the expected 0.3.3");
 });
