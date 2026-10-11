@@ -1,0 +1,212 @@
+{
+ "sports": [
+  {
+   "leagues": [
+    {
+     "teams": [
+      {
+       "team": {
+        "id": "103",
+        "abbreviation": "MIL",
+        "displayName": "AC Milan",
+        "shortDisplayName": "Milan",
+        "name": "AC Milan",
+        "location": "AC Milan"
+       }
+      },
+      {
+       "team": {
+        "id": "104",
+        "abbreviation": "ROMA",
+        "displayName": "AS Roma",
+        "shortDisplayName": "AS Roma",
+        "name": "AS Roma",
+        "location": "AS Roma"
+       }
+      },
+      {
+       "team": {
+        "id": "105",
+        "abbreviation": "ATA",
+        "displayName": "Atalanta",
+        "shortDisplayName": "Atalanta",
+        "name": "Atalanta",
+        "location": "Atalanta"
+       }
+      },
+      {
+       "team": {
+        "id": "107",
+        "abbreviation": "BOL",
+        "displayName": "Bologna",
+        "shortDisplayName": "Bologna",
+        "name": "Bologna",
+        "location": "Bologna"
+       }
+      },
+      {
+       "team": {
+        "id": "2925",
+        "abbreviation": "CAG",
+        "displayName": "Cagliari",
+        "shortDisplayName": "Cagliari",
+        "name": "Cagliari",
+        "location": "Cagliari"
+       }
+      },
+      {
+       "team": {
+        "id": "2572",
+        "abbreviation": "COMO",
+        "displayName": "Como",
+        "shortDisplayName": "Como",
+        "name": "Como",
+        "location": "Como"
+       }
+      },
+      {
+       "team": {
+        "id": "109",
+        "abbreviation": "FIO",
+        "displayName": "Fiorentina",
+        "shortDisplayName": "Fiorentina",
+        "name": "Fiorentina",
+        "location": "Fiorentina"
+       }
+      },
+      {
+       "team": {
+        "id": "4057",
+        "abbreviation": "FRO",
+        "displayName": "Frosinone",
+        "shortDisplayName": "Frosinone",
+        "name": "Frosinone",
+        "location": "Frosinone"
+       }
+      },
+      {
+       "team": {
+        "id": "3263",
+        "abbreviation": "GEN",
+        "displayName": "Genoa",
+        "shortDisplayName": "Genoa",
+        "name": "Genoa",
+        "location": "Genoa"
+       }
+      },
+      {
+       "team": {
+        "id": "110",
+        "abbreviation": "INT",
+        "displayName": "Internazionale",
+        "shortDisplayName": "Inter Milan",
+        "name": "Internazionale",
+        "location": "Internazionale"
+       }
+      },
+      {
+       "team": {
+        "id": "111",
+        "abbreviation": "JUV",
+        "displayName": "Juventus",
+        "shortDisplayName": "Juventus",
+        "name": "Juventus",
+        "location": "Juventus"
+       }
+      },
+      {
+       "team": {
+        "id": "112",
+        "abbreviation": "LAZ",
+        "displayName": "Lazio",
+        "shortDisplayName": "Lazio",
+        "name": "Lazio",
+        "location": "Lazio"
+       }
+      },
+      {
+       "team": {
+        "id": "113",
+        "abbreviation": "LEC",
+        "displayName": "Lecce",
+        "shortDisplayName": "Lecce",
+        "name": "Lecce",
+        "location": "Lecce"
+       }
+      },
+      {
+       "team": {
+        "id": "4007",
+        "abbreviation": "MON",
+        "displayName": "Monza",
+        "shortDisplayName": "Monza",
+        "name": "Monza",
+        "location": "Monza"
+       }
+      },
+      {
+       "team": {
+        "id": "114",
+        "abbreviation": "NAP",
+        "displayName": "Napoli",
+        "shortDisplayName": "Napoli",
+        "name": "Napoli",
+        "location": "Napoli"
+       }
+      },
+      {
+       "team": {
+        "id": "115",
+        "abbreviation": "PAR",
+        "displayName": "Parma",
+        "shortDisplayName": "Parma",
+        "name": "Parma",
+        "location": "Parma"
+       }
+      },
+      {
+       "team": {
+        "id": "3997",
+        "abbreviation": "SAS",
+        "displayName": "Sassuolo",
+        "shortDisplayName": "Sassuolo",
+        "name": "Sassuolo",
+        "location": "Sassuolo"
+       }
+      },
+      {
+       "team": {
+        "id": "239",
+        "abbreviation": "TOR",
+        "displayName": "Torino",
+        "shortDisplayName": "Torino",
+        "name": "Torino",
+        "location": "Torino"
+       }
+      },
+      {
+       "team": {
+        "id": "118",
+        "abbreviation": "UDI",
+        "displayName": "Udinese",
+        "shortDisplayName": "Udinese",
+        "name": "Udinese",
+        "location": "Udinese"
+       }
+      },
+      {
+       "team": {
+        "id": "17530",
+        "abbreviation": "VEN",
+        "displayName": "Venezia",
+        "shortDisplayName": "Venezia",
+        "name": "Venezia",
+        "location": "Venezia"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

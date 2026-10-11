@@ -95,7 +95,7 @@ export async function applyMine(matches: Match[], args: string[]): Promise<Match
 }
 
 /** Example team for "add a favorite" hints, per sport. */
-export const EXAMPLE_TEAM: Record<string, string> = { fifa: "USA", nba: "UTAH", nhl: "UTAH" };
+export const EXAMPLE_TEAM: Record<string, string> = { fifa: "USA", nba: "UTAH", nhl: "UTAH", epl: "ARS", seriea: "JUV", ligue1: "PSG" };
 
 /** Shared message for `--mine` with no favorites configured for `sport`. */
 export function noFavoritesHint(sport = "fifa"): void {

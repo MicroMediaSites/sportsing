@@ -12,12 +12,13 @@ import { c } from "../ansi.ts";
 import { LIVE_REFRESH_MS, pollAlerters, raise, type Alerter } from "../alerts.ts";
 import { getMatches } from "../api.ts";
 import { getFavorites } from "../config.ts";
-import { getTeams } from "../espn.ts";
+import { getTeams, isClubSoccer } from "../espn.ts";
 import { fmtDate, gameLine, matchLine, relativeTime } from "../format.ts";
 import type { GameState } from "../game.ts";
 import { fifa, fifaHasCommand } from "../sports/fifa.ts";
 import { NBA, nba } from "../sports/nba.ts";
 import { NHL, nhl } from "../sports/nhl.ts";
+import { EPL, LIGUE1, SERIEA, epl, ligue1, seriea } from "../sports/soccer.ts";
 import type { Match } from "../types.ts";
 import { matchState } from "../match-util.ts";
 import { fifaAlerter, fifaDaemonGames } from "./live.ts";
@@ -121,6 +122,10 @@ const FIFA: Sport = {
 // ── ESPN leagues (sport-neutral `Game`) ──────────────────────────────────────
 
 function league(cfg: LeagueConfig, run: Sport["run"]): Sport {
+  // Club soccer has no live-alert rules yet (AGT-1714), and its daemon routing
+  // comes with `watch` (AGT-1713): until then, leave soccer out of
+  // `live --notify` and the daemon rather than error on every poll.
+  const soccer = isClubSoccer(cfg.league);
   const favoriteTeamsOf = async () => {
     const favs = await getFavorites(cfg.sport);
     if (favs.length === 0) return null;
@@ -129,12 +134,12 @@ function league(cfg: LeagueConfig, run: Sport["run"]): Sport {
   };
   return {
     key: cfg.sport,
-    label: cfg.label,
+    label: cfg.shortLabel ?? cfg.label,
     icon: cfg.icon,
     run,
-    has: leagueHasCommand,
-    alerter: () => leagueAlerter(cfg),
-    daemonGames: () => leagueDaemonGames(cfg),
+    has: (cmd) => leagueHasCommand(cmd, cfg),
+    alerter: async () => (soccer ? null : leagueAlerter(cfg)),
+    daemonGames: async () => (soccer ? null : leagueDaemonGames(cfg)),
     async favoritesOn(day) {
       const favs = await favoriteTeamsOf();
       if (!favs) return null;
@@ -162,16 +167,27 @@ function league(cfg: LeagueConfig, run: Sport["run"]): Sport {
 }
 
 /** Every registered sport, in display order. */
-export const SPORTS: Sport[] = [FIFA, league(NBA, nba), league(NHL, nhl)];
+export const SPORTS: Sport[] = [
+  FIFA,
+  league(NBA, nba),
+  league(NHL, nhl),
+  league(EPL, epl),
+  league(SERIEA, seriea),
+  league(LIGUE1, ligue1),
+];
 
 // ── Pure helpers (unit-tested) ───────────────────────────────────────────────
 
 const byStart = (a: Row, b: Row) => Date.parse(a.start) - Date.parse(b.start);
 
-/** A sport tag + the game line, e.g. "🏀 NBA   UTAH  @  DEN …". */
-export function tagged(sport: Pick<Sport, "icon" | "label">, line: string): string {
-  return `${sport.icon} ${c.bold(sport.label.padEnd(4))}  ${line}`;
+/** A sport tag + the game line, e.g. "🏀 NBA   UTAH  @  DEN …". `width` pads
+ *  the label so rows line up when a longer one (e.g. "Serie A") is present. */
+export function tagged(sport: Pick<Sport, "icon" | "label">, line: string, width = 4): string {
+  return `${sport.icon} ${c.bold(sport.label.padEnd(width))}  ${line}`;
 }
+
+/** Label column width for a set of rows: at least 4, or the longest label. */
+const tagWidth = (sports: Pick<Sport, "label">[]) => Math.max(4, ...sports.map((s) => s.label.length));
 
 /** A team's most recent finished game and its next not-yet-started one. */
 export function lastAndNext(rows: Row[], now: number): { last: Row | null; next: Row | null } {
@@ -265,7 +281,8 @@ export async function today(sports: Sport[], args: string[], footer?: Footer): P
   if (rows.length === 0) console.log(c.dim("\nNo games for your teams."));
   else {
     console.log();
-    for (const { sport, row } of rows) console.log("  " + tagged(sport, row.line));
+    const width = tagWidth(rows.map((r) => r.sport));
+    for (const { sport, row } of rows) console.log("  " + tagged(sport, row.line, width));
   }
   printFooter(footer);
 }
@@ -281,8 +298,9 @@ export async function next(sports: Sport[], footer?: Footer): Promise<void> {
 
   console.log(c.bold(c.cyan("★ Your teams — Next up")));
   if (rows.length === 0) console.log(c.dim("\nNo upcoming games for your teams."));
+  const width = tagWidth(rows.map((r) => r.sport));
   for (const { sport, row } of rows) {
-    console.log("\n  " + tagged(sport, row.line));
+    console.log("\n  " + tagged(sport, row.line, width));
     console.log(`  ${c.bold(fmtDate(row.start))}  ${c.green("— starts " + relativeTime(row.start))}`);
   }
   printFooter(footer);

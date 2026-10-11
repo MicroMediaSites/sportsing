@@ -1,0 +1,192 @@
+{
+ "sports": [
+  {
+   "leagues": [
+    {
+     "teams": [
+      {
+       "team": {
+        "id": "172",
+        "abbreviation": "AUX",
+        "displayName": "AJ Auxerre",
+        "shortDisplayName": "Auxerre",
+        "name": "AJ Auxerre",
+        "location": "AJ Auxerre"
+       }
+      },
+      {
+       "team": {
+        "id": "174",
+        "abbreviation": "MON",
+        "displayName": "AS Monaco",
+        "shortDisplayName": "Monaco",
+        "name": "AS Monaco",
+        "location": "AS Monaco"
+       }
+      },
+      {
+       "team": {
+        "id": "7868",
+        "abbreviation": "ANG",
+        "displayName": "Angers",
+        "shortDisplayName": "Angers",
+        "name": "Angers",
+        "location": "Angers"
+       }
+      },
+      {
+       "team": {
+        "id": "6997",
+        "abbreviation": "BRE",
+        "displayName": "Brest",
+        "shortDisplayName": "Brest",
+        "name": "Brest",
+        "location": "Brest"
+       }
+      },
+      {
+       "team": {
+        "id": "3236",
+        "abbreviation": "HAC",
+        "displayName": "Le Havre AC",
+        "shortDisplayName": "Le Havre AC",
+        "name": "Le Havre AC",
+        "location": "Le Havre AC"
+       }
+      },
+      {
+       "team": {
+        "id": "2697",
+        "abbreviation": "MNS",
+        "displayName": "Le Mans",
+        "shortDisplayName": "Le Mans",
+        "name": "Le Mans",
+        "location": "Le Mans"
+       }
+      },
+      {
+       "team": {
+        "id": "175",
+        "abbreviation": "RCL",
+        "displayName": "Lens",
+        "shortDisplayName": "Lens",
+        "name": "Lens",
+        "location": "Lens"
+       }
+      },
+      {
+       "team": {
+        "id": "166",
+        "abbreviation": "LILL",
+        "displayName": "Lille",
+        "shortDisplayName": "Lille",
+        "name": "Lille",
+        "location": "Lille"
+       }
+      },
+      {
+       "team": {
+        "id": "273",
+        "abbreviation": "LOR",
+        "displayName": "Lorient",
+        "shortDisplayName": "Lorient",
+        "name": "Lorient",
+        "location": "Lorient"
+       }
+      },
+      {
+       "team": {
+        "id": "167",
+        "abbreviation": "LYON",
+        "displayName": "Lyon",
+        "shortDisplayName": "Lyon",
+        "name": "Lyon",
+        "location": "Lyon"
+       }
+      },
+      {
+       "team": {
+        "id": "176",
+        "abbreviation": "OLM",
+        "displayName": "Marseille",
+        "shortDisplayName": "Marseille",
+        "name": "Marseille",
+        "location": "Marseille"
+       }
+      },
+      {
+       "team": {
+        "id": "2502",
+        "abbreviation": "NICE",
+        "displayName": "Nice",
+        "shortDisplayName": "Nice",
+        "name": "Nice",
+        "location": "Nice"
+       }
+      },
+      {
+       "team": {
+        "id": "6851",
+        "abbreviation": "PAR",
+        "displayName": "Paris FC",
+        "shortDisplayName": "Paris FC",
+        "name": "Paris FC",
+        "location": "Paris FC"
+       }
+      },
+      {
+       "team": {
+        "id": "160",
+        "abbreviation": "PSG",
+        "displayName": "Paris Saint-Germain",
+        "shortDisplayName": "PSG",
+        "name": "Paris Saint-Germain",
+        "location": "Paris Saint-Germain"
+       }
+      },
+      {
+       "team": {
+        "id": "169",
+        "abbreviation": "REN",
+        "displayName": "Stade Rennais",
+        "shortDisplayName": "Rennes",
+        "name": "Stade Rennais",
+        "location": "Stade Rennais"
+       }
+      },
+      {
+       "team": {
+        "id": "180",
+        "abbreviation": "STR",
+        "displayName": "Strasbourg",
+        "shortDisplayName": "Strasbourg",
+        "name": "Strasbourg",
+        "location": "Strasbourg"
+       }
+      },
+      {
+       "team": {
+        "id": "179",
+        "abbreviation": "TOU",
+        "displayName": "Toulouse",
+        "shortDisplayName": "Toulouse",
+        "name": "Toulouse",
+        "location": "Toulouse"
+       }
+      },
+      {
+       "team": {
+        "id": "170",
+        "abbreviation": "TRY",
+        "displayName": "Troyes",
+        "shortDisplayName": "Troyes",
+        "name": "Troyes",
+        "location": "Troyes"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

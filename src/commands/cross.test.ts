@@ -43,11 +43,11 @@ afterEach(() => {
   process.exitCode = 0;
 });
 
-test("the registry is fifa, nba, nhl — each routable and with its own command table", () => {
-  expect(SPORTS.map((s) => s.key)).toEqual(["fifa", "nba", "nhl"]);
+test("the registry is fifa, nba, nhl, then the soccer leagues — each routable and with its own command table", () => {
+  expect(SPORTS.map((s) => s.key)).toEqual(["fifa", "nba", "nhl", "epl", "seriea", "ligue1"]);
   expect(SPORTS.every((s) => s.has("today") && s.has("fav"))).toBe(true);
   const has = (cmd: string) => SPORTS.filter((s) => s.has(cmd)).map((s) => s.key);
-  expect(has("bracket")).toEqual(["fifa", "nba", "nhl"]);
+  expect(has("bracket")).toEqual(["fifa", "nba", "nhl"]); // soccer has none
   expect(has("season")).toEqual(["nba", "nhl"]); // ESPN leagues only
   expect(has("scorers")).toEqual(["fifa"]);
   expect(SPORTS.some((s) => s.has("toString"))).toBe(false);
