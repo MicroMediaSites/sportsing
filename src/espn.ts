@@ -11,7 +11,7 @@
 
 import { cached, ApiError } from "./api.ts";
 import { c } from "./ansi.ts";
-import type { Broadcast, BroadcastMarket, Game, GameCompetitor, SeasonPhase } from "./game.ts";
+import type { Broadcast, BroadcastMarket, Game, GameCompetitor, Incident, SeasonPhase } from "./game.ts";
 
 /** ESPN league paths this client speaks. A closed set — the path is
  *  interpolated into request URLs and cache filenames, so no free text. */
@@ -245,6 +245,30 @@ function competitorOf(comp: any, side: "home" | "away"): GameCompetitor {
   };
 }
 
+/** Goals and red cards from a soccer competition's `details`. Shootout kicks
+ *  aren't goals; yellow cards and substitutions aren't kept. */
+function incidentsOf(comp: any): Incident[] | undefined {
+  if (!Array.isArray(comp?.details)) return undefined;
+  const out: Incident[] = [];
+  for (const d of comp.details) {
+    if (d?.shootout) continue;
+    const kind = d?.scoringPlay ? "goal" : d?.redCard ? "red-card" : null;
+    if (!kind) continue;
+    const athlete = d?.athletesInvolved?.[0];
+    const minute = String(d?.clock?.displayValue ?? "");
+    out.push({
+      key: `${kind}:${d?.type?.id ?? ""}:${d?.clock?.value ?? minute}:${athlete?.id ?? ""}`,
+      kind,
+      teamId: String(d?.team?.id ?? ""),
+      player: String(athlete?.displayName ?? athlete?.fullName ?? ""),
+      minute,
+      ...(d?.ownGoal ? { ownGoal: true } : {}),
+      ...(d?.penaltyKick ? { penalty: true } : {}),
+    });
+  }
+  return out;
+}
+
 /**
  * One ESPN scoreboard or team-schedule event → `Game`. Season type comes from
  * the event (`seasonType.type` on schedules, `season.type` on scoreboards),
@@ -254,6 +278,7 @@ function competitorOf(comp: any, side: "home" | "away"): GameCompetitor {
 export function toGame(e: any, requested?: SeasonType): Game {
   const comp = e?.competitions?.[0] ?? {};
   const status = comp.status ?? e?.status ?? {};
+  const incidents = incidentsOf(comp);
   const state: Game["state"] = status.type?.state === "in" || status.type?.state === "post" ? status.type.state : "pre";
   return {
     id: String(e?.id ?? ""),
@@ -268,6 +293,7 @@ export function toGame(e: any, requested?: SeasonType): Game {
     home: competitorOf(comp, "home"),
     away: competitorOf(comp, "away"),
     broadcasts: broadcastsOf(comp),
+    ...(incidents ? { incidents } : {}),
   };
 }
 

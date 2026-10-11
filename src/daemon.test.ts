@@ -161,6 +161,22 @@ test("leagueDaemonGame: keyed per sport, watches the favorite's team id, opens s
   expect(d.clickArgs).toEqual(["nba", "watch", "26"]);
 });
 
+test("leagueDaemonGame for a soccer favorite: runs `<league> watch <team> --supervised`, with or without a provider yet", () => {
+  const match: Game = {
+    ...g,
+    id: "401876432",
+    name: "Paris Saint-Germain at Strasbourg",
+    home: { id: "160", name: "Paris Saint-Germain", abbreviation: "PSG", score: "" },
+    away: { id: "180", name: "Strasbourg", abbreviation: "STR", score: "" },
+  };
+  const none = leagueRoute(match, null, null);
+  expect(none.kind).toBe("none");
+  const d = leagueDaemonGame("ligue1", "⚽", match, new Set(["160"]), none);
+  expect(d.key).toBe("ligue1:401876432");
+  expect(d.openArgs).toEqual(["ligue1", "watch", "160", "--supervised"]);
+  expect(leagueDaemonGame("ligue1", "⚽", match, new Set(["160"]), leagueRoute(match, null, "fubo")).route.kind).toBe("open");
+});
+
 test("routeWhere describes what a start will do in each mode", () => {
   expect(routeWhere({ kind: "open", note: "Fubo" }, "open")).toBe("opens Fubo");
   expect(routeWhere({ kind: "open", note: "Fubo" }, "notify")).toContain("click to open Fubo");

@@ -12,7 +12,7 @@ import { c } from "../ansi.ts";
 import { LIVE_REFRESH_MS, pollAlerters, raise, type Alerter } from "../alerts.ts";
 import { getMatches } from "../api.ts";
 import { getFavorites } from "../config.ts";
-import { getTeams, isClubSoccer } from "../espn.ts";
+import { getTeams } from "../espn.ts";
 import { fmtDate, gameLine, matchLine, relativeTime } from "../format.ts";
 import type { GameState } from "../game.ts";
 import { fifa, fifaHasCommand } from "../sports/fifa.ts";
@@ -122,10 +122,6 @@ const FIFA: Sport = {
 // ── ESPN leagues (sport-neutral `Game`) ──────────────────────────────────────
 
 function league(cfg: LeagueConfig, run: Sport["run"]): Sport {
-  // Club soccer has no live-alert rules yet (AGT-1714), and its daemon routing
-  // comes with `watch` (AGT-1713): until then, leave soccer out of
-  // `live --notify` and the daemon rather than error on every poll.
-  const soccer = isClubSoccer(cfg.league);
   const favoriteTeamsOf = async () => {
     const favs = await getFavorites(cfg.sport);
     if (favs.length === 0) return null;
@@ -138,8 +134,8 @@ function league(cfg: LeagueConfig, run: Sport["run"]): Sport {
     icon: cfg.icon,
     run,
     has: (cmd) => leagueHasCommand(cmd, cfg),
-    alerter: async () => (soccer ? null : leagueAlerter(cfg)),
-    daemonGames: async () => (soccer ? null : leagueDaemonGames(cfg)),
+    alerter: () => leagueAlerter(cfg),
+    daemonGames: () => leagueDaemonGames(cfg),
     async favoritesOn(day) {
       const favs = await favoriteTeamsOf();
       if (!favs) return null;

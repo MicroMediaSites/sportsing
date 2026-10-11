@@ -1,5 +1,8 @@
 import { test, expect, describe } from "bun:test";
-import { clockSeconds, diffGames, type GameEvent, type GameMemory, type GameSport } from "./game-events.ts";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { toGame } from "./espn.ts";
+import { clockSeconds, diffGames, isGameSport, isSoccerSport, type GameEvent, type GameMemory, type GameSport } from "./game-events.ts";
 import type { Game, GameState, SeasonPhase } from "./game.ts";
 
 // Synthetic Game snapshots — only the fields the differ reads matter.
@@ -305,4 +308,110 @@ describe("NBA", () => {
     ]);
     expect(diffGames([close("a", "4:00")], [close("a", "3:00")], "nba", memory)).toEqual([]);
   });
+});
+
+// ── club soccer: trimmed real ESPN scoreboard events (fixtures/espn/soccer-incidents.json) ──
+
+describe("club soccer", () => {
+  const events: any[] = JSON.parse(readFileSync(join(import.meta.dir, "..", "fixtures", "espn", "soccer-incidents.json"), "utf8")).events;
+  const raw = (id: string) => structuredClone(events.find((e) => e.id === id)!);
+
+  /** The fixture match as it stood: first `n` incidents listed, at `state`/`detail`, with the real score
+   *  scaled back to the goals so far. */
+  function at(id: string, o: { n: number; state?: "pre" | "in" | "post"; detail?: string; period?: number; clock?: string }): Game {
+    const e = raw(id);
+    const comp = e.competitions[0];
+    comp.details = comp.details.slice(0, o.n);
+    const goals = (teamId: string) => comp.details.filter((d: any) => d.scoringPlay && d.team.id === teamId).length;
+    for (const t of comp.competitors) t.score = o.state === "pre" ? "0" : String(goals(t.team.id));
+    comp.status.type.state = o.state ?? "in";
+    comp.status.type.shortDetail = o.detail ?? "";
+    comp.status.period = o.period ?? (o.state === "pre" ? 0 : 1);
+    comp.status.displayClock = o.clock ?? "";
+    return toGame(e);
+  }
+
+  const CITY = "401879264"; // Liverpool 0–3 Man City: a red card (Liverpool), then three Man City goals
+  const HULL = "401878774"; // Hull 2–2 Everton: a draw
+  const NICE = "401876443"; // Nice 2–1 Strasbourg: an own goal
+
+  test("toGame reads goals and red cards from the scoreboard details, skipping cards that aren't red", () => {
+    const g = at(CITY, { n: 4, state: "post", detail: "FT", period: 2 });
+    expect(g.incidents?.map((i) => [i.kind, i.player, i.minute, i.teamId])).toEqual([
+      ["red-card", "Ryan Gravenberch", "62'", "364"],
+      ["goal", "Erling Haaland", "65'", "382"],
+      ["goal", "Jérémy Doku", "68'", "382"],
+      ["goal", "Rayan Cherki", "78'", "382"],
+    ]);
+  });
+
+  test("a goal: side, scorer and minute from the newly listed incident", () => {
+    const es = run("epl", [
+      at(CITY, { n: 1, clock: "60'", period: 2 }),
+      at(CITY, { n: 2, clock: "65'", period: 2 }),
+    ]);
+    expect(es).toHaveLength(1);
+    expect(es[0]).toMatchObject({ kind: "goal", scoringSide: "away", player: "Erling Haaland", minute: "65'", score: { home: 0, away: 1 } });
+  });
+
+  test("a goal the incident list hasn't caught up with: score only, no scorer", () => {
+    const before = at(CITY, { n: 1, clock: "60'", period: 2 });
+    const after = at(CITY, { n: 2, clock: "65'", period: 2 });
+    after.incidents = before.incidents;
+    const es = run("epl", [before, after]);
+    expect(es).toHaveLength(1);
+    expect(es[0]!.player).toBeUndefined();
+    expect(es[0]!.scoringSide).toBe("away");
+  });
+
+  test("an own goal credits the benefiting side", () => {
+    const es = run("ligue1", [at(NICE, { n: 1, clock: "44'" }), at(NICE, { n: 2, clock: "45'+2'" })]);
+    expect(es).toHaveLength(1);
+    expect(es[0]).toMatchObject({ kind: "goal", scoringSide: "home", player: "Pape Diop", ownGoal: true, score: { home: 1, away: 1 } });
+  });
+
+  test("a red card: the side of the player sent off, with name and minute", () => {
+    const es = run("epl", [at(CITY, { n: 0, clock: "61'", period: 2 }), at(CITY, { n: 1, clock: "62'", period: 2 })]);
+    expect(es).toHaveLength(1);
+    expect(es[0]).toMatchObject({ kind: "red-card", cardSide: "home", player: "Ryan Gravenberch", minute: "62'" });
+  });
+
+  test("incidents already listed when we first see the game never alert", () => {
+    const snap = at(CITY, { n: 4, clock: "70'", period: 2 });
+    expect(run("epl", [snap, snap])).toEqual([]);
+    // …and re-polling a later snapshot only alerts for what's new since the baseline.
+    expect(kinds(run("epl", [snap, at(CITY, { n: 4, clock: "75'", period: 2 })]))).toEqual([]);
+  });
+
+  test("kickoff, half time, full time: one event per transition", () => {
+    const es = run("epl", [
+      at(HULL, { n: 0, state: "pre" }),
+      at(HULL, { n: 0, clock: "1'" }),
+      at(HULL, { n: 0, clock: "44'" }),
+      at(HULL, { n: 0, detail: "HT", clock: "45'+2'" }),
+      at(HULL, { n: 0, detail: "HT", clock: "45'+2'" }),
+      at(HULL, { n: 0, clock: "46'", period: 2 }),
+      at(HULL, { n: 0, state: "post", detail: "FT", period: 2 }),
+    ]);
+    expect(kinds(es)).toEqual(["kickoff", "halftime", "full-time"]);
+  });
+
+  test("a draw finishes level", () => {
+    const es = run("epl", [at(HULL, { n: 4, clock: "89'", period: 2 }), at(HULL, { n: 4, state: "post", detail: "FT", period: 2 })]);
+    expect(es).toHaveLength(1);
+    expect(es[0]).toMatchObject({ kind: "full-time", score: { home: 2, away: 2 } });
+  });
+
+  test("a game first seen at full time, or still pre-kickoff, alerts nothing", () => {
+    expect(run("seriea", [at(HULL, { n: 4, state: "post", detail: "FT", period: 2 }), at(HULL, { n: 4, state: "post", detail: "FT", period: 2 })])).toEqual([]);
+    expect(run("seriea", [at(HULL, { n: 0, state: "pre" }), at(HULL, { n: 0, state: "pre" })])).toEqual([]);
+  });
+});
+
+test("every club-soccer namespace has alert rules (no \"No live alert rules\" for a league with no favorites)", () => {
+  for (const sport of ["epl", "seriea", "ligue1"]) {
+    expect(isGameSport(sport)).toBe(true);
+    expect(isSoccerSport(sport)).toBe(true);
+  }
+  expect(isSoccerSport("nba")).toBe(false);
 });
