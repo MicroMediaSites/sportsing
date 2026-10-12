@@ -15,6 +15,7 @@ import { getClubTeamGames, getGameSummary, getScoreboardGames, getStandings, get
 import { fmtDate, fmtDayHeader, gameLine, relativeTime, type PeriodNaming } from "../format.ts";
 import type { Game } from "../game.ts";
 import { PLAYOFF_FORMATS, renderSeasonSummary, summarizeSeason } from "../season.ts";
+import { renderTeamRows, teamRows } from "../team-list.ts";
 import { STANDINGS_LAYOUTS, groupMatches, loadStandingsView, renderStandingsTable, type StandingsLevel } from "../standings.ts";
 import { launchStream, openInBrowser, pickProvider } from "../stream.ts";
 import { renderStatsHtml, statsHtmlPath } from "../stats-html.ts";
@@ -474,6 +475,17 @@ async function standings(cfg: LeagueConfig, args: string[]): Promise<void> {
     console.log(c.yellow(`${upcoming} hasn't started — showing last season's final standings.`));
   }
   for (const g of groups) console.log("\n" + renderStandingsTable(g, layout, ids));
+}
+
+/** `teams [--json]` — every team: the code `--team` accepts, name, aliases;
+ *  favorites starred. */
+async function teamsList(cfg: LeagueConfig, args: string[]): Promise<void> {
+  const [teams, favs] = await Promise.all([getTeams(cfg.league), getFavorites(cfg.sport)]);
+  const rows = teamRows(teams, cfg.aliases, favs.length > 0 ? favoriteIds(cfg, teams, favs) : new Set<string>());
+  if (args.includes("--json")) return console.log(JSON.stringify(rows, null, 2));
+  title(cfg, `Teams (${rows.length})`);
+  console.log("\n" + renderTeamRows(rows));
+  console.log(c.dim(`\nsportsing ${cfg.sport} schedule --team <code>`));
 }
 
 /** `stats [--by <stat> | --list | --ahead [team] | <team> <team>] [--json | --html]` —
@@ -968,6 +980,7 @@ const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<vo
   results,
   standings,
   stats,
+  teams: teamsList,
   season,
   bracket: (cfg, args) => leagueBracket(cfg, args, favoriteIds),
   fav: leagueFav,
@@ -1008,6 +1021,7 @@ ${b("COMMANDS")}
   ${c.green("results")}            Finished games, newest first ${c.dim(`(league-wide: last ${WINDOW_DAYS} days)`)}
 ${standingsLine}
   ${c.green("stats")}              Form table + team stats ${c.dim("(--by <stat>, --list, <team> <team>, --ahead [team], --json, --html)")}
+  ${c.green("teams")}              Every team: code for --team, name, aliases, favorites ★ ${c.dim("(--json)")}
 ${nonSoccer(`  ${c.green("season")} ${c.dim("[team]")}      Favorites' season: record, splits, playoff race
   ${c.green("bracket")}            Playoff bracket ${c.dim("(projected before the postseason; --season YYYY for a past one)")}
 `)}  ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
