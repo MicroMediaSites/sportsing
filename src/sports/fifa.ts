@@ -24,6 +24,8 @@ import { agentSetup } from "../commands/agent-setup.ts";
 import { setup } from "../commands/setup.ts";
 import { fav } from "../commands/fav.ts";
 import { me } from "../commands/me.ts";
+import { roster } from "../commands/roster.ts";
+import { resolveTeam } from "../commands/league.ts";
 import { LEAGUES } from "../espn.ts";
 import type { SquadLeague } from "../squad.ts";
 import { SOCCER_PLAYER_STATS } from "./soccer.ts";
@@ -45,6 +47,7 @@ const ROUTES: Record<string, (args: string[]) => unknown | Promise<unknown>> = {
   schedule,
   results,
   teams,
+  roster: (args) => roster({ ...FIFA_SQUAD, icon: "⚽" }, args, resolveTeam),
   table,
   bracket: () => bracket(),
   next,
@@ -68,6 +71,7 @@ const ALIASES: Record<string, string> = {
   t: "today",
   n: "next",
   f: "fixtures",
+  squad: "roster",
   standings: "table",
   tables: "table",
   knockout: "bracket",
@@ -125,6 +129,7 @@ ${b("COMMANDS")}
   ${c.green("ask")}    ${c.dim("--next|--reply")} Low-level AI-bus plumbing ${c.dim("(serve wraps this)")}
   ${c.green("fav")}    ${c.dim("[add|rm|list]")} Manage favorite teams
   ${c.green("me")}                 Dashboard for your favorite teams
+  ${c.green("roster")} ${c.dim("[team]")}      A squad by position ${c.dim("(alias squad; --pos X, --stats, --by <stat>, --json)")}
   ${c.green("setup")}  ${c.dim("[key]")}      Add your free football-data.org API key
 
 ${b("FILTER")}
@@ -154,5 +159,6 @@ ${b("EXAMPLES")}
   sportsing fifa live
   sportsing fifa watch --wait              ${c.dim("# wait for the next match, open it live (with stats)")}
   sportsing fifa watch USA --wait          ${c.dim("# wait for USA's game, open it the moment it's live")}
+  sportsing fifa roster USA --stats
 `);
 }
