@@ -71,11 +71,11 @@ function noPositionals<T extends StatsRequest>(req: T, rest: string[]): T {
 /** Find a profile stat by key, short label or label (case-insensitive, in that
  *  order of precedence); failing an exact match, ignoring punctuation and
  *  spaces too ("3p" finds "3P%"). Null if none. */
-export function resolveStat(profile: StatProfile, input: string): StatDef | null {
+export function resolveStat<S extends { key: string; short: string; label: string }>(profile: { stats: S[] }, input: string): S | null {
   const exact = input.trim().toLowerCase();
   if (!exact) return null;
   const loose = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const picks: ((s: StatDef) => string)[] = [(s) => s.key, (s) => s.short, (s) => s.label];
+  const picks: ((s: S) => string)[] = [(s) => s.key, (s) => s.short, (s) => s.label];
   for (const norm of [(t: string) => t.toLowerCase(), loose]) {
     const q = norm(exact);
     if (!q) continue;
@@ -87,10 +87,10 @@ export function resolveStat(profile: StatProfile, input: string): StatDef | null
   return null;
 }
 
-const direction = (def: StatDef) => (def.higherIsBetter ? "higher is better" : "lower is better");
+const direction = (def: { higherIsBetter: boolean }) => (def.higherIsBetter ? "higher is better" : "lower is better");
 
 /** The valid stats, for `--list` and for an unknown `--by`. */
-export function renderStatList(profile: StatProfile): string {
+export function renderStatList(profile: { stats: { key: string; label: string; short: string; higherIsBetter: boolean }[] }): string {
   const keyW = Math.max(...profile.stats.map((s) => s.key.length)) + 2;
   const labelW = Math.max(...profile.stats.map((s) => s.label.length)) + 2;
   const rows = profile.stats.map((s) => `  ${c.green(pad(s.short, 7))}${pad(s.label, labelW)}${c.dim(pad(s.key, keyW))}${direction(s)}`);

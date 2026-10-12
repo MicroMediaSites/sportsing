@@ -36,6 +36,7 @@ import { fav } from "./fav.ts";
 import { leagueAnalyze, leaguePredict, leagueRecap, type LeagueGames } from "./league-ai.ts";
 import { fmtEta, parseSize, positionalTerms, smokeWatch, waitPollMs } from "./watch.ts";
 import { leagueBracket } from "./league-bracket.ts";
+import { roster } from "./roster.ts";
 import { aheadCommand, compareCommand } from "../stats-compare.ts";
 import {
   NOT_STARTED,
@@ -981,6 +982,7 @@ const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<vo
   standings,
   stats,
   teams: teamsList,
+  roster: (cfg, args) => roster(cfg, args, resolveTeam),
   season,
   bracket: (cfg, args) => leagueBracket(cfg, args, favoriteIds),
   fav: leagueFav,
@@ -991,7 +993,7 @@ const COMMANDS: Record<string, (cfg: LeagueConfig, args: string[]) => Promise<vo
   recap: (cfg, args) => leagueRecap(cfg, leagueGames(cfg), args),
 };
 
-const ALIASES: Record<string, string> = { t: "today", n: "next", st: "standings" };
+const ALIASES: Record<string, string> = { t: "today", n: "next", st: "standings", squad: "roster" };
 
 /** True if `sportsing <league> <cmd>` is a command (or alias). With `cfg`,
  *  commands that league doesn't have (soccer: season, bracket) are excluded. */
@@ -1030,6 +1032,7 @@ ${nonSoccer(`  ${c.green("season")} ${c.dim("[team]")}      Favorites' season: r
   ${c.green("recap")}   ${c.dim("<team> [team]")}  AI "here's what you missed" ${c.dim("(--prompt)")}
   ${c.green("watch")}  ${c.dim("[team]")}      Open the stream where you can watch it ${c.dim("(--wait, --overlay, --provider, --url, --smoke)")}
   ${c.green("live")}               Auto-refreshing live board ${c.dim("(--notify: favorites' alerts; --quiet: alerts only)")}
+  ${c.green("roster")} ${c.dim("[team]")}      Players by position ${c.dim("(alias squad; --pos X, --stats, --by <stat>, --json)")}
 
 ${b("FILTER")}
   ${c.dim("--team X")} on today/next/schedule/results picks one team (abbreviation or name).
@@ -1057,6 +1060,7 @@ ${b("EXAMPLES")}
   sportsing ${s} standings${soccer ? "" : " --conference West"}
   sportsing ${s} stats --by ${soccer ? "possession" : "3p"}
   sportsing ${s} recap ${ex} --prompt
+  sportsing ${s} roster ${ex} --stats
 `);
 }
 

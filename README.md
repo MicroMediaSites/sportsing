@@ -73,6 +73,7 @@ across every sport — see **Your teams, every sport** below):
 | `fixtures` / `schedule` / `results` | Fixtures, whole-tournament schedule, finished games (`--mine`) |
 | `table [A-L]` / `bracket` | Group standings / knockout bracket |
 | `teams` / `scorers` / `stats <team>` | Teams, Golden Boot race, match stats (`--json`) |
+| `roster [team] [--stats] [--pos X] [--by <stat>] [--json]` (alias `squad`) | A squad by position, with player stats — see **Rosters** below |
 | `analyze` / `predict <team>` | AI tactical read / prediction (answered by `serve`) |
 | `serve` | Run the AI answer loop that powers `analyze`, `predict`, and the overlay's "Ask Claude" (see **AI** below) |
 | `fav [add\|rm\|list]` / `me` | Manage favorite teams / your dashboard |
@@ -102,6 +103,7 @@ through playoffs. Times are local; preseason games are tagged `PRE`, postseason
 | `live [--notify [--quiet]]` | Auto-refreshing live board; `--notify` alerts for favorites — see **Live fav-alerts** below |
 | `analyze <team> [team]` | AI read of the live or latest game: shooting, boards, turnovers, leaders (answered by `serve`; `--prompt` prints it) |
 | `predict <team> [team]` | AI prediction for the next game from both teams' recent form |
+| `roster [team] [--stats] [--pos X] [--by <stat>] [--json]` (alias `squad`) | A team's players by position, with stats — see **Rosters** below |
 | `recap <team> [team]` | AI "here's what you missed": lead changes, runs, close-late baskets, quarter scores |
 
 `--team X` (abbreviation or name; NBA.com codes like `UTA` work too) picks one
@@ -141,6 +143,28 @@ teams, every goal and penalty). There's
 no default NHL streaming provider: `nhl watch` follows **Where to watch** — a
 Mammoth game on Utah 16 opens Fubo (which carries Utah 16 in-market) with the
 `fubo` subscription, or prints the channel to tune in with only `local-ota`.
+
+## Rosters (every league)
+
+`sportsing <league> roster [team]` (alias `squad`) works the same for `nba`,
+`nhl`, `epl`, `seriea`, `ligue1` and `fifa`: the team's players grouped by
+position (NBA C/F/G, NHL C/LW/RW/D/G, soccer GK/DEF/MID/FWD) with jersey, name,
+position, age, nationality and, when a player is hurt or suspended, why. The
+team is an argument or `--team X` (abbreviation or name, same as everywhere
+else); with none it shows your favorites in turn, and with no favorites it asks
+for a team (exit 1).
+
+- `--pos X` shows one position group (`--pos gk`, `--pos LW`); an unknown one
+  lists the valid keys.
+- `--stats` adds each player's season line (NBA GP/MIN/PTS/REB/AST/STL/BLK/FG%/3P%;
+  NHL GP/G/A/PTS/+-/PIM/TOI, goalies GP/W/L/GAA/SV%; soccer APP/ST/G/A/SH/SOT/YC/RC,
+  goalkeepers APP/ST/SV/GC/YC/RC). Missing figures show `–`, never 0. In the
+  preseason it shows last season's numbers and says so in the header.
+- `--by <stat>` (key, short or full label; implies `--stats`) drops the grouping
+  for one ranked list, best first. Goalie-only stats rank only the goalies. An
+  unknown stat lists the options.
+- `--json` prints the squad as displayed (filtered/sorted); several favorites
+  give an array.
 
 ## Where to watch (NBA / NHL / club soccer)
 
