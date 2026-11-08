@@ -194,10 +194,11 @@ it:
   the same browser profile as `prime-video` — one Amazon sign-in covers both.
   `prime-video` itself is Amazon's own national NBA games.
 - **Club soccer** (`epl`, `seriea`, `ligue1`) has no home market: every listed
-  broadcast is national. NBC, USA Net, CBS, CBSSN, beIN Sports, Universo and
-  Telemundo route to Fubo (NBC, CBS and Telemundo also over the air), Peacock
-  to `peacock`, Paramount+ to `paramount-plus`. Tubi is known but not carried
-  (`✗`). A match ESPN lists no broadcast for is assumed to be on the league's
+  broadcast is national. CBS, CBSSN and beIN Sports route to Fubo (CBS also
+  over the air), Peacock to `peacock`, Paramount+ to `paramount-plus`. NBC
+  routes to Peacock or over the air, and Telemundo over the air only:
+  NBCUniversal's channels have been off Fubo since November 2025, so USA Net
+  and Universo aren't carried (`✗`), and neither is Tubi. A match ESPN lists no broadcast for is assumed to be on the league's
   usual home when you have it, shown as `no broadcast listed yet (assumed)`:
   Premier League → Peacock, Ligue 1 → beIN Sports on Fubo. Serie A has no
   default (ESPN lists Paramount+ on every match). Without that subscription

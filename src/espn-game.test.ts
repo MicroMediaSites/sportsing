@@ -55,6 +55,18 @@ test("scoreboard's condensed broadcasts are used when geoBroadcasts is absent", 
   expect(toGame(e).broadcasts).toEqual([{ name: "NBA TV", market: "national" }]);
 });
 
+test("ESPN's cryptic 'Tele' is renamed Telemundo (both broadcast shapes)", () => {
+  const e = structuredClone(byId(nbaScoreboard, "401914127"));
+  e.competitions[0].geoBroadcasts = [{ market: { type: "National" }, media: { shortName: "Tele" } }];
+  expect(toGame(e).broadcasts).toEqual([{ name: "Telemundo", market: "national" }]);
+  delete e.competitions[0].geoBroadcasts;
+  e.competitions[0].broadcasts = [{ market: "national", names: ["USA Net", "Tele"] }];
+  expect(toGame(e).broadcasts).toEqual([
+    { name: "USA Net", market: "national" },
+    { name: "Telemundo", market: "national" },
+  ]);
+});
+
 test("NHL regular season with broadcasts: Mammoth @ Rangers on Utah 16 (Away)", () => {
   const g = toGame(byId(nhlSchedule, "401892443"), SEASON_TYPES.regular);
   expect(g.seasonType).toBe("regular");

@@ -84,7 +84,10 @@ const NATIONAL: Record<string, Subscription[]> = {
   espn: ["fubo"],
   espn2: ["fubo"],
   abc: ["fubo", "local-ota"],
-  nbc: ["fubo", "local-ota"],
+  // NBCUniversal pulled its channels from Fubo on 2025-11-21 (the Versant
+  // carriage fight) and they haven't returned: NBC, USA Network, Telemundo
+  // and Universo are NOT on Fubo. Peacock streams NBC's broadcasts live.
+  nbc: ["peacock", "local-ota"],
   cbs: ["fubo", "local-ota"],
   fox: ["fubo", "local-ota"],
   fs1: ["fubo"],
@@ -92,15 +95,15 @@ const NATIONAL: Record<string, Subscription[]> = {
   "nhl net": ["fubo"],
   "nhl network": ["fubo"],
   // Club soccer (ESPN's names, lowercased).
-  "usa net": ["fubo"],
-  "usa network": ["fubo"],
+  "usa net": [], // NBCU cable — off Fubo (see nbc above), not on Peacock
+  "usa network": [],
   cbssn: ["fubo"],
   "cbs sports network": ["fubo"],
   "bein sports": ["fubo"],
   "bein sports en español": ["fubo"],
   "bein sports en espanol": ["fubo"],
-  universo: ["fubo"],
-  telemundo: ["fubo", "local-ota"],
+  universo: [], // NBCU cable — off Fubo
+  telemundo: ["local-ota"], // NBCU broadcast — off Fubo, still over the air (ESPN's "Tele" is renamed on parse)
   peacock: ["peacock"],
   "paramount+": ["paramount-plus"],
   "paramount plus": ["paramount-plus"],

@@ -203,7 +203,7 @@ describe("routing details", () => {
 
   test("a service beats over-the-air when both carry it", () => {
     const g = game(CELTICS, LAKERS, [{ name: "NBC", market: "national" }]);
-    expect(resolveWatch(g, ["local-ota", "fubo"], "utah", "nba")).toMatchObject({ via: "Fubo", note: "on NBC" });
+    expect(resolveWatch(g, ["local-ota", "peacock"], "utah", "nba")).toMatchObject({ via: "Peacock", note: "on NBC" });
     expect(resolveWatch(g, ["local-ota"], "utah", "nba")).toMatchObject({ via: "NBC", service: "local-ota" });
   });
 
@@ -247,17 +247,26 @@ describe("club soccer (epl / seriea / ligue1)", () => {
   const ALL_SOCCER: Subscription[] = ["fubo", "peacock", "paramount-plus", "local-ota"];
 
   describe("Premier League", () => {
-    test("listed NBC / USA Net → Fubo, or NBC over the air without Fubo", () => {
-      const g = game(SPURS, ARSENAL, nat("NBC", "USA Net"));
-      expect(resolveWatch(g, ALL_SOCCER, "utah", "epl")).toEqual({ watchable: true, via: "Fubo", service: "fubo", note: "on NBC" });
+    // NBCUniversal's channels have been off Fubo since 2025-11-21.
+    test("listed NBC → Peacock, or over the air; never Fubo", () => {
+      const g = game(SPURS, ARSENAL, nat("NBC"));
+      expect(resolveWatch(g, ALL_SOCCER, "utah", "epl")).toEqual({ watchable: true, via: "Peacock", service: "peacock", note: "on NBC" });
       expect(resolveWatch(g, ["local-ota"], "utah", "epl")).toMatchObject({ watchable: true, via: "NBC", service: "local-ota" });
+      expect(resolveWatch(g, ["fubo"], "utah", "epl").watchable).toBe(false);
     });
 
-    test("listed Peacock → Peacock; Universo → Fubo", () => {
+    test("listed USA Net → not on Fubo; with Telemundo → over the air", () => {
+      expect(resolveWatch(game(SPURS, ARSENAL, nat("USA Net")), ["fubo", "peacock"], "utah", "epl").watchable).toBe(false);
+      const g = game(SPURS, ARSENAL, nat("USA Net", "Telemundo"));
+      expect(resolveWatch(g, ["fubo", "peacock"], "utah", "epl").watchable).toBe(false);
+      expect(resolveWatch(g, ALL_SOCCER, "utah", "epl")).toMatchObject({ watchable: true, via: "Telemundo", service: "local-ota" });
+    });
+
+    test("listed Peacock → Peacock; Universo → not on Fubo", () => {
       const g = game(SPURS, ARSENAL, nat("Peacock"));
       expect(resolveWatch(g, ["peacock"], "utah", "epl")).toEqual({ watchable: true, via: "Peacock", service: "peacock", note: "on Peacock" });
       expect(resolveWatch(g, ["fubo"], "utah", "epl")).toMatchObject({ watchable: false, note: "Peacock exclusive — no subscription" });
-      expect(resolveWatch(game(SPURS, ARSENAL, nat("Universo")), ["fubo"], "utah", "epl")).toMatchObject({ via: "Fubo" });
+      expect(resolveWatch(game(SPURS, ARSENAL, nat("Universo")), ["fubo"], "utah", "epl").watchable).toBe(false);
     });
 
     test("every listed broadcast is national, whatever market ESPN tags it with", () => {
@@ -282,8 +291,8 @@ describe("club soccer (epl / seriea / ligue1)", () => {
     });
 
     test("the unlisted default never applies when something else is listed", () => {
-      const g = game(SPURS, ARSENAL, nat("NBC"));
-      expect(resolveWatch(g, ["peacock"], "utah", "epl")).toMatchObject({ watchable: false, note: "NBC exclusive — no subscription" });
+      const g = game(SPURS, ARSENAL, nat("USA Net"));
+      expect(resolveWatch(g, ["peacock"], "utah", "epl")).toMatchObject({ watchable: false, note: "USA Net exclusive — no subscription" });
     });
 
     test("unknown broadcaster → unknown", () => {
@@ -354,14 +363,15 @@ describe("club soccer (epl / seriea / ligue1)", () => {
     });
   });
 
-  test("Telemundo → Fubo, or over the air", () => {
+  test("Telemundo → over the air only (off Fubo)", () => {
     const g = game(SPURS, ARSENAL, nat("Telemundo"));
-    expect(resolveWatch(g, ["fubo", "local-ota"], "utah", "epl")).toMatchObject({ via: "Fubo" });
+    expect(resolveWatch(g, ["fubo"], "utah", "epl").watchable).toBe(false);
+    expect(resolveWatch(g, ["fubo", "local-ota"], "utah", "epl")).toMatchObject({ via: "Telemundo", service: "local-ota" });
     expect(resolveWatch(g, ["local-ota"], "utah", "epl")).toMatchObject({ via: "Telemundo", service: "local-ota" });
   });
 
   test("Fubo outranks Peacock when both carry the match", () => {
-    const g = game(SPURS, ARSENAL, nat("NBC", "Peacock"));
+    const g = game(SPURS, ARSENAL, nat("CBSSN", "Peacock"));
     expect(resolveWatch(g, ["peacock", "fubo"], "utah", "epl")).toMatchObject({ service: "fubo" });
   });
 });

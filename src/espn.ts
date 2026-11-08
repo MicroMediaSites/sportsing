@@ -208,6 +208,9 @@ function seasonPhaseOf(n: unknown): SeasonPhase | null {
 
 const MARKETS: Record<string, BroadcastMarket> = { national: "national", home: "home", away: "away" };
 
+/** ESPN short names too cryptic to show as-is → the channel's real name. */
+const BROADCAST_NAMES: Record<string, string> = { Tele: "Telemundo" };
+
 /**
  * A competition's broadcasts. ESPN uses two shapes: team schedules (and the
  * scoreboard's `geoBroadcasts`) list `{ market: { type: "Away" }, media:
@@ -228,7 +231,8 @@ function broadcastsOf(comp: any): Broadcast[] {
   const out: Broadcast[] = [];
   for (const r of rows) {
     const market = MARKETS[String(r.market ?? "").toLowerCase()];
-    const name = typeof r.name === "string" ? r.name.trim() : "";
+    const raw = typeof r.name === "string" ? r.name.trim() : "";
+    const name = Object.hasOwn(BROADCAST_NAMES, raw) ? BROADCAST_NAMES[raw]! : raw;
     if (!market || !name) continue;
     if (out.some((b) => b.name === name && b.market === market)) continue;
     out.push({ name, market });

@@ -173,7 +173,7 @@ describe("club soccer routing", () => {
     const ctx = soccer("epl", ["peacock", "paramount-plus"]);
     expect(strip(watchCell(game(SPURS, ARSENAL, nat("Peacock")), ctx))).toBe("Peacock");
     expect(strip(watchCell(game(SPURS, ARSENAL, []), ctx))).toBe("Peacock");
-    expect(strip(watchCell(game(SPURS, ARSENAL, nat("NBC")), ctx))).toBe("✗");
+    expect(strip(watchCell(game(SPURS, ARSENAL, nat("USA Net")), ctx))).toBe("✗");
     expect(strip(watchCell(game(SPURS, ARSENAL, nat("Mystery Net")), ctx))).toBe("?");
     expect(strip(watchCell(game(SPURS, ARSENAL, []), soccer("seriea", ["paramount-plus"])))).toBe("?");
     expect(watchCell(game(SPURS, ARSENAL, nat("Peacock"), "post"), ctx)).toBe("");
