@@ -91,7 +91,9 @@ const NATIONAL: Record<string, Subscription[]> = {
   cbs: ["fubo", "local-ota"],
   fox: ["fubo", "local-ota"],
   fs1: ["fubo"],
-  "nba tv": ["fubo"],
+  // NBA TV is a Fubo add-on, not in the base plan: NBA TV-only games are
+  // not watchable on a base Fubo subscription.
+  "nba tv": [],
   "nhl net": ["fubo"],
   "nhl network": ["fubo"],
   // Club soccer (ESPN's names, lowercased).
