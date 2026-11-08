@@ -220,7 +220,7 @@ describe("real ESPN games (fixtures captured 2026-10-04)", () => {
   test("Jazz @ Nuggets preseason on NBA TV", () => {
     const e = fixture("nba-schedule-preseason.json").find((x) => x.id === "401914127");
     const g = toGame(e, SEASON_TYPES.preseason);
-    expect(resolveWatch(g, ALL, "utah", "nba")).toMatchObject({ watchable: true, via: "Fubo", note: "on NBA TV" });
+    expect(resolveWatch(g, ALL, "utah", "nba")).toMatchObject({ watchable: false }); // NBA TV is a Fubo add-on
     expect(resolveWatch(g, ["nba-league-pass"], "utah", "nba")).toMatchObject({ watchable: false });
   });
 
