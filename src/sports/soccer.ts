@@ -16,7 +16,7 @@ import type { PlayerStatProfile } from "../squad.ts";
 
 // Per-match means of ESPN's summary boxscore, aggregated over the season (club
 // soccer's team statistics endpoint is empty). Goals come from the scores. No xG.
-const SOCCER_STATS: StatProfile = {
+export const SOCCER_STATS: StatProfile = {
   source: "boxscores",
   form: "wdl",
   scatter: { x: "possessionPct", y: "totalShots" },

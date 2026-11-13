@@ -11,7 +11,7 @@ import type { Game } from "./game.ts";
 import { resolveWatch, type Subscription, type Watchability, type WatchSport } from "./watchability.ts";
 
 export function isWatchSport(sport: string): sport is WatchSport {
-  return sport === "nba" || sport === "nhl" || sport === "epl" || sport === "seriea" || sport === "ligue1";
+  return sport === "nba" || sport === "nhl" || sport === "epl" || sport === "seriea" || sport === "ligue1" || sport === "intl";
 }
 
 /** What the resolver needs besides the game. */

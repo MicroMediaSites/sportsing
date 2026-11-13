@@ -20,6 +20,8 @@ import { fifa, fifaHasCommand } from "../sports/fifa.ts";
 import { NBA, nba } from "../sports/nba.ts";
 import { NHL, nhl } from "../sports/nhl.ts";
 import { EPL, LIGUE1, SERIEA, epl, ligue1, seriea } from "../sports/soccer.ts";
+import { INTL, intl, notWorldCup } from "../sports/intl.ts";
+import { TOURNAMENT_END, TOURNAMENT_START } from "../espn.ts";
 import type { Match } from "../types.ts";
 import { matchState } from "../match-util.ts";
 import { fifaAlerter, fifaDaemonGames } from "./live.ts";
@@ -27,15 +29,18 @@ import type { DaemonGame } from "../daemon.ts";
 import { daemonFooter } from "../daemon-io.ts";
 import { EXAMPLE_TEAM, addDays, localDateOf, matchHasTeam, withFallback, ymd } from "./_lib.ts";
 import {
+  dayGames,
+  favSport,
   favoriteIds,
-  gameHasTeam,
-  gamesOnDays,
   leagueAlerter,
   leagueDaemonGames,
   leagueHasCommand,
   parseOffset,
-  teamSeason,
+  resolveTeam,
+  teamGamesOnDays,
+  teamSeasonCurrent,
   watchContext,
+  type GameFilter,
   type LeagueConfig,
 } from "./league.ts";
 
@@ -88,7 +93,7 @@ const allMatches = () =>
     (all) => all,
   );
 
-const FIFA: Sport = {
+const WORLD_CUP: Sport = {
   key: "fifa",
   label: "FIFA",
   icon: "⚽",
@@ -125,13 +130,16 @@ const FIFA: Sport = {
 
 // ── ESPN leagues (sport-neutral `Game`) ──────────────────────────────────────
 
-function league(cfg: LeagueConfig, run: Sport["run"]): Sport {
+/** A league's Sport. The favorites are followed into every competition they
+ *  play in (soccer); `keep` narrows which of their games count. */
+function league(cfg: LeagueConfig, run: Sport["run"], keep: GameFilter = () => true): Sport {
   const favoriteTeamsOf = async () => {
-    const favs = await getFavorites(cfg.sport);
+    const favs = await getFavorites(favSport(cfg));
     if (favs.length === 0) return null;
     const teams = await getTeams(cfg.league);
     return { teams, ids: favoriteIds(cfg, teams, favs) };
   };
+  const row = (g: Game): Row => ({ id: g.id, start: g.date, state: g.state, line: gameLine(g, cfg.periods) });
   return {
     key: cfg.sport,
     label: cfg.shortLabel ?? cfg.label,
@@ -139,15 +147,12 @@ function league(cfg: LeagueConfig, run: Sport["run"]): Sport {
     cfg,
     run,
     has: (cmd) => leagueHasCommand(cmd, cfg),
-    alerter: () => leagueAlerter(cfg),
-    daemonGames: () => leagueDaemonGames(cfg),
+    alerter: () => leagueAlerter(cfg, keep),
+    daemonGames: () => leagueDaemonGames(cfg, keep),
     async favoritesOn(day) {
       const favs = await favoriteTeamsOf();
       if (!favs) return null;
-      const games = await gamesOnDays(cfg, day, 1);
-      return games
-        .filter((g) => gameHasTeam(g, favs.ids))
-        .map((g) => ({ id: g.id, start: g.date, state: g.state, line: gameLine(g, cfg.periods) }));
+      return (await teamGamesOnDays(cfg, favs.ids, day, 1)).filter(keep).map(row);
     },
     async favoriteTeams() {
       const favs = await favoriteTeamsOf();
@@ -155,17 +160,122 @@ function league(cfg: LeagueConfig, run: Sport["run"]): Sport {
       return Promise.all(
         [...favs.ids].map(async (id) => ({
           team: favs.teams.find((t) => t.id === id)!.name,
-          rows: (await teamSeason(cfg, id)).map((g) => ({
-            id: g.id,
-            start: g.date,
-            state: g.state,
-            line: gameLine(g, cfg.periods),
-          })),
+          rows: (await teamSeasonCurrent(cfg, id)).filter(keep).map(row),
         })),
       );
     },
   };
 }
+
+// ── National teams: the World Cup (football-data) + every other competition ──
+
+/** True while the World Cup is on (a week's margin either side). Outside it,
+ *  a World Cup feed that can't run (no API key) isn't worth reporting. */
+export function worldCupIsOn(now: number): boolean {
+  const day = (ymd8: string) => Date.parse(`${ymd8.slice(0, 4)}-${ymd8.slice(4, 6)}-${ymd8.slice(6, 8)}T00:00:00Z`);
+  const margin = 7 * 24 * 60 * 60_000;
+  return now >= day(TOURNAMENT_START) - margin && now <= day(TOURNAMENT_END) + margin;
+}
+
+/**
+ * Both halves of a national-team lookup — the World Cup feed and the other
+ * competitions — joined by `join`; null when neither has favorites. One half
+ * failing doesn't lose the other: the error is rethrown only when the half
+ * that worked has nothing to show — or, for the World Cup feed, while the
+ * tournament is on (its "needs an API key" matters then, not in November).
+ */
+export async function bothHalves<T>(
+  worldCup: () => Promise<T | null>,
+  others: () => Promise<T | null>,
+  join: (a: T | null, b: T | null) => T | null,
+  now = Date.now(),
+): Promise<T | null> {
+  const [wc, rest] = await Promise.allSettled([worldCup(), others()]);
+  if (wc.status === "rejected" && rest.status === "rejected") throw rest.reason;
+  if (wc.status === "rejected" && worldCupIsOn(now)) throw wc.reason;
+  const a = wc.status === "fulfilled" ? wc.value : null;
+  const b = rest.status === "fulfilled" ? rest.value : null;
+  if (rest.status === "rejected" && a === null) throw rest.reason;
+  return join(a, b);
+}
+
+const concat = <T>(a: T[] | null, b: T[] | null): T[] | null => (a === null && b === null ? null : [...(a ?? []), ...(b ?? [])]);
+
+/** Team rows from both feeds, one entry per team. The World Cup half is keyed
+ *  by the favorite as typed ("USA"), the other by the team's name ("United
+ *  States"): `nameOf` maps the first to the second. A team only one half
+ *  knows keeps its own entry. Pure. */
+export function joinTeamRows(
+  wc: TeamRows[] | null,
+  others: TeamRows[] | null,
+  nameOf: (favorite: string) => string | undefined = () => undefined,
+): TeamRows[] | null {
+  if (wc === null || others === null) return wc ?? others;
+  const left = [...others];
+  const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  const out = wc.map((t) => {
+    const name = nameOf(t.team) ?? t.team;
+    const j = left.findIndex((o) => same(o.team, name));
+    if (j < 0) return t;
+    const [match] = left.splice(j, 1);
+    return { team: t.team, rows: [...t.rows, ...match!.rows].sort(byStart) };
+  });
+  return [...out, ...left];
+}
+
+/** Maps a `fifa` favorite as typed to its national team's name; a lookup that
+ *  can't run maps nothing (the halves then just list separately). */
+async function nationalTeamNames(): Promise<(favorite: string) => string | undefined> {
+  const teams = await getTeams(INTL.league).catch(() => []);
+  return (favorite) => resolveTeam(teams, favorite, INTL.aliases)?.name;
+}
+
+/** A national-team alerter polling both feeds. */
+function joinAlerters(a: Alerter | null, b: Alerter | null): Alerter | null {
+  if (a === null || b === null) return a ?? b;
+  return {
+    label: a.label,
+    teams: a.teams,
+    poll: async () => {
+      const polls = await Promise.allSettled([a.poll(), b.poll()]);
+      if (polls.every((p) => p.status === "rejected")) throw (polls[0] as PromiseRejectedResult).reason;
+      return polls.flatMap((p) => (p.status === "fulfilled" ? p.value : []));
+    },
+  };
+}
+
+/** National teams outside the World Cup, as a league: their favorites are
+ *  the `fifa` ones. Not registered on its own — it's the other half of FIFA. */
+const OTHER_INTERNATIONALS = league(INTL, intl, notWorldCup);
+
+/** `fifa` in the cross-sport views: a favorite national team's World Cup
+ *  matches and its games in every other competition, as one sport. */
+const FIFA: Sport = {
+  ...WORLD_CUP,
+  favoritesOn: (day) => bothHalves(() => WORLD_CUP.favoritesOn(day), () => OTHER_INTERNATIONALS.favoritesOn(day), concat),
+  async favoriteTeams() {
+    const nameOf = await nationalTeamNames();
+    return bothHalves(WORLD_CUP.favoriteTeams, OTHER_INTERNATIONALS.favoriteTeams, (a, b) => joinTeamRows(a, b, nameOf));
+  },
+  alerter: () => bothHalves(WORLD_CUP.alerter, OTHER_INTERNATIONALS.alerter, joinAlerters),
+  daemonGames: () => bothHalves(WORLD_CUP.daemonGames, OTHER_INTERNATIONALS.daemonGames, concat),
+};
+
+/** `sportsing intl …` — the national-team namespace. Its favorites are FIFA's,
+ *  which already carries them through the cross-sport views, so this entry
+ *  only routes commands (and feeds `sportsing all`). */
+const INTL_NAMESPACE: Sport = {
+  key: INTL.sport,
+  label: INTL.shortLabel ?? INTL.label,
+  icon: INTL.icon,
+  cfg: INTL,
+  run: intl,
+  has: (cmd) => leagueHasCommand(cmd, INTL),
+  favoritesOn: async () => null,
+  favoriteTeams: async () => null,
+  alerter: async () => null,
+  daemonGames: async () => null,
+};
 
 /** Every registered sport, in display order. */
 export const SPORTS: Sport[] = [
@@ -175,6 +285,7 @@ export const SPORTS: Sport[] = [
   league(EPL, epl),
   league(SERIEA, seriea),
   league(LIGUE1, ligue1),
+  INTL_NAMESPACE,
 ];
 
 // ── Pure helpers (unit-tested) ───────────────────────────────────────────────
@@ -308,16 +419,19 @@ export function allSources(sports: Sport[] = SPORTS): AllSource[] {
   return sports.flatMap((s): AllSource[] => {
     const cfg = s.cfg;
     if (!cfg) return [];
+    const favorites = async () => {
+      const favs = await getFavorites(favSport(cfg));
+      return favs.length === 0 ? new Set<string>() : favoriteIds(cfg, await getTeams(cfg.league), favs);
+    };
     return [
       {
         sport: s,
         periods: cfg.periods,
-        games: (day) => gamesOnDays(cfg, day, 1),
+        // The whole league, plus the favorites' games in other competitions
+        // (national teams: only those — there is no league to list).
+        games: async (day) => dayGames(cfg, await favorites().catch(() => new Set<string>()), day),
         watch: () => watchContext(cfg),
-        favorites: async () => {
-          const favs = await getFavorites(cfg.sport);
-          return favs.length === 0 ? new Set<string>() : favoriteIds(cfg, await getTeams(cfg.league), favs);
-        },
+        favorites,
       },
     ];
   });
@@ -404,7 +518,8 @@ export function allJson(r: AllRow, periods?: LeagueConfig["periods"]) {
   };
 }
 
-/** `today --all` / `all` — every game on one local day across the ESPN leagues (not FIFA). */
+/** `today --all` / `all` — every game on one local day across the ESPN leagues,
+ *  plus the soccer favorites' games in other competitions (not the World Cup feed). */
 export async function allGames(sources: AllSource[], args: string[], footer?: Footer): Promise<void> {
   const offset = parseOffset(args);
   const day = addDays(new Date(), offset);

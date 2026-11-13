@@ -105,6 +105,28 @@ addressed or the design is reconsidered.
 
 <!-- stamp:end -->
 
+## Soccer teams play in more than one competition
+
+A league's own scoreboard and team schedule only know that league. A soccer
+team's cup, European and (for national teams) every game come from ESPN's
+cross-competition schedule, `soccer/all/teams/<id>/schedule`
+(`getSoccerTeamGames`), where each event names its competition. See "Other
+competitions" in `src/commands/league.ts`. Rules that keep it correct:
+
+- A `Game` carries `competition` only when it is outside the league being
+  shown (`ownGame`). Code that must stay league-only (AI summaries, stats)
+  filters on it; where-to-watch uses it to skip the league's assumed service.
+- That schedule lags: a live match can read `pre`, a finished one can be
+  missing for hours. Anything about now or a given day reads the
+  competition's own scoreboard (`soccerCompetition(slug)` +
+  `getScoreboardGames`) and uses the schedule only to learn which scoreboards.
+- A competition slug comes from ESPN, never from user input, and still goes
+  through `soccerCompetition` before it reaches a URL or cache filename.
+- National teams are `src/sports/intl.ts`, a teams-only `LeagueConfig` whose
+  favorites are the `fifa` ones. In the cross-sport views and the daemon its
+  games are merged into `fifa` (`bothHalves` in `src/commands/cross.ts`),
+  minus World Cup games, which the football-data path already follows.
+
 ## Adding a league
 
 A league that sportsing tracks gets stats the moment it is added.

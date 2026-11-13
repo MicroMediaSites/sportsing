@@ -281,6 +281,7 @@ export const GAME_RULES = {
   epl: soccer,
   seriea: soccer,
   ligue1: soccer,
+  intl: soccer, // national teams, every competition outside the World Cup
 } satisfies Record<string, Rule[]>;
 
 export type GameSport = keyof typeof GAME_RULES;
@@ -290,7 +291,7 @@ export function isGameSport(sport: string): sport is GameSport {
   return Object.hasOwn(GAME_RULES, sport);
 }
 
-/** True if `sport` is one of the club-soccer leagues. */
+/** True if `sport` plays by the soccer rules (the club leagues and `intl`). */
 export const isSoccerSport = (sport: string): boolean => GAME_RULES[sport as GameSport] === soccer;
 
 /**

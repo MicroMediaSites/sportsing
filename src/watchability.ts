@@ -27,12 +27,12 @@ export function isSubscription(s: string): s is Subscription {
 }
 
 /** Sports the resolver knows how to route (ESPN-backed, `Game`-shaped). */
-export type WatchSport = "nba" | "nhl" | "epl" | "seriea" | "ligue1";
+export type WatchSport = "nba" | "nhl" | "epl" | "seriea" | "ligue1" | "intl";
 
-/** Club-soccer leagues: no home market (every listed broadcast is national)
- *  and no blackouts. */
-const CLUB_SOCCER: readonly WatchSport[] = ["epl", "seriea", "ligue1"];
-const isSoccer = (sport: WatchSport) => CLUB_SOCCER.includes(sport);
+/** Soccer — the club leagues and national teams (`intl`): no home market
+ *  (every listed broadcast is national) and no blackouts. */
+const SOCCER: readonly WatchSport[] = ["epl", "seriea", "ligue1", "intl"];
+const isSoccer = (sport: WatchSport) => SOCCER.includes(sport);
 
 /** What an unlisted match (ESPN lists no broadcasts at all) is assumed to be
  *  on, per sport — the same guess League Pass gets for NBA, shown as "no
@@ -91,6 +91,7 @@ const NATIONAL: Record<string, Subscription[]> = {
   cbs: ["fubo", "local-ota"],
   fox: ["fubo", "local-ota"],
   fs1: ["fubo"],
+  fs2: ["fubo"], // national-team games Fox doesn't put on FS1
   // NBA TV is a Fubo add-on, not in the base plan: NBA TV-only games are
   // not watchable on a base Fubo subscription.
   "nba tv": [],
@@ -207,7 +208,9 @@ export function resolveWatch(
 
   // Club soccer: a match ESPN lists nothing for is assumed to be on the
   // league's usual home (Premier League → Peacock, Ligue 1 → beIN on Fubo).
-  const assumed = ASSUMED_WHEN_UNLISTED[sport];
+  // Only the league's own matches: a cup or European tie (`competition` set)
+  // has different rights, so it stays unknown rather than a wrong guess.
+  const assumed = game.competition ? undefined : ASSUMED_WHEN_UNLISTED[sport];
   if (assumed && game.broadcasts.length === 0 && has.has(assumed.service)) {
     routes.push({ ...assumed, assumed: true });
   }

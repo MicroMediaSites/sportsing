@@ -280,7 +280,8 @@ function side(t: GameCompetitor, other: GameCompetitor, g: Game): string {
 
 /** One game as an aligned line, US style (away @ home):
  *  "UTAH  109  @  DEN    97   Final  PRE". `naming` renders the status in the
- *  league's period terms (see `PeriodNaming`). */
+ *  league's period terms (see `PeriodNaming`). A game outside the league
+ *  being shown ends with its competition: "… 1:00 PM  UEFA Europa League". */
 export function gameLine(g: Game, naming?: PeriodNaming): string {
   const tag = phaseTag(g);
   const tagStr = tag === "PRE" ? c.yellow(tag) : tag === "POST" ? c.magenta(tag) : "";
@@ -290,7 +291,8 @@ export function gameLine(g: Game, naming?: PeriodNaming): string {
     side(g.home, g.away, g) +
     "   " +
     pad(gameStatus(g, naming), 12) +
-    (tagStr ? " " + tagStr : "")
+    (tagStr ? " " + tagStr : "") +
+    (g.competition ? " " + c.dim(g.competition.name) : "")
   ).trimEnd();
 }
 

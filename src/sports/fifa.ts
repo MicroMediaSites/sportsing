@@ -104,6 +104,7 @@ function fifaHelp(): void {
 ${b("USAGE")}
   sportsing fifa <command> [options]
   ${c.dim("(bare `sportsing today|next|me` cover your favorites across every sport)")}
+  ${c.dim("(national teams outside the World Cup — Nations League, qualifiers, friendlies: `sportsing intl`)")}
 
 ${b("COMMANDS")}
   ${c.green("today")}              Matches today  ${c.dim("(--tomorrow, --yesterday, --offset N)")}

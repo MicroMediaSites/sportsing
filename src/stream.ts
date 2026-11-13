@@ -60,6 +60,10 @@ export interface Provider {
   /** Hub page per sport namespace (`fifa`, `nba`, …). A provider without a hub
    *  for a sport can't be picked for that sport's `watch`. */
   hubs: Partial<Record<string, string>>;
+  /** Page for one competition (ESPN slug, e.g. `uefa.champions`), opened
+   *  instead of the sport's hub for a game in that competition — a club's
+   *  European tie isn't on its league's page. */
+  competitions?: Partial<Record<string, string>>;
 }
 
 export const PROVIDERS: Record<string, Provider> = {
@@ -89,6 +93,8 @@ export const PROVIDERS: Record<string, Provider> = {
       epl: "https://www.fubo.tv/p/soccer",
       seriea: "https://www.fubo.tv/p/soccer",
       ligue1: "https://www.fubo.tv/p/soccer",
+      // National teams outside the World Cup (FS1 / FS2 …): the same hub.
+      intl: "https://www.fubo.tv/p/soccer",
     },
   },
   // Amazon's national NBA games (Prime's own package, not League Pass). The
@@ -101,6 +107,13 @@ export const PROVIDERS: Record<string, Provider> = {
   "paramount-plus": {
     label: "Paramount+",
     hubs: { seriea: "https://www.paramountplus.com/shows/serie-a/" },
+    // UEFA club competitions (US rights), same live-events layout as the Serie
+    // A page. Checked 2026-11-12; the Conference League and Coppa Italia have
+    // no such page, so those games open the sport's hub.
+    competitions: {
+      "uefa.champions": "https://www.paramountplus.com/shows/uefa-champions-league/",
+      "uefa.europa": "https://www.paramountplus.com/shows/uefa-europa-league/",
+    },
   },
   // Out-of-market NBA games — the provider key matches the `nba-league-pass`
   // subscription id the watchability resolver routes to. Opened as the Prime
@@ -124,18 +137,23 @@ function profileKey(label: string): string {
 export type ProviderPick = { ok: true; key: string; label: string; hub: string } | { ok: false; error: string };
 
 /** Resolve a provider key to its hub for `sport`: unknown keys and providers
- *  with no hub for that sport are errors naming the valid choices. */
+ *  with no hub for that sport are errors naming the valid choices. With a
+ *  `competition` (ESPN slug), the provider's page for that competition wins
+ *  over the sport's hub — and is enough on its own when it has no such hub. */
 export function pickProvider(
   key: string,
   sport: string,
   providers: Record<string, Provider> = PROVIDERS,
+  competition?: string,
 ): ProviderPick {
   const k = key.trim().toLowerCase();
   const forSport = Object.keys(providers).filter((p) => providers[p]!.hubs[sport]);
   const known = forSport.join(", ") || "none";
-  const provider = providers[k];
+  // hasOwn: `competition` is feed data — a bare lookup would accept "constructor".
+  const provider = Object.hasOwn(providers, k) ? providers[k] : undefined;
   if (!provider) return { ok: false, error: `Unknown provider "${k}". Known: ${known}.` };
-  const hub = provider.hubs[sport];
+  const page = competition && provider.competitions && Object.hasOwn(provider.competitions, competition) ? provider.competitions[competition] : undefined;
+  const hub = page ?? provider.hubs[sport];
   if (!hub) return { ok: false, error: `${provider.label} has no ${sport} hub. Known for ${sport}: ${known}.` };
   return { ok: true, key: k, label: provider.label, hub };
 }

@@ -11,7 +11,22 @@ import { mkdir } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { c } from "../ansi.ts";
 import { CACHE_DIR, getFavorites, getHomeMarket, getStreamProvider, getSubscriptions } from "../config.ts";
-import { getClubTeamGames, getGameSummary, getScoreboardGames, getStandings, getTeamGames, getTeams, isClubSoccer, SEASON_TYPES, type EspnTeam, type League } from "../espn.ts";
+import {
+  competitionSlug,
+  followsAllCompetitions,
+  getGameSummary,
+  getScoreboardGames,
+  getSoccerTeamGames,
+  getStandings,
+  getTeamGames,
+  getTeams,
+  isClubSoccer,
+  SEASON_TYPES,
+  soccerCompetition,
+  type EspnPath,
+  type EspnTeam,
+  type League,
+} from "../espn.ts";
 import { fmtDate, fmtDayHeader, gameLine, relativeTime, type PeriodNaming } from "../format.ts";
 import type { Game } from "../game.ts";
 import { PLAYOFF_FORMATS, renderSeasonSummary, summarizeSeason } from "../season.ts";
@@ -92,7 +107,24 @@ export interface LeagueConfig {
    *  position, and where the stats come from (src/squad.ts). Required: a
    *  registry test fails any league without one. */
   playerStatProfile: PlayerStatProfile;
+  /** Favorites key when it isn't `sport`: national teams (`intl`) are the
+   *  `fifa` favorites. */
+  favoritesSport?: string;
+  /** No league-wide view — the "league" is only a list of teams (national
+   *  teams). Every command is about teams: `--team X`, else the favorites. */
+  teamsOnly?: boolean;
+  /** The only commands this namespace has (default: every league command). */
+  commands?: readonly string[];
+  /** Printed instead of the generic league help. */
+  help?: () => void;
 }
+
+/** The favorites key for a league: its own sport unless it shares another's. */
+export const favSport = (cfg: Pick<LeagueConfig, "sport" | "favoritesSport">): string => cfg.favoritesSport ?? cfg.sport;
+
+/** Which of a team's games a caller wants (e.g. not the World Cup ones). */
+export type GameFilter = (g: Game) => boolean;
+const ALL_GAMES: GameFilter = () => true;
 
 /** How far `schedule` looks ahead / `results` looks back league-wide, and how
  *  far `next` scans for a game, in days. ESPN date ranges are unreliable for
@@ -198,7 +230,7 @@ export function liveBoard(games: Game[], today: string): { live: Game[]; upcomin
 /** Every game for one team across preseason, regular season, and postseason
  *  (club soccer: played + upcoming fixtures, which ESPN lists separately). */
 export async function teamSeason(cfg: LeagueConfig, teamId: string): Promise<Game[]> {
-  if (isClubSoccer(cfg.league)) return mergeGames([await getClubTeamGames(cfg.league, teamId)]);
+  if (followsAllCompetitions(cfg.league)) return mergeGames([(await getSoccerTeamGames(teamId)).map((g) => ownGame(cfg, g))]);
   const { preseason, regular, postseason } = SEASON_TYPES;
   const lists = await Promise.all([preseason, regular, postseason].map((st) => getTeamGames(cfg.league, teamId, st)));
   return mergeGames(lists);
@@ -214,8 +246,171 @@ export async function gamesOnDays(cfg: LeagueConfig, from: Date, days: number): 
   return mergeGames(lists).filter((g) => wanted.has(localDateOf(g.date)));
 }
 
+// ── Other competitions ───────────────────────────────────────────────────────
+//
+// A soccer team plays outside its league: cups and Europe for a club, and a
+// national team has no league at all. teamSeason lists those games (tagged
+// with `competition`), but ESPN's cross-competition schedule lags — a match in
+// progress can still read "pre" and a just-finished one can be missing for
+// hours — so anything about *now* or *a given day* reads the competition's own
+// scoreboard instead, and uses the schedule only to learn which scoreboards.
+
+type Competition = NonNullable<Game["competition"]>;
+
+/** `g` without its competition tag when that's the league's own (so only
+ *  games *outside* the league carry one). A teams-only league has no games
+ *  of its own: every one keeps its tag. Pure. */
+export function ownGame(cfg: Pick<LeagueConfig, "league" | "teamsOnly">, g: Game): Game {
+  if (cfg.teamsOnly || g.competition?.slug !== competitionSlug(cfg.league)) return g;
+  const { competition: _own, ...rest } = g;
+  return rest;
+}
+
+/** How near (either side of `now`) a scheduled game makes its competition one
+ *  the team is currently playing in. */
+const ACTIVE_COMPETITION_MS = 45 * 24 * 60 * 60_000;
+
+/** The other competitions in `games` with a game near `now`, one per slug. Pure. */
+export function activeCompetitions(games: Game[], now: number): Competition[] {
+  const bySlug = new Map<string, Competition>();
+  for (const g of games) {
+    if (!g.competition || bySlug.has(g.competition.slug)) continue;
+    if (Math.abs(Date.parse(g.date) - now) <= ACTIVE_COMPETITION_MS) bySlug.set(g.competition.slug, g.competition);
+  }
+  return [...bySlug.values()];
+}
+
+/** One competition's scoreboard for a day, narrowed to `ids` and tagged with
+ *  the competition. A competition that can't be fetched is just absent — the
+ *  team's league view must not fail because a cup's feed did. */
+async function boardGames(competition: Competition, date: string, ids: ReadonlySet<string>, ttlMs: number): Promise<Game[]> {
+  const path = soccerCompetition(competition.slug);
+  if (!path) return [];
+  try {
+    const games = await getScoreboardGames(path, date, ttlMs);
+    return games.filter((g) => gameHasTeam(g, ids)).map((g) => ({ ...g, competition }));
+  } catch {
+    return [];
+  }
+}
+
+/** The teams' games in other competitions on each local day in [from, from +
+ *  days): every competition they're currently playing in, from its scoreboard,
+ *  with the schedule's copy as the fallback for one a scoreboard didn't give. */
+async function otherGamesOnDays(cfg: LeagueConfig, ids: ReadonlySet<string>, from: Date, days: number): Promise<Game[]> {
+  if (!followsAllCompetitions(cfg.league) || ids.size === 0) return [];
+  const scheduled = (await scopedSeasons(cfg, ids)).filter((g) => g.competition);
+  const dates = Array.from({ length: days + 2 }, (_, i) => espnDate(addDays(from, i - 1)));
+  const boards = await Promise.all(
+    activeCompetitions(scheduled, from.getTime()).flatMap((comp) => dates.map((d) => boardGames(comp, d, ids, 60_000))),
+  );
+  const wanted = new Set(Array.from({ length: days }, (_, i) => ymd(addDays(from, i))));
+  return mergeGames([...boards, scheduled]).filter((g) => wanted.has(localDateOf(g.date)));
+}
+
+/** A team's games on each local day in [from, from + days), in every
+ *  competition: the league's scoreboards plus the other competitions'. */
+export async function teamGamesOnDays(cfg: LeagueConfig, ids: ReadonlySet<string>, from: Date, days: number): Promise<Game[]> {
+  const [own, other] = await Promise.all([
+    cfg.teamsOnly ? [] : gamesOnDays(cfg, from, days).then((games) => games.filter((g) => gameHasTeam(g, ids))),
+    otherGamesOnDays(cfg, ids, from, days),
+  ]);
+  return mergeGames([own, other]);
+}
+
+/** A team's season with the last two days read from the scoreboards, for
+ *  "last result / next game": the cross-competition schedule can lack a match
+ *  for hours after it ends. Leagues followed in one competition only are
+ *  already current, so theirs is just teamSeason. */
+export async function teamSeasonCurrent(cfg: LeagueConfig, teamId: string): Promise<Game[]> {
+  if (!followsAllCompetitions(cfg.league)) return teamSeason(cfg, teamId);
+  const [recent, season] = await Promise.all([
+    teamGamesOnDays(cfg, new Set([teamId]), addDays(new Date(), -1), 2),
+    teamSeason(cfg, teamId),
+  ]);
+  return mergeGames([recent, season]); // scoreboard copies first: they win
+}
+
+/** Every game on one local day as `sportsing all` lists it: the whole league,
+ *  plus the favorites' games in other competitions. */
+export async function dayGames(cfg: LeagueConfig, favIds: ReadonlySet<string>, day: Date): Promise<Game[]> {
+  const [own, other] = await Promise.all([cfg.teamsOnly ? [] : gamesOnDays(cfg, day, 1), otherGamesOnDays(cfg, favIds, day, 1)]);
+  return mergeGames([own, other]);
+}
+
 /** How fresh live polls are: below LIVE_REFRESH_MS so every refresh refetches. */
 const LIVE_TTL_MS = 20_000;
+
+/** Other-competition scoreboards a live poll has read, by `slug|date`. A
+ *  long-running poller (the daemon, `live --notify`) keeps reading them after
+ *  the game drops out of the lagging team schedule, so it still sees it end. */
+const liveBoards = new Map<string, { competition: Competition; date: string }>();
+
+/** Which scoreboards a live poll reads: the ones `games` (the schedule's
+ *  nearby other-competition games) are on, plus those already being read
+ *  that aren't older than `oldest` (YYYYMMDD). Mutates and returns `boards`. */
+export function trackLiveBoards(
+  boards: Map<string, { competition: Competition; date: string }>,
+  games: Game[],
+  oldest: string,
+): Map<string, { competition: Competition; date: string }> {
+  for (const g of games) {
+    if (!g.competition) continue;
+    const date = easternScoreboardDate(g.date);
+    boards.set(`${g.competition.slug}|${date}`, { competition: g.competition, date });
+  }
+  for (const [key, b] of boards) if (b.date < oldest) boards.delete(key);
+  return boards;
+}
+
+/** The teams' live and nearby games in other competitions (local yesterday →
+ *  tomorrow), with scoreboard-fresh state. */
+async function otherLiveGames(cfg: LeagueConfig, ids: ReadonlySet<string>): Promise<Game[]> {
+  if (!followsAllCompetitions(cfg.league) || ids.size === 0) return [];
+  const now = new Date();
+  const near = new Set([-1, 0, 1].map((i) => ymd(addDays(now, i))));
+  const scheduled = (await scopedSeasons(cfg, ids)).filter((g) => g.competition && near.has(localDateOf(g.date)));
+  const boards = trackLiveBoards(liveBoards, scheduled, espnDate(addDays(now, -2)));
+  const fresh = await Promise.all([...boards.values()].map((b) => boardGames(b.competition, b.date, ids, LIVE_TTL_MS)));
+  return mergeGames([...fresh, scheduled]).filter((g) => near.has(localDateOf(g.date)));
+}
+
+/** The teams' games for alerts and the daemon, in every competition: the
+ *  league's live scoreboards plus the other competitions'. */
+async function liveTeamGames(cfg: LeagueConfig, ids: ReadonlySet<string>): Promise<Game[]> {
+  const [own, other] = await Promise.all([
+    cfg.teamsOnly ? [] : liveGames(cfg).then((games) => games.filter((g) => gameHasTeam(g, ids))),
+    otherLiveGames(cfg, ids),
+  ]);
+  return mergeGames([own, other]);
+}
+
+/** The scoreboard a game is on: its competition's, else the league's. Null
+ *  when a teams-only league's game names no usable competition. */
+function boardOf(cfg: LeagueConfig, g: Game): EspnPath | null {
+  if (g.competition) return soccerCompetition(g.competition.slug);
+  return cfg.teamsOnly ? null : cfg.league;
+}
+
+/** A scheduled game's copy from its scoreboard: current state, and the
+ *  broadcast list (soccer team schedules don't say which market a broadcast is
+ *  for, so theirs parses as none). `g` itself when the scoreboard doesn't have
+ *  it; a failed fetch throws. */
+async function fromScoreboard(cfg: LeagueConfig, g: Game, ttlMs: number): Promise<Game> {
+  const board = boardOf(cfg, g);
+  if (!board) return g;
+  const fresh = (await getScoreboardGames(board, easternScoreboardDate(g.date), ttlMs)).find((x) => x.id === g.id);
+  if (!fresh) return g;
+  // A scoreboard copy carries no competition tag: keep the schedule's.
+  return g.competition ? { ...fresh, competition: g.competition } : fresh;
+}
+
+/** The game `watch` is about for these teams (see watchTarget), as its
+ *  scoreboard has it; the schedule's copy if the scoreboard can't be read. */
+async function currentWatchTarget(cfg: LeagueConfig, ids: ReadonlySet<string>): Promise<Game | null> {
+  const target = watchTarget(await scopedSeasons(cfg, ids), Date.now());
+  return target && fromScoreboard(cfg, target, 30_000).catch(() => target);
+}
 
 /** Games for the live board and alerts: the scoreboards for local yesterday,
  *  today, and tomorrow (ESPN groups by US-Eastern day), unfiltered — a game
@@ -263,7 +458,8 @@ type Scope =
  */
 async function scopeOf(cfg: LeagueConfig, args: string[]): Promise<Scope> {
   const teamArg = getFlag(args, "--team");
-  const favs = teamArg ? null : await mineFavorites(args, cfg.sport);
+  // A teams-only league has no league-wide view: no --team means the favorites.
+  const favs = teamArg ? null : await mineFavorites(cfg.teamsOnly ? [...args, "--mine"] : args, favSport(cfg));
   if (!teamArg && favs === null) return { kind: "league" };
   if (favs === "no-favorites") return { kind: "no-favorites" };
 
@@ -287,7 +483,7 @@ export function favoriteIds(cfg: LeagueConfig, teams: EspnTeam[], favs: string[]
 }
 
 /** Every game for the scoped teams' full seasons. */
-async function scopedSeasons(cfg: LeagueConfig, ids: Set<string>): Promise<Game[]> {
+async function scopedSeasons(cfg: LeagueConfig, ids: ReadonlySet<string>): Promise<Game[]> {
   return mergeGames(await Promise.all([...ids].map((id) => teamSeason(cfg, id))));
 }
 
@@ -352,10 +548,12 @@ async function today(cfg: LeagueConfig, args: string[]): Promise<void> {
   const offset = parseOffset(args);
   const day = addDays(new Date(), offset);
   const scope = await scopeOf(cfg, args);
-  if (scope.kind === "no-favorites") return noFavoritesHint(cfg.sport);
+  if (scope.kind === "no-favorites") return noFavoritesHint(favSport(cfg));
 
-  let [games, watch] = await Promise.all([gamesOnDays(cfg, day, 1), watchContext(cfg)]);
-  if (scope.kind === "teams") games = games.filter((g) => gameHasTeam(g, scope.ids));
+  const [games, watch] = await Promise.all([
+    scope.kind === "teams" ? teamGamesOnDays(cfg, scope.ids, day, 1) : gamesOnDays(cfg, day, 1),
+    watchContext(cfg),
+  ]);
 
   const label = offset === 0 ? "Today" : offset === 1 ? "Tomorrow" : offset === -1 ? "Yesterday" : ymd(day);
   title(cfg, `${label} (${ymd(day)})`);
@@ -369,12 +567,14 @@ async function today(cfg: LeagueConfig, args: string[]): Promise<void> {
 /** `next [--team X] [--mine]` — the next game to start, with a countdown. */
 async function next(cfg: LeagueConfig, args: string[]): Promise<void> {
   const scope = await scopeOf(cfg, args);
-  if (scope.kind === "no-favorites") return noFavoritesHint(cfg.sport);
+  if (scope.kind === "no-favorites") return noFavoritesHint(favSport(cfg));
 
   const now = Date.now();
   let g: Game | null = null;
   if (scope.kind === "teams") {
     g = firstUpcoming(await scopedSeasons(cfg, scope.ids), now);
+    // The scoreboard's copy lists where it airs (a soccer schedule's doesn't).
+    if (g && followsAllCompetitions(cfg.league)) g = await fromScoreboard(cfg, g, 60_000).catch(() => g);
   } else {
     g = await nextLeagueGame(cfg, now); // league-wide: day by day until a game turns up
   }
@@ -396,7 +596,7 @@ async function next(cfg: LeagueConfig, args: string[]): Promise<void> {
  *  preseason through postseason; league-wide, the next week. */
 async function schedule(cfg: LeagueConfig, args: string[]): Promise<void> {
   const scope = await scopeOf(cfg, args);
-  if (scope.kind === "no-favorites") return noFavoritesHint(cfg.sport);
+  if (scope.kind === "no-favorites") return noFavoritesHint(favSport(cfg));
 
   const [games, watch] = await Promise.all([
     scope.kind === "teams" ? scopedSeasons(cfg, scope.ids) : gamesOnDays(cfg, new Date(), WINDOW_DAYS),
@@ -418,7 +618,7 @@ async function schedule(cfg: LeagueConfig, args: string[]): Promise<void> {
  *  the past week. */
 async function results(cfg: LeagueConfig, args: string[]): Promise<void> {
   const scope = await scopeOf(cfg, args);
-  if (scope.kind === "no-favorites") return noFavoritesHint(cfg.sport);
+  if (scope.kind === "no-favorites") return noFavoritesHint(favSport(cfg));
 
   const pool =
     scope.kind === "teams"
@@ -451,7 +651,7 @@ async function standings(cfg: LeagueConfig, args: string[]): Promise<void> {
 
   const [view, favs] = await Promise.all([
     loadStandingsView((q) => getStandings(cfg.league, q), level),
-    getFavorites(cfg.sport),
+    getFavorites(favSport(cfg)),
   ]);
   if (view.kind === "not-started") {
     title(cfg, `Standings${view.upcoming ? ` ${view.upcoming}` : ""}`);
@@ -481,7 +681,7 @@ async function standings(cfg: LeagueConfig, args: string[]): Promise<void> {
 /** `teams [--json]` — every team: the code `--team` accepts, name, aliases;
  *  favorites starred. */
 async function teamsList(cfg: LeagueConfig, args: string[]): Promise<void> {
-  const [teams, favs] = await Promise.all([getTeams(cfg.league), getFavorites(cfg.sport)]);
+  const [teams, favs] = await Promise.all([getTeams(cfg.league), getFavorites(favSport(cfg))]);
   const rows = teamRows(teams, cfg.aliases, favs.length > 0 ? favoriteIds(cfg, teams, favs) : new Set<string>());
   if (args.includes("--json")) return console.log(JSON.stringify(rows, null, 2));
   title(cfg, `Teams (${rows.length})`);
@@ -524,7 +724,7 @@ async function stats(cfg: LeagueConfig, args: string[]): Promise<void> {
     return;
   }
 
-  const [data, favs] = await Promise.all([loadLeagueStats(cfg), getFavorites(cfg.sport)]);
+  const [data, favs] = await Promise.all([loadLeagueStats(cfg), getFavorites(favSport(cfg))]);
   const fetchedAt = new Date();
   const ids = favs.length > 0 && data.teams.length > 0 ? favoriteIds(cfg, await getTeams(cfg.league), favs) : new Set<string>();
   if (json) {
@@ -572,7 +772,7 @@ async function season(cfg: LeagueConfig, args: string[]): Promise<void> {
   if (input) {
     ids = new Set([(resolveTeam(teams, input, cfg.aliases) ?? unknownTeam(cfg, input)).id]);
   } else {
-    const favs = await getFavorites(cfg.sport);
+    const favs = await getFavorites(favSport(cfg));
     if (favs.length === 0) return noFavoritesHint(cfg.sport);
     ids = favoriteIds(cfg, teams, favs);
   }
@@ -601,6 +801,9 @@ async function season(cfg: LeagueConfig, args: string[]): Promise<void> {
 async function leagueFav(cfg: LeagueConfig, args: string[]): Promise<void> {
   const [sub, ...rest] = args;
   const input = rest.join(" ").trim();
+  // Shared favorites (national teams = the `fifa` ones) are that sport's
+  // free-text names, not this league's abbreviations: hand them straight over.
+  if (cfg.favoritesSport) return fav(args, cfg.favoritesSport);
   if (sub === "add" && input) {
     const t = resolveTeam(await getTeams(cfg.league), input, cfg.aliases) ?? unknownTeam(cfg, input);
     return fav(["add", t.abbreviation], cfg.sport);
@@ -628,7 +831,7 @@ async function watchScope(cfg: LeagueConfig, args: string[]): Promise<{ ids: Set
     const t = resolveTeam(teams, input, cfg.aliases) ?? unknownTeam(cfg, input);
     return { ids: new Set([t.id]), label: t.name };
   }
-  const favs = await getFavorites(cfg.sport);
+  const favs = await getFavorites(favSport(cfg));
   const ids = favoriteIds(cfg, teams, favs);
   return ids.size ? { ids, label: "your favorites" } : null;
 }
@@ -650,10 +853,7 @@ async function waitForLeagueLive(cfg: LeagueConfig, ids: Set<string>, who: strin
     let target: Game | null = null;
     try {
       target = watchTarget(await scopedSeasons(cfg, ids), Date.now());
-      if (target && target.state !== "in") {
-        const day = await getScoreboardGames(cfg.league, easternScoreboardDate(target.date), 30_000);
-        target = day.find((g) => g.id === target!.id) ?? target;
-      }
+      if (target && target.state !== "in") target = await fromScoreboard(cfg, target, 30_000);
     } catch (e) {
       console.error(c.dim("  (data fetch failed, retrying) " + (e instanceof Error ? e.message : String(e))));
     }
@@ -700,8 +900,8 @@ function routeWatch(g: Game, ctx: WatchContext, fallback: string | null): string
 }
 
 /** pickProvider, reporting a bad key (exit 1) instead of returning it. */
-function pickOrReport(key: string, sport: string): { key: string; label: string; hub: string } | null {
-  const pick = pickProvider(key, sport);
+function pickOrReport(key: string, sport: string, competition?: string): { key: string; label: string; hub: string } | null {
+  const pick = pickProvider(key, sport, undefined, competition);
   if (pick.ok) return pick;
   console.error(c.red(pick.error));
   process.exitCode = 1;
@@ -739,10 +939,10 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
   // No team named and no favorites: with --provider/--url, just open that
   // hub/link; otherwise say so before anything provider-related.
   const teamGiven = positionalTerms(args).length > 0;
-  const favCount = teamGiven ? 0 : (await getFavorites(cfg.sport)).length;
+  const favCount = teamGiven ? 0 : (await getFavorites(favSport(cfg))).length;
   const entry = watchEntry({ teamGiven, favCount, provider: !!providerFlag, url: !!url, smoke: args.includes("--smoke") });
   if (entry === "no-favorites") {
-    console.error(c.red(`No ${cfg.label} favorites — add one with `) + c.bold(`sportsing ${cfg.sport} fav add ${EXAMPLE_TEAM[cfg.sport] ?? "<team>"}`) + c.red(", or name a team:"));
+    console.error(c.red(`No ${cfg.label} favorites — add one with `) + c.bold(`sportsing ${favSport(cfg)} fav add ${EXAMPLE_TEAM[favSport(cfg)] ?? "<team>"}`) + c.red(", or name a team:"));
     console.error(c.dim(`  sportsing ${cfg.sport} watch <team>`));
     process.exitCode = 1;
     return;
@@ -757,7 +957,7 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
   let key = providerFlag ?? fallback;
   if (routing) {
     scope = await watchScope(cfg, args);
-    routed = scope && watchTarget(await scopedSeasons(cfg, scope.ids), Date.now());
+    routed = scope && (await currentWatchTarget(cfg, scope.ids));
     if (routed) {
       console.log(describeWatchGame(routed));
       key = routeWatch(routed, routing, fallback);
@@ -771,7 +971,9 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
     process.exitCode = 1;
     return;
   }
-  let pick = pickOrReport(key, cfg.sport);
+  // A game in another competition opens that competition's page where the
+  // provider has one (a Champions League tie isn't on the league's hub).
+  let pick = pickOrReport(key, cfg.sport, routed?.competition?.slug);
   if (!pick) return;
   const overlay = args.includes("--overlay");
 
@@ -804,7 +1006,7 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
   if (scope === undefined) scope = await watchScope(cfg, args);
   if (!scope) {
     console.error(c.red(`Usage: sportsing ${cfg.sport} watch <team> [--wait] [--overlay] [--provider ${pick.key}] [--url <link>] [--smoke] [--supervised]`));
-    console.error(c.dim(`Or add a favorite (sportsing ${cfg.sport} fav add ${EXAMPLE_TEAM[cfg.sport] ?? "<team>"}) and omit the team.`));
+    console.error(c.dim(`Or add a favorite (sportsing ${favSport(cfg)} fav add ${EXAMPLE_TEAM[favSport(cfg)] ?? "<team>"}) and omit the team.`));
     process.exitCode = 1;
     return;
   }
@@ -817,12 +1019,19 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
     if (routing && live.id !== routed?.id) {
       const liveKey = routeWatch(live, routing, fallback);
       if (!liveKey) return;
-      if (liveKey !== pick.key && !(pick = pickOrReport(liveKey, cfg.sport))) return;
+      if (liveKey !== pick.key && !(pick = pickOrReport(liveKey, cfg.sport, live.competition?.slug))) return;
     }
   } else if (!routed) {
-    g = watchTarget(await scopedSeasons(cfg, scope.ids), Date.now());
+    g = await currentWatchTarget(cfg, scope.ids);
     console.log(g ? describeWatchGame(g) : c.dim(`No upcoming ${cfg.label} games for ${scope.label}.`));
   }
+  // The game may not be the one the provider was picked for (or none was
+  // routed at all): land on its competition's page when the provider has one.
+  if (g?.competition) {
+    const forGame = pickProvider(pick.key, cfg.sport, undefined, g.competition.slug);
+    if (forGame.ok) pick = forGame;
+  }
+  const hubName = g?.competition?.name ?? cfg.label;
   // With a target game and no explicit link, deep-link: click the game's tile
   // on the hub and start its player. --url opens exactly what was asked.
   const deepLink = !url && g ? { home: g.home.name, away: g.away.name, name: g.name } : undefined;
@@ -830,8 +1039,8 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
     console.log(
       c.dim(
         deepLink
-          ? `Opening ${pick.label}'s ${cfg.label} hub and going into ${g!.name} (use --url for a direct link).`
-          : `Opening ${pick.label}'s ${cfg.label} hub — pick the game there (use --url for a direct link).`,
+          ? `Opening ${pick.label}'s ${hubName} hub and going into ${g!.name} (use --url for a direct link).`
+          : `Opening ${pick.label}'s ${hubName} hub — pick the game there (use --url for a direct link).`,
       ),
     );
   }
@@ -845,10 +1054,10 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
 
 /** Favorite-team alert feed for the league (see league-alerts.ts), with the
  *  favorites' names; null when the league has no (resolvable) favorites. */
-async function alertFeed(cfg: LeagueConfig): Promise<{ teams: string[]; feed: (games: Game[]) => Alert[] } | null> {
+async function alertFeed(cfg: LeagueConfig): Promise<{ teams: string[]; ids: Set<string>; feed: (games: Game[]) => Alert[] } | null> {
   const sport = cfg.sport;
   if (!isGameSport(sport)) throw new Error(`No live alert rules for ${cfg.label}.`);
-  const favs = await getFavorites(sport);
+  const favs = await getFavorites(favSport(cfg));
   if (favs.length === 0) return null;
   const teams = await getTeams(cfg.league);
   const favIds = favoriteIds(cfg, teams, favs);
@@ -856,15 +1065,18 @@ async function alertFeed(cfg: LeagueConfig): Promise<{ teams: string[]; feed: (g
   const [watch, fallback] = await Promise.all([watchContext(cfg), watchFallback(cfg)]);
   return {
     teams: teams.filter((t) => favIds.has(t.id)).map((t) => t.name),
+    ids: favIds,
     feed: leagueFeed({ league: { sport, icon: cfg.icon, periods: cfg.periods }, favIds, watch, fallback, exe: selfInvocation() }),
   };
 }
 
-/** The league's alerter for bare `sportsing live --notify`; null with no favorites. */
-export async function leagueAlerter(cfg: LeagueConfig): Promise<Alerter | null> {
+/** The league's alerter for bare `sportsing live --notify`; null with no
+ *  favorites. Follows the favorites into every competition; `keep` narrows
+ *  which of their games count. */
+export async function leagueAlerter(cfg: LeagueConfig, keep: GameFilter = ALL_GAMES): Promise<Alerter | null> {
   const alerts = await alertFeed(cfg);
   if (!alerts) return null;
-  return { label: cfg.label, teams: alerts.teams, poll: async () => alerts.feed(await liveGames(cfg)) };
+  return { label: cfg.label, teams: alerts.teams, poll: async () => alerts.feed((await liveTeamGames(cfg, alerts.ids)).filter(keep)) };
 }
 
 /**
@@ -874,17 +1086,17 @@ export async function leagueAlerter(cfg: LeagueConfig): Promise<Alerter | null> 
  * game is added from their season schedules (5-min cache) so status can say
  * what it's waiting for. Null with no (resolvable) favorites.
  */
-export async function leagueDaemonGames(cfg: LeagueConfig): Promise<DaemonGame[] | null> {
-  const favs = await getFavorites(cfg.sport);
+export async function leagueDaemonGames(cfg: LeagueConfig, keep: GameFilter = ALL_GAMES): Promise<DaemonGame[] | null> {
+  const favs = await getFavorites(favSport(cfg));
   if (favs.length === 0) return null;
   const ids = favoriteIds(cfg, await getTeams(cfg.league), favs);
   if (ids.size === 0) return null;
-  const [all, watch, fallback] = await Promise.all([liveGames(cfg), watchContext(cfg), watchFallback(cfg)]);
-  const nearby = all.filter((g) => gameHasTeam(g, ids));
+  const [all, watch, fallback] = await Promise.all([liveTeamGames(cfg, ids), watchContext(cfg), watchFallback(cfg)]);
+  const nearby = all.filter(keep);
   const now = Date.now();
   let later: Game | null = null;
   if (!nearby.some((g) => g.state === "pre" && Date.parse(g.date) >= now)) {
-    later = firstUpcoming(await scopedSeasons(cfg, ids), now);
+    later = firstUpcoming((await scopedSeasons(cfg, ids)).filter(keep), now);
     if (later && nearby.some((g) => g.id === later!.id)) later = null;
   }
   const games = later ? [...nearby, later] : nearby;
@@ -965,7 +1177,8 @@ async function live(cfg: LeagueConfig, args: string[]): Promise<void> {
 function leagueGames(cfg: LeagueConfig): LeagueGames {
   return {
     team: async (input) => resolveTeam(await getTeams(cfg.league), input, cfg.aliases),
-    season: (teamId) => teamSeason(cfg, teamId),
+    // The league's own games only: summaries are fetched from the league.
+    season: async (teamId) => (await teamSeason(cfg, teamId)).filter((g) => !g.competition),
     summary: (gameId) => getGameSummary(cfg.league, gameId),
   };
 }
@@ -997,9 +1210,11 @@ const ALIASES: Record<string, string> = { t: "today", n: "next", st: "standings"
 
 /** True if `sportsing <league> <cmd>` is a command (or alias). With `cfg`,
  *  commands that league doesn't have (soccer: season, bracket) are excluded. */
-export function leagueHasCommand(cmd: string, cfg?: Pick<LeagueConfig, "league">): boolean {
+export function leagueHasCommand(cmd: string, cfg?: Pick<LeagueConfig, "league" | "commands">): boolean {
   if (cfg && isClubSoccer(cfg.league) && NOT_FOR_CLUB_SOCCER.has(cmd)) return false;
-  return Object.hasOwn(COMMANDS, cmd) || Object.hasOwn(ALIASES, cmd);
+  if (!Object.hasOwn(COMMANDS, cmd) && !Object.hasOwn(ALIASES, cmd)) return false;
+  const name = Object.hasOwn(COMMANDS, cmd) ? cmd : ALIASES[cmd]!;
+  return !cfg?.commands || cfg.commands.includes(name);
 }
 
 function help(cfg: LeagueConfig): void {
@@ -1037,7 +1252,7 @@ ${nonSoccer(`  ${c.green("season")} ${c.dim("[team]")}      Favorites' season: r
 ${b("FILTER")}
   ${c.dim("--team X")} on today/next/schedule/results picks one team (abbreviation or name).
   ${c.dim("--mine")} on today/next/schedule/results limits output to your ${cfg.label} favorites.
-${nonSoccer(`  ${c.dim("--conference X")} / ${c.dim("--division X")} on standings shows one table (e.g. West, Pacific).
+${soccer ? `  With either, a team's cup, European and friendly games are included, labelled with the competition.\n` : ""}${nonSoccer(`  ${c.dim("--conference X")} / ${c.dim("--division X")} on standings shows one table (e.g. West, Pacific).
 `)}
 ${b("STATS")}
   ${c.dim("stats")}: last 5, points per game or win%, home/away, scored/conceded per game${soccer ? ", clean sheets" : ""}.
@@ -1068,7 +1283,7 @@ ${b("EXAMPLES")}
 export function leagueNamespace(cfg: LeagueConfig): (args: string[]) => Promise<void> {
   return async (args) => {
     const [cmd, ...rest] = args;
-    if (!cmd || cmd === "help" || cmd === "--help" || cmd === "-h") return help(cfg);
+    if (!cmd || cmd === "help" || cmd === "--help" || cmd === "-h") return cfg.help ? cfg.help() : help(cfg);
     const run = leagueHasCommand(cmd, cfg) ? (COMMANDS[cmd] ?? COMMANDS[ALIASES[cmd] ?? ""]) : undefined;
     if (!run) {
       console.error(c.red(`Unknown ${cfg.sport} command: ${cmd}`));

@@ -91,9 +91,9 @@ test("season and bracket have no soccer form; the other commands do", () => {
 });
 
 test("the registry lists the three soccer leagues, tagged by their short labels", () => {
-  expect(SPORTS.map((s) => s.key)).toEqual(["fifa", "nba", "nhl", "epl", "seriea", "ligue1"]);
+  expect(SPORTS.map((s) => s.key)).toEqual(["fifa", "nba", "nhl", "epl", "seriea", "ligue1", "intl"]);
   expect(SPORTS.filter((s) => s.has("season")).map((s) => s.key)).toEqual(["nba", "nhl"]);
-  expect(SPORTS.slice(3).map((s) => [s.label, s.icon])).toEqual([["EPL", "⚽"], ["Serie A", "⚽"], ["Ligue 1", "⚽"]]);
+  expect(SPORTS.slice(3).map((s) => [s.label, s.icon])).toEqual([["EPL", "⚽"], ["Serie A", "⚽"], ["Ligue 1", "⚽"], ["Intl", "⚽"]]);
 });
 
 // ── No favorite ──────────────────────────────────────────────────────────────

@@ -1,0 +1,224 @@
+{
+ "events": [
+  {
+   "id": "401875008",
+   "date": "2026-11-22T11:30Z",
+   "name": "Venezia at Juventus",
+   "shortName": "VEN @ JUV",
+   "league": {
+    "id": "730",
+    "name": "Italian Serie A",
+    "abbreviation": "Serie A",
+    "slug": "ita.1"
+   },
+   "competitions": [
+    {
+     "date": "2026-11-22T11:30Z",
+     "status": {
+      "period": 0,
+      "displayClock": "0'",
+      "type": {
+       "state": "pre",
+       "shortDetail": "11/22 - 6:30 AM EST",
+       "detail": "Sun, November 22nd at 6:30 AM EST",
+       "completed": false
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "id": "111",
+        "displayName": "Juventus",
+        "abbreviation": "JUV"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "id": "17530",
+        "displayName": "Venezia",
+        "abbreviation": "VEN"
+       }
+      }
+     ],
+     "broadcasts": [
+      {
+       "type": {
+        "id": "4",
+        "shortName": "STREAMING"
+       },
+       "media": {
+        "shortName": "Paramount+"
+       },
+       "lang": "en",
+       "region": "us"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401915502",
+   "date": "2026-11-26T20:00Z",
+   "name": "Omonia Nicosia at Juventus",
+   "shortName": "OMON @ JUV",
+   "league": {
+    "id": "776",
+    "name": "UEFA Europa League",
+    "abbreviation": "UEFA Europa League",
+    "slug": "uefa.europa"
+   },
+   "competitions": [
+    {
+     "date": "2026-11-26T20:00Z",
+     "status": {
+      "period": 0,
+      "displayClock": "0'",
+      "type": {
+       "state": "pre",
+       "shortDetail": "11/26 - 3:00 PM EST",
+       "detail": "Thu, November 26th at 3:00 PM EST",
+       "completed": false
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "id": "111",
+        "displayName": "Juventus",
+        "abbreviation": "JUV"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "id": "617",
+        "displayName": "Omonia Nicosia",
+        "abbreviation": "OMON"
+       }
+      }
+     ],
+     "broadcasts": [
+      {
+       "type": {
+        "id": "4",
+        "shortName": "STREAMING"
+       },
+       "media": {
+        "shortName": "Paramount+"
+       },
+       "lang": "en",
+       "region": "us"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401874994",
+   "date": "2026-11-29T19:45Z",
+   "name": "Juventus at Como",
+   "shortName": "JUV @ COMO",
+   "league": {
+    "id": "730",
+    "name": "Italian Serie A",
+    "abbreviation": "Serie A",
+    "slug": "ita.1"
+   },
+   "competitions": [
+    {
+     "date": "2026-11-29T19:45Z",
+     "status": {
+      "period": 0,
+      "displayClock": "0'",
+      "type": {
+       "state": "pre",
+       "shortDetail": "11/29 - 2:45 PM EST",
+       "detail": "Sun, November 29th at 2:45 PM EST",
+       "completed": false
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "id": "2572",
+        "displayName": "Como",
+        "abbreviation": "COMO"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "id": "111",
+        "displayName": "Juventus",
+        "abbreviation": "JUV"
+       }
+      }
+     ],
+     "broadcasts": [
+      {
+       "type": {
+        "id": "4",
+        "shortName": "STREAMING"
+       },
+       "media": {
+        "shortName": "Paramount+"
+       },
+       "lang": "en",
+       "region": "us"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401912261",
+   "date": "2026-12-03T20:00Z",
+   "name": "Sassuolo at Juventus",
+   "shortName": "SAS @ JUV",
+   "league": {
+    "id": "3956",
+    "name": "Coppa Italia",
+    "abbreviation": "Coppa Italia",
+    "slug": "ita.coppa_italia"
+   },
+   "competitions": [
+    {
+     "date": "2026-12-03T20:00Z",
+     "status": {
+      "period": 0,
+      "displayClock": "0'",
+      "type": {
+       "state": "pre",
+       "shortDetail": "12/3 - 3:00 PM EST",
+       "detail": "Thu, December 3rd at 3:00 PM EST",
+       "completed": false
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "id": "111",
+        "displayName": "Juventus",
+        "abbreviation": "JUV"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "id": "3997",
+        "displayName": "Sassuolo",
+        "abbreviation": "SAS"
+       }
+      }
+     ],
+     "broadcasts": []
+    }
+   ]
+  }
+ ]
+}
