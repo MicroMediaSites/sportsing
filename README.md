@@ -1,7 +1,8 @@
 # ⚽ sportsing
 
-Sports in your terminal — the FIFA World Cup 2026, the **NBA**, and the
-**NHL**: schedules, favorites across every sport, live scores, standings, playoff
+Sports in your terminal — the FIFA World Cup 2026, the **NBA**, the
+**NHL**, club soccer (Premier League, Serie A, Ligue 1) and national teams in
+every competition: schedules, favorites across every sport, live scores, standings, playoff
 brackets, **where to watch**, **ambient fav-alerts**, browser streaming,
 highlights, stats, and AI analysis. Runs on [Bun](https://bun.sh); its one runtime dependency,
 [ui-leaf](https://www.npmjs.com/package/@openthink/ui-leaf), powers the
@@ -144,6 +145,41 @@ no default NHL streaming provider: `nhl watch` follows **Where to watch** — a
 Mammoth game on Utah 16 opens Fubo (which carries Utah 16 in-market) with the
 `fubo` subscription, or prints the channel to tune in with only `local-ota`.
 
+## Soccer: every competition
+
+A soccer team plays outside its league, and sportsing follows it there.
+
+- **Clubs** (`epl`, `seriea`, `ligue1`): a team's `schedule`, `results`,
+  `next` and `today` (`--team X` or `--mine`) include its Champions League,
+  Europa League, domestic cup and friendly games, each labelled with the
+  competition. League-wide views (`today`, `schedule` with no team,
+  `standings`, `stats`) stay the league's own.
+- **National teams**: `sportsing intl` covers them in every competition —
+  Nations Leagues, qualifiers, continental tournaments and friendlies.
+
+```sh
+sportsing intl next --team Italy       # when does Italy play next, and where it airs
+sportsing intl schedule --team France  # played and upcoming, every competition
+sportsing intl today                   # your national-team favorites today
+sportsing seriea schedule --team JUV   # Serie A + Europa League + Coppa Italia
+```
+
+`intl` has `next`, `today`, `schedule`, `results`, `watch`, `teams` and `fav`.
+With no `--team` it means your national-team favorites, which are the same list
+as `sportsing fifa fav` (there is no second list). It has no tables or stats:
+those belong to each competition, and the World Cup has its own namespace
+(`sportsing fifa`).
+
+Favorites are followed everywhere: bare `sportsing today | next | me`, the live
+alerts and the daemon all include a favorite club's cup and European games and
+a favorite national team's games outside the World Cup. `sportsing all` lists
+them too, next to each league's full slate. League-wide listings of the other
+competitions (every Champions League game tonight) are not included.
+
+The data is ESPN's cross-competition team schedule. It can lag by a few hours
+after a match ends, so anything about today or a live game is read from the
+competition's own scoreboard instead.
+
 ## Rosters (every league)
 
 `sportsing <league> roster [team]` (alias `squad`) works the same for `nba`,
@@ -166,7 +202,7 @@ for a team (exit 1).
 - `--json` prints the squad as displayed (filtered/sorted); several favorites
   give an array.
 
-## Where to watch (NBA / NHL / club soccer)
+## Where to watch (NBA / NHL / soccer)
 
 Tell sportsing what you can watch with and where you live, once — it applies to
 every sport:
@@ -206,6 +242,14 @@ it:
   `seriea watch` Paramount+'s Serie A page, and Fubo's soccer page serves all
   three leagues; going into the match itself is best effort, so on some pages
   you pick it there.
+- **Other competitions** (a club's cup and European games, national teams)
+  are routed by their listed broadcasts the same way: Paramount+ for the
+  Champions League and Europa League, FS1 and FS2 on Fubo for the national
+  teams Fox carries. The league's "assumed" service is never applied to them:
+  a Premier League club's FA Cup tie with nothing listed shows `?`, not
+  Peacock. A Champions League or Europa League game opens Paramount+'s page
+  for that competition; anything else opens the sport's usual page.
+  `intl watch` falls back to Fubo when nothing is listed.
 
 ## Your teams, every sport
 
@@ -227,6 +271,11 @@ prints the sports that have it and exits non-zero.
 Favorites are stored per sport as `<sport>:<team>` (`nba:UTAH`, `nhl:UTAH`,
 `fifa:USA`) in `~/.config/sportsing/config.json`; add and remove them with each
 sport's `fav` command.
+
+Soccer favorites are followed into every competition (see **Soccer: every
+competition**): a `fifa` favorite's rows are its World Cup matches plus its
+Nations League, qualifying and friendly games, and a club's rows include its
+cup and European games. Those rows end with the competition's name.
 
 ## Daemon — open your teams' games automatically
 
@@ -259,8 +308,14 @@ sportsing daemon uninstall     # stop + remove it
 - **Polling** is sparse (every 10 min) until 15 minutes before a favorite's
   scheduled start, then every 30s until it goes live — including a delayed
   start (up to 3h late).
-- **One sport failing** (e.g. FIFA without an API key) shows as a warning in
-  `status`; the others keep working.
+- **One sport failing** shows as a warning in `status`; the others keep
+  working.
+- **Soccer favorites are followed in every competition**: a favorite club's
+  Champions League, Europa League and cup games, and a favorite national
+  team's Nations League, qualifying and friendly games, are waited for and
+  opened like league games. National-team games outside the World Cup need no
+  API key; the World Cup feed's missing-key warning only appears while the
+  tournament is on.
 - **Install from a global install** (`npm install -g sportsing` or
   `bun add -g sportsing`): the agent runs that install's stable `sportsing`
   bin, and `sportsing upgrade` restarts it on the new version. Preview the

@@ -53,6 +53,7 @@ const UNLISTED = game(CELTICS, LAKERS, []);
 test("isWatchSport: only the resolver's leagues", () => {
   expect(isWatchSport("nba")).toBe(true);
   expect(isWatchSport("nhl")).toBe(true);
+  expect(isWatchSport("intl")).toBe(true); // national teams outside the World Cup
   expect(isWatchSport("fifa")).toBe(false);
 });
 

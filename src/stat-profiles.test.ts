@@ -12,7 +12,9 @@ import { EPL, LIGUE1, SERIEA } from "./sports/soccer.ts";
 // (only the per-match `stats` command). Every other registered key MUST be here,
 // so adding a league to SPORTS without a config below fails the first test.
 const LEAGUE_CONFIGS: Record<string, LeagueConfig> = { nba: NBA, nhl: NHL, epl: EPL, seriea: SERIEA, ligue1: LIGUE1 };
-const NOT_LEAGUE_CONFIGS = ["fifa"];
+// `intl` (national teams) is a LeagueConfig, but a teams-only one: it has no
+// league, so no `stats` or `roster` command reads a profile from it.
+const NOT_LEAGUE_CONFIGS = ["fifa", "intl"];
 
 test("every registered sport is a LeagueConfig league or explicitly exempt", () => {
   const keys = SPORTS.map((s) => s.key).filter((k) => !NOT_LEAGUE_CONFIGS.includes(k));

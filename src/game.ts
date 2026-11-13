@@ -67,4 +67,9 @@ export interface Game {
   /** Soccer: goals and red cards so far, chronological. Absent for sports
    *  without them (and for feeds that don't list any). */
   incidents?: Incident[];
+  /** Soccer: the competition the game is in, when it isn't the league being
+   *  shown — a cup or European tie in a club's schedule, any game of a national
+   *  team. `slug` is the source's id for it (ESPN: "uefa.europa"). Absent for
+   *  a league's own games. */
+  competition?: { slug: string; name: string };
 }

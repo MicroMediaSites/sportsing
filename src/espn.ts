@@ -24,8 +24,34 @@ export const LEAGUES = {
   epl: "soccer/eng.1",
   seriea: "soccer/ita.1",
   ligue1: "soccer/fra.1",
+  // National teams (`sportsing intl`). They have no league of their own: this
+  // is the international-friendlies "league", used only for its /teams list —
+  // every national team, ~200 of them. Their games come from SOCCER_ALL.
+  intl: "soccer/fifa.friendly",
 } as const;
 export type League = (typeof LEAGUES)[keyof typeof LEAGUES];
+
+/** Any ESPN soccer path: a registered league, SOCCER_ALL, or another
+ *  competition a followed team plays in (`soccer/uefa.europa`, built by
+ *  soccerCompetition from a slug ESPN reported — never from user text). */
+export type SoccerPath = `soccer/${string}`;
+/** What the schedule/scoreboard calls accept. */
+export type EspnPath = League | SoccerPath;
+
+/** ESPN's cross-competition view of soccer: `soccer/all/teams/<id>/schedule`
+ *  lists a team's games in every competition (league, cups, Europe; for a
+ *  national team: Nations League, qualifiers, friendlies, tournaments). */
+export const SOCCER_ALL: SoccerPath = "soccer/all";
+
+/** The ESPN path for a competition slug as ESPN reports it (`uefa.europa`,
+ *  `ita.coppa_italia`, `concacaf.nations.league`). Null for anything that
+ *  isn't a plain dotted slug: the path goes into URLs and cache filenames. */
+export function soccerCompetition(slug: string): SoccerPath | null {
+  return /^[a-z0-9]+(?:[._][a-z0-9]+)*$/.test(slug) ? `soccer/${slug}` : null;
+}
+
+/** The competition slug of a soccer league path (`soccer/ita.1` → `ita.1`). */
+export const competitionSlug = (league: EspnPath): string => league.replace(/^soccer\//, "");
 
 /** Domestic club-soccer leagues. ESPN has no season types for them (their
  *  `seasonType.type` is a league-specific id like 14308, and `seasontype=1|2|3`
@@ -33,6 +59,10 @@ export type League = (typeof LEAGUES)[keyof typeof LEAGUES];
  *  standings calls below skip season types for these. */
 const CLUB_SOCCER: readonly League[] = [LEAGUES.epl, LEAGUES.seriea, LEAGUES.ligue1];
 export const isClubSoccer = (league: League): boolean => CLUB_SOCCER.includes(league);
+
+/** Leagues whose teams are followed in every competition they play in, not
+ *  just this one: the club leagues (cups, Europe) and the national teams. */
+export const followsAllCompetitions = (league: League): boolean => isClubSoccer(league) || league === LEAGUES.intl;
 
 /** The default league — every pre-existing (World Cup) call site uses it. */
 export const FIFA: League = LEAGUES.fifa;
@@ -48,13 +78,13 @@ const SITE = "https://site.api.espn.com/apis/site/v2/sports";
 const STANDINGS_BASE = "https://site.api.espn.com/apis/v2/sports";
 
 /** Full URL for a `site/v2` endpoint under `league`, e.g. `scoreboard?dates=…`. */
-export function espnUrl(league: League, path: string): string {
+export function espnUrl(league: EspnPath, path: string): string {
   return `${SITE}/${league}/${path}`;
 }
 
 /** Disk-cache key for an ESPN response: always includes the league, and is
  *  filename-safe (ids come from user terms / API data, never trusted as paths). */
-export function espnCacheKey(league: League, kind: string, id: string | number = ""): string {
+export function espnCacheKey(league: EspnPath, kind: string, id: string | number = ""): string {
   const safe = (s: string) => s.replace(/[^A-Za-z0-9_-]/g, "_");
   return ["espn", safe(league), kind, safe(String(id))].filter(Boolean).join("_");
 }
@@ -493,6 +523,34 @@ async function rawTeamSchedule(
  *  to come (matchweeks and international breaks included). Played first, so a
  *  match in progress keeps the fresher copy when the lists are merged by id. */
 export async function getClubTeamGames(league: League, team: string | number, ttlMs = 5 * 60_000): Promise<Game[]> {
+  return soccerSchedule(league, team, ttlMs, (e) => toGame(e));
+}
+
+/** The competition a team-schedule event belongs to (`league` on the event);
+ *  undefined when ESPN doesn't say or the slug isn't one we'd put in a URL. */
+export function competitionOf(e: any): Game["competition"] {
+  const slug = typeof e?.league?.slug === "string" ? e.league.slug : "";
+  if (!soccerCompetition(slug)) return undefined;
+  // The name is printed as-is: keep feed-supplied control characters (ANSI
+  // escapes) out of the terminal.
+  const raw = e.league.name ?? e.league.shortName ?? e.league.abbreviation;
+  const name = typeof raw === "string" ? raw.replace(/[\u0000-\u001f\u007f-\u009f]/g, "").trim() : "";
+  return { slug, name: name || slug };
+}
+
+/** A soccer team's games in every competition (SOCCER_ALL), each tagged with
+ *  its competition. Same two-list shape as getClubTeamGames. The lists lag:
+ *  a match in progress can still read "pre", and a just-finished one can be
+ *  missing from both for hours — take live state from the competition's own
+ *  scoreboard (soccerCompetition + getScoreboardGames). */
+export async function getSoccerTeamGames(team: string | number, ttlMs = 5 * 60_000): Promise<Game[]> {
+  return soccerSchedule(SOCCER_ALL, team, ttlMs, (e) => {
+    const competition = competitionOf(e);
+    return competition ? { ...toGame(e), competition } : toGame(e);
+  });
+}
+
+async function soccerSchedule(league: EspnPath, team: string | number, ttlMs: number, parse: (e: any) => Game): Promise<Game[]> {
   const get = async (kind: "played" | "fixtures") => {
     const qs = kind === "fixtures" ? "?fixture=true" : "";
     const raw = await fetchEspn(
@@ -502,7 +560,7 @@ export async function getClubTeamGames(league: League, team: string | number, tt
       "team schedule",
     );
     if (looksOff(raw)) warnDriftOnce();
-    return (raw?.events ?? []).map((e: any) => toGame(e));
+    return (raw?.events ?? []).map(parse);
   };
   const [played, fixtures] = await Promise.all([get("played"), get("fixtures")]);
   return [...played, ...fixtures];
@@ -755,7 +813,7 @@ export async function getLeagueSeason(league: League, ttlMs = 10 * 60_000): Prom
 /** A single day's scoreboard (`YYYYMMDD`) in `league` as `Game`s. Same cache
  *  entry as getScoreboard. Single dates only — ESPN's `dates=A-B` ranges are
  *  unreliable for NBA/NHL. */
-export async function getScoreboardGames(league: League, date: string, ttlMs = 60_000): Promise<Game[]> {
+export async function getScoreboardGames(league: EspnPath, date: string, ttlMs = 60_000): Promise<Game[]> {
   if (!/^\d{8}$/.test(date)) throw new Error(`getScoreboardGames expects one YYYYMMDD date, got "${date}".`);
   const raw = await fetchEspn(
     espnUrl(league, `scoreboard?dates=${encodeURIComponent(date)}`),

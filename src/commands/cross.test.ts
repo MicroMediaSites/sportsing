@@ -44,8 +44,8 @@ afterEach(() => {
   process.exitCode = 0;
 });
 
-test("the registry is fifa, nba, nhl, then the soccer leagues — each routable and with its own command table", () => {
-  expect(SPORTS.map((s) => s.key)).toEqual(["fifa", "nba", "nhl", "epl", "seriea", "ligue1"]);
+test("the registry is fifa, nba, nhl, the soccer leagues, then national teams — each routable and with its own command table", () => {
+  expect(SPORTS.map((s) => s.key)).toEqual(["fifa", "nba", "nhl", "epl", "seriea", "ligue1", "intl"]);
   expect(SPORTS.every((s) => s.has("today") && s.has("fav"))).toBe(true);
   const has = (cmd: string) => SPORTS.filter((s) => s.has(cmd)).map((s) => s.key);
   expect(has("bracket")).toEqual(["fifa", "nba", "nhl"]); // soccer has none
@@ -282,8 +282,9 @@ test("--json prints plain objects with the documented shape", async () => {
   const parsed = JSON.parse(out.join("\n"));
   expect(parsed).toHaveLength(1);
   expect(Object.keys(parsed[0]).sort()).toEqual(
-    ["away", "favorite", "home", "id", "league", "scores", "sport", "start", "state", "status", "watch"].sort(),
+    ["away", "competition", "favorite", "home", "id", "league", "scores", "sport", "start", "state", "status", "watch"].sort(),
   );
+  expect(parsed[0].competition).toBeNull(); // a league's own game
   expect(parsed[0]).toMatchObject({ sport: "nhl", league: "NHL", id: "h1", state: "post", scores: { home: "2", away: "2" }, favorite: true, status: "Final · draw" });
   expect(Object.keys(parsed[0].watch).sort()).toEqual(["note", "via", "watchable"]);
 });
@@ -293,8 +294,15 @@ test("allJson without a periods naming uses the source's status text", () => {
   expect(allJson(row).status).toBe("Q3 4:00");
 });
 
-test("allSources covers every LeagueConfig league, not FIFA", () => {
-  expect(allSources().map((s) => s.sport.key)).toEqual(["nba", "nhl", "epl", "seriea", "ligue1"]);
+test("allSources covers every LeagueConfig league (national teams included), not the World Cup feed", () => {
+  expect(allSources().map((s) => s.sport.key)).toEqual(["nba", "nhl", "epl", "seriea", "ligue1", "intl"]);
+});
+
+test("intl only routes commands: its favorites are fifa's, which already lists their games", async () => {
+  const intl = SPORTS.find((s) => s.key === "intl")!;
+  expect(await Promise.all([intl.favoritesOn(new Date()), intl.favoriteTeams(), intl.alerter(), intl.daemonGames()])).toEqual([null, null, null, null]);
+  expect(["today", "next", "schedule", "results", "watch", "fav"].every((cmd) => intl.has(cmd))).toBe(true);
+  expect(["live", "standings", "stats"].some((cmd) => intl.has(cmd))).toBe(false);
 });
 
 test("`all` and `today --all` dispatch to the all-leagues view; bare `today` does not", () => {

@@ -34,10 +34,11 @@ ${b("SPORTS")}
   ${c.green("epl")}                Premier League ${c.dim("— sportsing epl help")}
   ${c.green("seriea")}             Serie A ${c.dim("— sportsing seriea help")}
   ${c.green("ligue1")}             Ligue 1 ${c.dim("— sportsing ligue1 help")}
+  ${c.green("intl")}               National teams, every competition ${c.dim("— sportsing intl help")}
 
 ${b("YOUR TEAMS")} ${c.dim("(favorites across every sport, each row tagged with its sport)")}
   ${c.green("today")}              Your teams' games today ${c.dim("(--tomorrow, --yesterday, --offset N)")}
-  ${c.green("today --all")}        Every NBA/NHL/EPL/Serie A/Ligue 1 game today + where to watch ${c.dim("(alias: all · --upcoming, --json, --tomorrow; not FIFA)")}
+  ${c.green("today --all")}        Every NBA/NHL/EPL/Serie A/Ligue 1 game today + your soccer teams' other games + where to watch ${c.dim("(alias: all · --upcoming, --json, --tomorrow)")}
   ${c.green("next")}               Each team's next game + countdown
   ${c.green("me")}                 Dashboard: last result + next game per team
   ${c.green("live --notify")}      OS alerts for every sport with a favorite ${c.dim("(--quiet: no log; run with &)")}
@@ -55,6 +56,7 @@ ${b("EXAMPLES")}
   sportsing nhl next --team UTAH
   sportsing epl standings
   sportsing ligue1 next --team PSG
+  sportsing intl next --team Italy
   sportsing today              ${c.dim("(your teams, every sport)")}
   sportsing all --upcoming     ${c.dim("(everything still to play today)")}
 `);
