@@ -812,8 +812,9 @@ async function leagueFav(cfg: LeagueConfig, args: string[]): Promise<void> {
   // it), but said so: it would otherwise just never show up here.
   if (cfg.favoritesSport) {
     if (sub === "add" && input) {
-      const known = resolveTeam(await getTeams(cfg.league).catch(() => []), input, cfg.aliases);
-      if (!known) console.error(c.yellow(unknownFavoriteNote(cfg, input)));
+      // A team list that couldn't be fetched says nothing about the name.
+      const teams = await getTeams(cfg.league).catch(() => null);
+      if (teams && !resolveTeam(teams, input, cfg.aliases)) console.error(c.yellow(unknownFavoriteNote(cfg, input)));
     }
     return fav(args, cfg.favoritesSport);
   }
@@ -985,7 +986,10 @@ async function watch(cfg: LeagueConfig, args: string[]): Promise<void> {
     return;
   }
   // A game in another competition opens that competition's page where the
-  // provider has one (a Champions League tie isn't on the league's hub).
+  // provider has one (a Champions League tie isn't on the league's hub). It's
+  // passed here, not only once the final game is known (below), because that
+  // page can be the provider's only way in: Paramount+ has no Ligue 1 hub, so
+  // a PSG Champions League tie would be refused before it was looked at.
   let pick = pickOrReport(key, cfg.sport, routed?.competition?.slug);
   if (!pick) return;
   const overlay = args.includes("--overlay");
