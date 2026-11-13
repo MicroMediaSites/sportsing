@@ -531,8 +531,11 @@ export async function getClubTeamGames(league: League, team: string | number, tt
 export function competitionOf(e: any): Game["competition"] {
   const slug = typeof e?.league?.slug === "string" ? e.league.slug : "";
   if (!soccerCompetition(slug)) return undefined;
-  const name = e.league.name ?? e.league.shortName ?? e.league.abbreviation;
-  return { slug, name: typeof name === "string" && name.trim() ? name.trim() : slug };
+  // The name is printed as-is: keep feed-supplied control characters (ANSI
+  // escapes) out of the terminal.
+  const raw = e.league.name ?? e.league.shortName ?? e.league.abbreviation;
+  const name = typeof raw === "string" ? raw.replace(/[\u0000-\u001f\u007f-\u009f]/g, "").trim() : "";
+  return { slug, name: name || slug };
 }
 
 /** A soccer team's games in every competition (SOCCER_ALL), each tagged with

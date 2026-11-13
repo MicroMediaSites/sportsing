@@ -6,8 +6,8 @@ import { join } from "node:path";
 // or writes ~/.config/sportsing. The schedule fixture is a trimmed
 // `soccer/all/teams/111/schedule?fixture=true` (Juventus, captured 2026-11-12).
 import { LEAGUES, SOCCER_ALL, competitionOf, competitionSlug, followsAllCompetitions, soccerCompetition, toGame } from "./espn.ts";
-import { activeCompetitions, favSport, leagueHasCommand, ownGame, resolveTeam, trackLiveBoards } from "./commands/league.ts";
-import { bothHalves, joinTeamRows, worldCupIsOn, type Row, type TeamRows } from "./commands/cross.ts";
+import { activeCompetitions, favSport, leagueHasCommand, ownGame, resolveTeam, trackLiveBoards, unknownFavoriteNote } from "./commands/league.ts";
+import { allJson, bothHalves, joinTeamRows, worldCupIsOn, type Row, type TeamRows } from "./commands/cross.ts";
 import { leagueDaemonGame, leagueRoute } from "./daemon.ts";
 import { gameLine } from "./format.ts";
 import type { Game } from "./game.ts";
@@ -83,6 +83,11 @@ describe("a team's schedule across competitions", () => {
     expect(competitionOf({})).toBeUndefined();
     expect(competitionOf({ league: { slug: "../x", name: "Bad" } })).toBeUndefined();
     expect(competitionOf({ league: { slug: "uefa.europa" } })).toEqual({ slug: "uefa.europa", name: "uefa.europa" });
+  });
+
+  test("competitionOf: control characters in the feed's name never reach the terminal", () => {
+    expect(competitionOf({ league: { slug: "uefa.europa", name: "\u001b[31mUEFA\u0007 Europa League\u009b" } })?.name).toBe("[31mUEFA Europa League");
+    expect(competitionOf({ league: { slug: "uefa.europa", name: "\u001b\u0007" } })?.name).toBe("uefa.europa");
   });
 
   test("ownGame: a club's league games lose the tag, its cup and European games keep it", () => {
@@ -192,6 +197,18 @@ describe("the intl namespace (national teams)", () => {
     const id = (input: string) => resolveTeam(teams, input, INTL.aliases)?.id;
     expect(["USA", "usmnt", "United States", "France", "fra", "Turkey", "Türkiye", "Holland"].map(id)).toEqual(["660", "660", "660", "478", "478", "465", "465", "449"]);
     expect(id("Atlantis")).toBeUndefined();
+  });
+
+  test("fav add says so when a name isn't a national team it can follow", () => {
+    expect(unknownFavoriteNote(INTL, "Atlantis")).toBe(
+      `"Atlantis" isn't a team sportsing intl knows, so its International games won't show — see \`sportsing intl teams\`.`,
+    );
+  });
+
+  test("`all --json` rows name the competition of a game outside the league", () => {
+    const row = (g: Game) => ({ sport: { key: "seriea", label: "Serie A", icon: "⚽" }, game: g, line: "", cell: "", watch: { watchable: null, via: null, note: "" }, favorite: true });
+    expect(allJson(row(game({ competition: UEL }))).competition).toBe("UEFA Europa League");
+    expect(allJson(row(game())).competition).toBeNull();
   });
 
   test("notWorldCup drops only World Cup games — `sportsing fifa` already follows those", () => {

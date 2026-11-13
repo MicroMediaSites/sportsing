@@ -442,7 +442,7 @@ export const scanDays = (cfg: Pick<LeagueConfig, "nextScanDays">): number => cfg
 
 /** Throws a user-facing error for unknown team input. */
 function unknownTeam(cfg: LeagueConfig, input: string): never {
-  const example = EXAMPLE_TEAM[cfg.sport] ?? "<abbr>";
+  const example = EXAMPLE_TEAM[favSport(cfg)] ?? "<abbr>";
   throw new Error(`Unknown ${cfg.label} team "${input}". Use an ESPN abbreviation (e.g. ${example}) or a team name.`);
 }
 
@@ -773,7 +773,7 @@ async function season(cfg: LeagueConfig, args: string[]): Promise<void> {
     ids = new Set([(resolveTeam(teams, input, cfg.aliases) ?? unknownTeam(cfg, input)).id]);
   } else {
     const favs = await getFavorites(favSport(cfg));
-    if (favs.length === 0) return noFavoritesHint(cfg.sport);
+    if (favs.length === 0) return noFavoritesHint(favSport(cfg));
     ids = favoriteIds(cfg, teams, favs);
   }
 
@@ -796,6 +796,11 @@ async function season(cfg: LeagueConfig, args: string[]): Promise<void> {
   }
 }
 
+/** What `fav add` says about a name the league's team list doesn't have. Pure. */
+export function unknownFavoriteNote(cfg: Pick<LeagueConfig, "sport" | "label">, input: string): string {
+  return `"${input}" isn't a team sportsing ${cfg.sport} knows, so its ${cfg.label} games won't show — see \`sportsing ${cfg.sport} teams\`.`;
+}
+
 /** `fav [add|rm|list] [team]` — `add` resolves the team against the league's
  *  /teams list and stores its ESPN abbreviation; list/rm are the shared fav. */
 async function leagueFav(cfg: LeagueConfig, args: string[]): Promise<void> {
@@ -803,7 +808,15 @@ async function leagueFav(cfg: LeagueConfig, args: string[]): Promise<void> {
   const input = rest.join(" ").trim();
   // Shared favorites (national teams = the `fifa` ones) are that sport's
   // free-text names, not this league's abbreviations: hand them straight over.
-  if (cfg.favoritesSport) return fav(args, cfg.favoritesSport);
+  // A name this league can't place is still stored (the other feed may know
+  // it), but said so: it would otherwise just never show up here.
+  if (cfg.favoritesSport) {
+    if (sub === "add" && input) {
+      const known = resolveTeam(await getTeams(cfg.league).catch(() => []), input, cfg.aliases);
+      if (!known) console.error(c.yellow(unknownFavoriteNote(cfg, input)));
+    }
+    return fav(args, cfg.favoritesSport);
+  }
   if (sub === "add" && input) {
     const t = resolveTeam(await getTeams(cfg.league), input, cfg.aliases) ?? unknownTeam(cfg, input);
     return fav(["add", t.abbreviation], cfg.sport);

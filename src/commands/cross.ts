@@ -506,6 +506,9 @@ export function allJson(r: AllRow, periods?: LeagueConfig["periods"]) {
   return {
     sport: r.sport.key,
     league: r.sport.label,
+    // Set when the game is outside that league (a club's cup or European tie,
+    // any national-team game); null for the league's own.
+    competition: g.competition?.name ?? null,
     id: g.id,
     state: g.state,
     start: g.date,
